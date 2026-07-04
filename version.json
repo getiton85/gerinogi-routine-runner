@@ -1,5 +1,10 @@
 ﻿{
-    "version":  "1.0.12",
+    "version":  "1.0.13",
+    "update_mode":  "installer",
+    "installer":  {
+                      "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/%EC%83%81%ED%83%9C%EB%A3%A8%ED%8B%B4%20%EC%84%A4%EC%B9%98.exe",
+                      "sha256":  "53143d7294c3c11dfa189e01939fdb3b3c56411ba3670d9c978958da299b0b62"
+                  },
     "files":  [
                   {
                       "path":  "gerinogi.ico",
@@ -9,7 +14,7 @@
                   {
                       "path":  "local_state_routine_runner.ps1",
                       "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/release/local_state_routine_runner.ps1",
-                      "sha256":  "b57558729ed82f92653c19e4de5cf7588f148399b57a13389e53f82cb2ac01ad"
+                      "sha256":  "aeca4d66387853d0801b78ea4abe88374be8e13f53a6bc5178265acd2078d3eb"
                   },
                   {
                       "path":  "state_samples/1단계_20260703_143209_143.png",

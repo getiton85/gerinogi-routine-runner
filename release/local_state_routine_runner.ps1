@@ -19,7 +19,7 @@ $script:SlotPointPath = Join-Path $PSScriptRoot 'slot_points.csv'
 $script:UserSettingsPath = Join-Path $PSScriptRoot 'user_settings.json'
 $script:ClickTracePath = Join-Path $PSScriptRoot 'click_trace_log.csv'
 $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
-$script:AppVersion = '1.0.12'
+$script:AppVersion = '1.0.13'
 $script:UpdateManifestPath = Join-Path $PSScriptRoot 'update_manifest_url.txt'
 $script:BackupDir = Join-Path $PSScriptRoot 'update_backup'
 $script:NewLine = [Environment]::NewLine
@@ -885,6 +885,29 @@ function Get-RemoteText([string]$Url) {
     $client.Headers.Add('User-Agent', 'GerinogiRoutineUpdater/' + $script:AppVersion)
     try { return $client.DownloadString($Url) } finally { $client.Dispose() }
 }
+function Invoke-AppInstallerUpdate($Manifest) {
+    if ($script:Running) { [System.Windows.Forms.MessageBox]::Show('실행 중에는 업데이트할 수 없습니다. 먼저 중단하세요.', '업데이트') | Out-Null; return }
+    $installer = $Manifest.installer
+    if ($null -eq $installer -or [string]::IsNullOrWhiteSpace([string]$installer.url)) { throw 'installer.url 값이 없습니다.' }
+    $stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+    $targetBackup = Join-Path $script:BackupDir $stamp
+    New-Item -ItemType Directory -Force -Path $targetBackup | Out-Null
+    $installerPath = Join-Path $targetBackup '상태루틴 설치.exe'
+    $client = New-Object System.Net.WebClient
+    $client.Headers.Add('User-Agent', 'GerinogiRoutineInstallerUpdater/' + $script:AppVersion)
+    try {
+        $client.DownloadFile([string]$installer.url, $installerPath)
+    }
+    finally { $client.Dispose() }
+    if ($installer.sha256) {
+        $hash = (Get-FileHash -LiteralPath $installerPath -Algorithm SHA256).Hash.ToLowerInvariant()
+        if ($hash -ne ([string]$installer.sha256).ToLowerInvariant()) { throw '설치파일 해시 검증 실패' }
+    }
+    [System.Windows.Forms.MessageBox]::Show('이 업데이트는 설치파일로 적용됩니다.' + $script:NewLine + '프로그램을 종료하고 설치를 시작합니다.' + $script:NewLine + '기존 설정과 샘플은 유지됩니다.', '업데이트') | Out-Null
+    Start-Process -FilePath $installerPath -WorkingDirectory $targetBackup
+    $script:StopRequested = $true
+    $form.Close()
+}
 function Invoke-AppUpdateCheck([bool]$Silent) {
     $url = Get-UpdateManifestUrl
     if ([string]::IsNullOrWhiteSpace($url) -or $url.StartsWith('GitHub version.json')) {
@@ -904,7 +927,8 @@ function Invoke-AppUpdateCheck([bool]$Silent) {
         }
         $msg = '새 버전이 있습니다.' + $script:NewLine + '현재: ' + $script:AppVersion + $script:NewLine + '최신: ' + $manifest.version + $script:NewLine + '업데이트할까요?'
         if ([System.Windows.Forms.MessageBox]::Show($msg, '업데이트 확인', [System.Windows.Forms.MessageBoxButtons]::YesNo) -ne [System.Windows.Forms.DialogResult]::Yes) { return }
-        Invoke-AppUpdateApply $manifest
+        $mode = if ($manifest.update_mode) { [string]$manifest.update_mode } else { 'files' }
+        if ($mode -eq 'installer') { Invoke-AppInstallerUpdate $manifest } else { Invoke-AppUpdateApply $manifest }
     }
     catch {
         if (-not $Silent) { [System.Windows.Forms.MessageBox]::Show('업데이트 확인 실패: ' + $_.Exception.Message, '업데이트 확인') | Out-Null }
