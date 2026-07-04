@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "1.0.13",
+    "version":  "1.0.16",
     "update_mode":  "installer",
     "installer":  {
-                      "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/%EC%83%81%ED%83%9C%EB%A3%A8%ED%8B%B4%20%EC%84%A4%EC%B9%98.exe",
-                      "sha256":  "53143d7294c3c11dfa189e01939fdb3b3c56411ba3670d9c978958da299b0b62"
+                      "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/%EC%83%81%ED%83%9C%EB%A3%A8%ED%8B%B4%20%EC%84%A4%EC%B9%98_1.0.16.exe",
+                      "sha256":  "84af04b3191e821d4dd87a0043f42ea90bdbf36897d4e9b971d69760ede41c9d"
                   },
     "files":  [
                   {
@@ -14,7 +14,7 @@
                   {
                       "path":  "local_state_routine_runner.ps1",
                       "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/release/local_state_routine_runner.ps1",
-                      "sha256":  "aeca4d66387853d0801b78ea4abe88374be8e13f53a6bc5178265acd2078d3eb"
+                      "sha256":  "65381b58f791896391599e56ef15bdbefe56a6d69868bc597fa01f0910f7d75c"
                   },
                   {
                       "path":  "state_samples/1단계_20260703_143209_143.png",
@@ -45,11 +45,6 @@
                       "path":  "state_samples/나가기_20260703_140135_429.png",
                       "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/release/state_samples/%EB%82%98%EA%B0%80%EA%B8%B0_20260703_140135_429.png",
                       "sha256":  "ea6e8234ae35a49f4fd3f86151a33722b1d2fe2d576d34433c55bde39741b24d"
-                  },
-                  {
-                      "path":  "state_samples/닫기_버튼_20260704_152100.png",
-                      "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/release/state_samples/%EB%8B%AB%EA%B8%B0_%EB%B2%84%ED%8A%BC_20260704_152100.png",
-                      "sha256":  "474d58439795db082c97e30df3bbf2248b04b438d0a757173eed572e5bb95363"
                   },
                   {
                       "path":  "state_samples/상태_기준_20260704_111212_145.png",
@@ -119,7 +114,7 @@
                   {
                       "path":  "update_manifest_url.txt",
                       "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/release/update_manifest_url.txt",
-                      "sha256":  "eb59f3b41811b5375bef1a456e00fcd0fd1b65e00cab655058684452fdc71dbf"
+                      "sha256":  "1fa15c7563ed849eb1387f6c808ccb38884a76bd3b68e61b3b2b9488ef585e1a"
                   },
                   {
                       "path":  "상태루틴 관리자 실행.bat",
