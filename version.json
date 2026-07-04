@@ -1,5 +1,5 @@
 ﻿{
-    "version":  "1.0.10",
+    "version":  "1.0.12",
     "files":  [
                   {
                       "path":  "gerinogi.ico",
@@ -9,7 +9,7 @@
                   {
                       "path":  "local_state_routine_runner.ps1",
                       "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/release/local_state_routine_runner.ps1",
-                      "sha256":  "ad245dc049494d665e2568ab3c87a466d554cfd9e989157bed9050bca83d10f9"
+                      "sha256":  "b57558729ed82f92653c19e4de5cf7588f148399b57a13389e53f82cb2ac01ad"
                   },
                   {
                       "path":  "state_samples/1단계_20260703_143209_143.png",
@@ -40,6 +40,11 @@
                       "path":  "state_samples/나가기_20260703_140135_429.png",
                       "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/release/state_samples/%EB%82%98%EA%B0%80%EA%B8%B0_20260703_140135_429.png",
                       "sha256":  "ea6e8234ae35a49f4fd3f86151a33722b1d2fe2d576d34433c55bde39741b24d"
+                  },
+                  {
+                      "path":  "state_samples/닫기_버튼_20260704_152100.png",
+                      "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/release/state_samples/%EB%8B%AB%EA%B8%B0_%EB%B2%84%ED%8A%BC_20260704_152100.png",
+                      "sha256":  "474d58439795db082c97e30df3bbf2248b04b438d0a757173eed572e5bb95363"
                   },
                   {
                       "path":  "state_samples/상태_기준_20260704_111212_145.png",

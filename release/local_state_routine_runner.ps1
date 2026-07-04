@@ -2,7 +2,7 @@
 Add-Type -AssemblyName System.Drawing
 
 $ErrorActionPreference = 'Stop'
-$script:Slots = @('상태 기준','식사 버튼','1단계','2단계','3단계','4단계','5단계','완료 확인','나가기')
+$script:Slots = @('상태 기준','식사 버튼','닫기 버튼','1단계','2단계','3단계','4단계','5단계','완료 확인','나가기')
 $script:Samples = @{}
 $script:SlotPoints = @{}
 foreach ($slot in $script:Slots) { $script:Samples[$slot] = $null; $script:SlotPoints[$slot] = $null }
@@ -19,7 +19,7 @@ $script:SlotPointPath = Join-Path $PSScriptRoot 'slot_points.csv'
 $script:UserSettingsPath = Join-Path $PSScriptRoot 'user_settings.json'
 $script:ClickTracePath = Join-Path $PSScriptRoot 'click_trace_log.csv'
 $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
-$script:AppVersion = '1.0.10'
+$script:AppVersion = '1.0.12'
 $script:UpdateManifestPath = Join-Path $PSScriptRoot 'update_manifest_url.txt'
 $script:BackupDir = Join-Path $PSScriptRoot 'update_backup'
 $script:NewLine = [Environment]::NewLine
@@ -119,6 +119,7 @@ public static class VisionFinder {
                 int contrastSlack = Math.Max(tolerance, 30);
 
                 for (int y = 0; y <= sh - th; y += searchStep) {
+                    if ((NativeInput.GetAsyncKeyState(0x75) & unchecked((short)0x8000)) != 0) { LastMode = "stopped-f6"; return Rectangle.Empty; }
                     for (int x = 0; x <= sw - tw; x += searchStep) {
                         int originalOk = 0, grayOk = 0, contrastOk = 0, edgeOk = 0, edgeTotal = 0;
                         for (int ty = 0; ty < th; ty += sampleStep) {
@@ -619,10 +620,27 @@ function Find-Slot([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
     $script:LastMatchedSample = ''
     return [System.Drawing.Rectangle]::Empty
 }
+function Test-StopRequested {
+    if ($script:StopRequested) { return $true }
+    if (([NativeInput]::GetAsyncKeyState(0x75) -band 0x8000) -ne 0) {
+        $script:StopRequested = $true
+        return $true
+    }
+    return $false
+}
+function Sleep-WithStop([int]$Milliseconds) {
+    $watch = [System.Diagnostics.Stopwatch]::StartNew()
+    while ($watch.ElapsedMilliseconds -lt $Milliseconds) {
+        if (Test-StopRequested) { return $false }
+        [System.Windows.Forms.Application]::DoEvents()
+        Start-Sleep -Milliseconds ([Math]::Min(100, $Milliseconds - [int]$watch.ElapsedMilliseconds))
+    }
+    return $true
+}
 function Wait-FindSlot([string]$Slot, [System.Windows.Forms.Screen]$Screen, [int]$RetryCount, [int]$RetryMs, [System.Windows.Forms.Label]$StatusLabel) {
     for ($attempt = 1; $attempt -le $RetryCount; $attempt++) {
         [System.Windows.Forms.Application]::DoEvents()
-        if ($script:StopRequested -or (([NativeInput]::GetAsyncKeyState(27) -band 0x8000) -ne 0)) { Write-RoutineTrace $script:CurrentCycle 'wait-find' $Slot 'stopped' ([System.Drawing.Rectangle]::Empty) ('attempt=' + $attempt); return [System.Drawing.Rectangle]::Empty }
+        if (Test-StopRequested) { Write-RoutineTrace $script:CurrentCycle 'wait-find' $Slot 'stopped' ([System.Drawing.Rectangle]::Empty) ('attempt=' + $attempt); return [System.Drawing.Rectangle]::Empty }
         $rect = Find-Slot $Slot $Screen
         if (-not $rect.IsEmpty) { Write-RoutineTrace $script:CurrentCycle 'wait-find' $Slot 'found' $rect ('attempt=' + $attempt); return $rect }
         Write-RoutineTrace $script:CurrentCycle 'wait-find' $Slot 'miss' ([System.Drawing.Rectangle]::Empty) ('attempt=' + $attempt + '/' + $RetryCount)
@@ -636,7 +654,7 @@ function Wait-SlotGone([string]$Slot, [System.Windows.Forms.Screen]$Screen, [int
     $watch = [System.Diagnostics.Stopwatch]::StartNew()
     while ($watch.ElapsedMilliseconds -lt $TimeoutMs) {
         [System.Windows.Forms.Application]::DoEvents()
-        if ($script:StopRequested -or (([NativeInput]::GetAsyncKeyState(27) -band 0x8000) -ne 0)) { return $false }
+        if (Test-StopRequested) { return $false }
         $rect = Find-Slot $Slot $Screen
         if ($rect.IsEmpty) { return $true }
         $StatusLabel.Text = $Slot + ' 사라짐 대기 중 (' + [int]($watch.ElapsedMilliseconds / 1000) + '초)'
@@ -651,8 +669,9 @@ function Wait-SlotAppear([string]$Slot, [System.Windows.Forms.Screen]$Screen, [i
     while ($watch.ElapsedMilliseconds -lt $TimeoutMs) {
         $attempt++
         [System.Windows.Forms.Application]::DoEvents()
-        if ($script:StopRequested -or (([NativeInput]::GetAsyncKeyState(27) -band 0x8000) -ne 0)) { Write-RoutineTrace $script:CurrentCycle 'wait-appear' $Slot 'stopped' ([System.Drawing.Rectangle]::Empty) ('elapsed_ms=' + [int]$watch.ElapsedMilliseconds); return [System.Drawing.Rectangle]::Empty }
-        if ($Slot -ne '식사 버튼') { [void](Invoke-FoodButtonIfVisible $Screen $StatusLabel) }
+        if (Test-StopRequested) { Write-RoutineTrace $script:CurrentCycle 'wait-appear' $Slot 'stopped' ([System.Drawing.Rectangle]::Empty) ('elapsed_ms=' + [int]$watch.ElapsedMilliseconds); return [System.Drawing.Rectangle]::Empty }
+        if ($Slot -eq '완료 확인' -or $Slot -eq '나가기') { [void](Invoke-CloseOverlayIfVisible $Screen $StatusLabel) }
+        if ($Slot -ne '식사 버튼' -and $Slot -ne '닫기 버튼') { [void](Invoke-FoodButtonIfVisible $Screen $StatusLabel) }
         $rect = Find-Slot $Slot $Screen
         if (-not $rect.IsEmpty) { Write-RoutineTrace $script:CurrentCycle 'wait-appear' $Slot 'found' $rect ('attempt=' + $attempt + '; elapsed_ms=' + [int]$watch.ElapsedMilliseconds); return $rect }
         Write-RoutineTrace $script:CurrentCycle 'wait-appear' $Slot 'miss' ([System.Drawing.Rectangle]::Empty) ('attempt=' + $attempt + '; elapsed_ms=' + [int]$watch.ElapsedMilliseconds)
@@ -670,8 +689,9 @@ function Wait-CheckedSlotAppear([string]$Slot, [System.Windows.Forms.Screen]$Scr
     while (($TimeoutMs -le 0) -or ($watch.ElapsedMilliseconds -lt $TimeoutMs)) {
         $attempt++
         [System.Windows.Forms.Application]::DoEvents()
-        if ($script:StopRequested -or (([NativeInput]::GetAsyncKeyState(27) -band 0x8000) -ne 0)) { Write-RoutineTrace $script:CurrentCycle 'wait-valid' $Slot 'stopped' ([System.Drawing.Rectangle]::Empty) ('elapsed_ms=' + [int]$watch.ElapsedMilliseconds); return [System.Drawing.Rectangle]::Empty }
-        if ($Slot -ne '식사 버튼') { [void](Invoke-FoodButtonIfVisible $Screen $StatusLabel) }
+        if (Test-StopRequested) { Write-RoutineTrace $script:CurrentCycle 'wait-valid' $Slot 'stopped' ([System.Drawing.Rectangle]::Empty) ('elapsed_ms=' + [int]$watch.ElapsedMilliseconds); return [System.Drawing.Rectangle]::Empty }
+        if ($Slot -eq '완료 확인' -or $Slot -eq '나가기') { [void](Invoke-CloseOverlayIfVisible $Screen $StatusLabel) }
+        if ($Slot -ne '식사 버튼' -and $Slot -ne '닫기 버튼') { [void](Invoke-FoodButtonIfVisible $Screen $StatusLabel) }
         $rect = Find-Slot $Slot $Screen
         if (-not $rect.IsEmpty) {
             $pointResult = Check-SlotPointMatch $Slot $rect
@@ -706,7 +726,7 @@ function Wait-ConfirmedCompleteSlot([System.Windows.Forms.Screen]$Screen, [Syste
         Write-RoutineTrace $script:CurrentCycle 'complete-confirm' '완료 확인' 'candidate-1' $first ('attempt=' + $attempt)
         $StatusLabel.Text = '완료 확인 후보 재검증 중'
         [System.Windows.Forms.Application]::DoEvents()
-        Start-Sleep -Milliseconds 1800
+        [void](Sleep-WithStop 1800)
         $second = Wait-CheckedSlotAppear '완료 확인' $Screen 4500 500 $StatusLabel
         if ($second.IsEmpty) {
             Write-RoutineTrace $script:CurrentCycle 'complete-confirm' '완료 확인' 'candidate-lost' $first 'second check not found'
@@ -729,17 +749,28 @@ function Try-CompleteAndFindExit([System.Windows.Forms.Screen]$Screen, [System.W
     [void](Click-SlotTarget '완료 확인' $CompleteRect ([int]$stepDelayBox.Value))
     Write-RoutineTrace $script:CurrentCycle 'complete' '완료 확인' 'click-after' $CompleteRect ''
     Mark-ActiveSlot '나가기'
-    Start-Sleep -Milliseconds 2500
+    [void](Sleep-WithStop 2500)
     [System.Windows.Forms.Application]::DoEvents()
     $exitRect = Wait-CheckedSlotAppear '나가기' $Screen 9000 1000 $StatusLabel
     if (-not $exitRect.IsEmpty) { return $exitRect }
     Write-RoutineTrace $script:CurrentCycle 'complete' '완료 확인' 'false-positive' $CompleteRect 'exit not visible after complete click; resume waiting'
     $StatusLabel.Text='완료 확인 오판으로 판단: 대기로 복귀'
     [System.Windows.Forms.Application]::DoEvents()
-    Start-Sleep -Milliseconds 2000
+    [void](Sleep-WithStop 2000)
     return [System.Drawing.Rectangle]::Empty
 }
 function Click-Rect([System.Drawing.Rectangle]$Rect, [int]$DelayMs, [int]$HoldOverrideMs = -1) { Invoke-LeftClick -X ([int]($Rect.Left + $Rect.Width / 2)) -Y ([int]($Rect.Top + $Rect.Height / 2)) -HoldOverrideMs $HoldOverrideMs; Start-Sleep -Milliseconds $DelayMs }
+function Invoke-CloseOverlayIfVisible([System.Windows.Forms.Screen]$Screen, [System.Windows.Forms.Label]$StatusLabel) {
+    if ($null -eq $script:Samples['닫기 버튼']) { return $false }
+    $rect = Find-Slot '닫기 버튼' $Screen
+    if ($rect.IsEmpty) { return $false }
+    Write-RoutineTrace $script:CurrentCycle 'overlay' '닫기 버튼' 'found-click' $rect 'complete-exit phase only'
+    $StatusLabel.Text = '설명창 닫기 감지: 먼저 닫기'
+    [System.Windows.Forms.Application]::DoEvents()
+    [void](Click-SlotTarget '닫기 버튼' $rect 500 120)
+    [void](Sleep-WithStop 500)
+    return $true
+}
 function Invoke-FoodButtonIfVisible([System.Windows.Forms.Screen]$Screen, [System.Windows.Forms.Label]$StatusLabel) {
     if ($null -eq $script:Samples['식사 버튼']) { return $false }
     $rect = Find-Slot '식사 버튼' $Screen
@@ -1372,10 +1403,28 @@ function Start-StateRoutine {
                     }
                     if($status -ne 'completed'){ break }
                     if($exitRect.IsEmpty){ if($script:StopRequested){ $status='stopped'; $message='사용자 중단' } else { Write-RoutineTrace $cycle 'exit' '나가기' 'timeout-blocked' ([System.Drawing.Rectangle]::Empty) 'not found after verified complete'; $status='blocked'; $message='나가기 이미지를 찾지 못함'; }; break }
-                    Write-RoutineTrace $cycle 'exit' '나가기' 'click-before' $exitRect ''
-                    [void](Click-SlotTarget '나가기' $exitRect ([int]$stepDelayBox.Value))
-                    Write-RoutineTrace $cycle 'exit' '나가기' 'click-after' $exitRect ''
-                    $completedClicks++
+                    $exitClosed = $false
+                    while((-not $script:StopRequested) -and (-not $exitClosed)){
+                        Write-RoutineTrace $cycle 'exit' '나가기' 'click-before' $exitRect ''
+                        [void](Click-SlotTarget '나가기' $exitRect ([int]$stepDelayBox.Value))
+                        Write-RoutineTrace $cycle 'exit' '나가기' 'click-after' $exitRect ''
+                        $completedClicks++
+                        [void](Sleep-WithStop 2500)
+                        $stillExit = Find-Slot '나가기' $screen
+                        if($stillExit.IsEmpty){ $exitClosed = $true; break }
+                        Write-RoutineTrace $cycle 'exit' '나가기' 'click-no-effect' $stillExit 'exit still visible; resume complete wait loop'
+                        $exitRect = [System.Drawing.Rectangle]::Empty
+                        while((-not $script:StopRequested) -and $exitRect.IsEmpty){
+                            $completeRect = Wait-ConfirmedCompleteSlot $screen $statusLabel
+                            if($completeRect.IsEmpty){ if($script:StopRequested){ $status='stopped'; $message='사용자 중단' } else { $status='blocked'; $message='완료 확인 이미지를 찾지 못함' }; break }
+                            $exitRect = Try-CompleteAndFindExit $screen $statusLabel $completeRect
+                            $completedClicks++
+                        }
+                        if($status -ne 'completed' -or $exitRect.IsEmpty){ break }
+                    }
+                    if($status -ne 'completed'){ break }
+                    if($script:StopRequested){ $status='stopped'; $message='사용자 중단'; break }
+                    if(-not $exitClosed){ Write-RoutineTrace $cycle 'exit' '나가기' 'not-closed' ([System.Drawing.Rectangle]::Empty) 'exit click did not close'; $status='blocked'; $message='나가기 클릭 후 종료 확인 실패'; break }
                 }
             }
             if($status -ne 'completed'){ break }
@@ -1391,9 +1440,9 @@ function Start-StateRoutine {
     finally { Write-RoutineTrace $script:CurrentCycle 'run' '' ('end-' + $status) ([System.Drawing.Rectangle]::Empty) $message; $ended=Get-Date; $elapsed=$timer.Elapsed.TotalSeconds; $average=if($completedCycles -gt 0){$elapsed/$completedCycles}else{0}; Write-RunLog $started $ended $titlePart (Get-WindowTitle $target.Handle) $monitorBox.SelectedItem 0 $completedCycles $completedClicks ([int]$intervalBox.Value) $elapsed $average $status $message; if ($minimizeOnRunCheck.Checked) { $form.WindowState = $previousWindowState; [void]$form.Activate() }; $script:ActiveSlot=''; Refresh-Slots; $statusLabel.Text='종료: '+$status+', 완료 '+$completedCycles+'회'; Set-ProgressStep 0; $startButton.Enabled=$true; $script:Running=$false }
 }
 $startButton.Add_Click({ Start-StateRoutine })
-$form.Add_Shown({ [void][NativeInput]::RegisterHotKey($form.Handle,801,0,0x77); [void][NativeInput]::RegisterHotKey($form.Handle,802,0,0x1B); [void][NativeInput]::RegisterHotKey($form.Handle,803,0,0x74); [void][NativeInput]::RegisterHotKey($form.Handle,804,0,0x75); [void][NativeInput]::RegisterHotKey($form.Handle,805,0,0x76) })
-$form.Add_FormClosed({ Save-UserSettings; [void][NativeInput]::UnregisterHotKey($form.Handle,801); [void][NativeInput]::UnregisterHotKey($form.Handle,802); [void][NativeInput]::UnregisterHotKey($form.Handle,803); [void][NativeInput]::UnregisterHotKey($form.Handle,804); [void][NativeInput]::UnregisterHotKey($form.Handle,805) })
+$form.Add_Shown({ [void][NativeInput]::RegisterHotKey($form.Handle,801,0,0x77); [void][NativeInput]::RegisterHotKey($form.Handle,803,0,0x74); [void][NativeInput]::RegisterHotKey($form.Handle,804,0,0x75); [void][NativeInput]::RegisterHotKey($form.Handle,805,0,0x76) })
+$form.Add_FormClosed({ Save-UserSettings; [void][NativeInput]::UnregisterHotKey($form.Handle,801); [void][NativeInput]::UnregisterHotKey($form.Handle,803); [void][NativeInput]::UnregisterHotKey($form.Handle,804); [void][NativeInput]::UnregisterHotKey($form.Handle,805) })
 $script:HotKeyFilter = New-Object HotKeyWindowFilter
-$script:HotKeyFilter.OnHotKey = [Action[int]]{ param($id) if($id -eq 801 -and -not $script:Running){ Add-SlotSample }; if($id -eq 802){ $script:StopRequested=$true; $statusLabel.Text='중단 요청됨.' }; if($id -eq 803 -and -not $script:Running){ Start-StateRoutine }; if($id -eq 804){ $script:StopRequested=$true; $statusLabel.Text='중단 요청됨.' }; if($id -eq 805 -and -not $script:Running){ Save-CurrentPointForSelectedSlot } }
+$script:HotKeyFilter.OnHotKey = [Action[int]]{ param($id) if($id -eq 801 -and -not $script:Running){ Add-SlotSample }; if($id -eq 803 -and -not $script:Running){ Start-StateRoutine }; if($id -eq 804){ $script:StopRequested=$true; $statusLabel.Text='중단 요청됨.' }; if($id -eq 805 -and -not $script:Running){ Save-CurrentPointForSelectedSlot } }
 [System.Windows.Forms.Application]::AddMessageFilter($script:HotKeyFilter)
 [void]$form.ShowDialog()
