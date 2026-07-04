@@ -161,7 +161,7 @@ $script:IgnoreZonePath = Join-Path $PSScriptRoot 'ignore_zones.csv'
 $script:UserSettingsPath = Join-Path $PSScriptRoot 'user_settings.json'
 $script:ClickTracePath = Join-Path $PSScriptRoot 'click_trace_log.csv'
 $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
-$script:AppVersion = '1.0.32'
+$script:AppVersion = '1.0.33'
 $script:IgnoreZones = New-Object System.Collections.Generic.List[object]
 $script:MaxIgnoreZones = 4
 $script:LastUltimateAt = [datetime]::MinValue
@@ -241,6 +241,13 @@ public static class VisionFinder {
         return e > 255 ? 255 : e;
     }
 
+    private static int ChannelValue(int channel, byte b, byte g, byte r) {
+        if (channel == 0) return b;
+        if (channel == 1) return g;
+        if (channel == 2) return r;
+        return Gray(b, g, r);
+    }
+
     public static Rectangle FindSample(Rectangle screenBounds, string samplePath, int searchStep, int sampleStep, int tolerance, double requiredScore) {
         LastMode = "";
         LastScore = 0.0;
@@ -260,6 +267,28 @@ public static class VisionFinder {
                 Marshal.Copy(td.Scan0, t, 0, t.Length);
                 int sampleCount = 0;
                 for (int ty = 0; ty < th; ty += sampleStep) for (int tx = 0; tx < tw; tx += sampleStep) sampleCount++;
+                int[] minCh = new int[] { 255, 255, 255, 255 };
+                int[] maxCh = new int[] { 0, 0, 0, 0 };
+                for (int ty = 0; ty < th; ty += sampleStep) {
+                    int tRow = ty * ts;
+                    for (int tx = 0; tx < tw; tx += sampleStep) {
+                        int ti = tRow + tx * 4;
+                        byte tb = t[ti], tg = t[ti + 1], tr = t[ti + 2];
+                        for (int ch = 0; ch < 4; ch++) {
+                            int v = ChannelValue(ch, tb, tg, tr);
+                            if (v < minCh[ch]) minCh[ch] = v;
+                            if (v > maxCh[ch]) maxCh[ch] = v;
+                        }
+                    }
+                }
+                int maskChannel = 3;
+                int maskRange = -1;
+                for (int ch = 0; ch < 4; ch++) {
+                    int range = maxCh[ch] - minCh[ch];
+                    if (range > maskRange) { maskRange = range; maskChannel = ch; }
+                }
+                int maskThreshold = (minCh[maskChannel] + maxCh[maskChannel]) / 2;
+                int maskMargin = Math.Max(18, maskRange / 5);
                 double bestScore = -1; int bestX = -1, bestY = -1; string bestMode = "";
                 int grayTolerance = Math.Max(tolerance, 22);
                 int edgeTolerance = Math.Max(tolerance * 2, 55);
@@ -268,7 +297,7 @@ public static class VisionFinder {
                 for (int y = 0; y <= sh - th; y += searchStep) {
                     if ((NativeInput.GetAsyncKeyState(0x75) & unchecked((short)0x8000)) != 0) { LastMode = "stopped-f6"; return Rectangle.Empty; }
                     for (int x = 0; x <= sw - tw; x += searchStep) {
-                        int originalOk = 0, grayOk = 0, contrastOk = 0, edgeOk = 0, edgeTotal = 0;
+                        int originalOk = 0, grayOk = 0, contrastOk = 0, edgeOk = 0, edgeTotal = 0, maskOk = 0, maskTotal = 0;
                         for (int ty = 0; ty < th; ty += sampleStep) {
                             int sRow = (y + ty) * ss; int tRow = ty * ts;
                             for (int tx = 0; tx < tw; tx += sampleStep) {
@@ -282,6 +311,12 @@ public static class VisionFinder {
                                 bool sc = sgx >= 128;
                                 bool tc = tgx >= 128;
                                 if (sc == tc || Math.Abs(sgx - tgx) <= contrastSlack) contrastOk++;
+                                int sv = ChannelValue(maskChannel, sb, sg, sr);
+                                int tv = ChannelValue(maskChannel, tb, tg, tr);
+                                if (Math.Abs(tv - maskThreshold) >= maskMargin) {
+                                    maskTotal++;
+                                    if ((sv >= maskThreshold) == (tv >= maskThreshold)) maskOk++;
+                                }
                                 int se = EdgeAt(s, ss, sw, sh, x + tx, y + ty);
                                 int te = EdgeAt(t, ts, tw, th, tx, ty);
                                 if (te > 35 || se > 35) {
@@ -294,14 +329,21 @@ public static class VisionFinder {
                         double grayScore = (double)grayOk / sampleCount;
                         double contrastScore = (double)contrastOk / sampleCount;
                         double edgeScore = edgeTotal > 0 ? (double)edgeOk / edgeTotal : 0.0;
+                        double maskScore = maskTotal > 0 ? (double)maskOk / maskTotal : 0.0;
 
                         double score = originalScore;
                         string mode = "original";
                         if (grayScore * 0.99 > score) { score = grayScore * 0.99; mode = "gray"; }
-                        if (contrastScore * 0.94 > score) { score = contrastScore * 0.94; mode = "contrast"; }
-                        if (edgeTotal >= Math.Max(4, sampleCount / 12) && edgeScore * 0.96 > score) { score = edgeScore * 0.96; mode = "edge"; }
+                        if (contrastScore * 0.90 > score) { score = contrastScore * 0.90; mode = "contrast"; }
+                        if (maskTotal >= Math.Max(8, sampleCount / 4) && maskScore * 0.98 > score) { score = maskScore * 0.98; mode = "channel-mask"; }
+                        if (edgeTotal >= Math.Max(4, sampleCount / 12) && edgeScore * 0.88 > score) { score = edgeScore * 0.88; mode = "edge"; }
 
-                        bool verificationOk = originalScore >= requiredScore - 0.18 || grayScore >= requiredScore - 0.08 || (edgeTotal >= Math.Max(4, sampleCount / 12) && edgeScore >= requiredScore - 0.04);
+                        bool originalStrong = originalScore >= requiredScore;
+                        bool grayStrong = grayScore >= requiredScore;
+                        bool maskStrong = maskTotal >= Math.Max(8, sampleCount / 4) && maskScore >= Math.Max(requiredScore + 0.04, 0.91);
+                        bool edgeStrong = edgeTotal >= Math.Max(4, sampleCount / 12) && edgeScore >= Math.Max(requiredScore + 0.05, 0.92);
+                        bool supportOk = originalScore >= requiredScore - 0.10 || grayScore >= requiredScore - 0.06 || contrastScore >= requiredScore - 0.04 || edgeStrong;
+                        bool verificationOk = originalStrong || grayStrong || (maskStrong && supportOk);
                         if (verificationOk && score > bestScore) { bestScore = score; bestX = x; bestY = y; bestMode = mode; }
                     }
                 }
@@ -772,12 +814,12 @@ function Save-CapturedSlotPoint([string]$Slot, [System.Drawing.Rectangle]$Rect) 
     Save-SlotPoints
 }
 function Get-MatchRequired {
-    if ($matchPercentBox) { return [double]$matchPercentBox.Value / 100.0 }
-    return 0.84
+    if ($matchPercentBox) { return [Math]::Max(0.91, [double]$matchPercentBox.Value / 100.0) }
+    return 0.91
 }
 function Get-ColorTolerance {
-    if ($colorToleranceBox) { return [int]$colorToleranceBox.Value }
-    return 35
+    if ($colorToleranceBox) { return [Math]::Min(22, [int]$colorToleranceBox.Value) }
+    return 22
 }
 function Save-SlotPoints {
     $rows = New-Object System.Collections.Generic.List[string]
@@ -906,7 +948,6 @@ function Save-CurrentPointForSelectedSlot {
 function Get-PointTolerance { try { if ($pointToleranceBox) { return [int]$pointToleranceBox.Value } } catch { }; return 120 }
 function Check-SlotPointMatch([string]$Slot, [System.Drawing.Rectangle]$Rect) {
     if ($Slot -eq '상태 기준') { return [pscustomobject]@{ Ok = $true; Message = '' } }
-    if ($Slot -eq '완료 확인') { return [pscustomobject]@{ Ok = $true; Message = '완료 확인은 하단 영역과 안정검증으로 판정합니다.' } }
     if (-not $pointCheck.Checked) { return [pscustomobject]@{ Ok = $true; Message = '' } }
     $point = $script:SlotPoints[$Slot]
     if ($null -eq $point) { return [pscustomobject]@{ Ok = $true; Message = '' } }
@@ -2026,11 +2067,11 @@ function Add-OptionRow([int]$Row, [string]$Text, [System.Windows.Forms.Control]$
     $settingsTable.Controls.Add($label, 0, $Row); $settingsTable.Controls.Add($Control, 1, $Row)
 }
 $intervalBox = New-Object System.Windows.Forms.NumericUpDown; $intervalBox.Minimum = 1000; $intervalBox.Maximum = 60000; $intervalBox.Increment = 100; $intervalBox.Value = 10000
-$pointToleranceBox = New-Object System.Windows.Forms.NumericUpDown; $pointToleranceBox.Minimum = 10; $pointToleranceBox.Maximum = 1000; $pointToleranceBox.Increment = 10; $pointToleranceBox.Value = 120
+$pointToleranceBox = New-Object System.Windows.Forms.NumericUpDown; $pointToleranceBox.Minimum = 10; $pointToleranceBox.Maximum = 1000; $pointToleranceBox.Increment = 10; $pointToleranceBox.Value = 80
 $coordinateModeBox = New-Object System.Windows.Forms.ComboBox; $coordinateModeBox.DropDownStyle = 'DropDownList'; [void]$coordinateModeBox.Items.Add('대상 창 기준'); [void]$coordinateModeBox.Items.Add('화면 기준'); $coordinateModeBox.SelectedIndex = 0
 $clickModeBox = New-Object System.Windows.Forms.ComboBox; $clickModeBox.DropDownStyle = 'DropDownList'; [void]$clickModeBox.Items.Add('둘다'); [void]$clickModeBox.Items.Add('SendInput'); [void]$clickModeBox.Items.Add('mouse_event'); [void]$clickModeBox.Items.Add('백그라운드'); $clickModeBox.SelectedIndex = 0; $script:ClickModeBox = $clickModeBox
-$matchPercentBox = New-Object System.Windows.Forms.NumericUpDown; $matchPercentBox.Minimum = 50; $matchPercentBox.Maximum = 100; $matchPercentBox.Value = 84
-$colorToleranceBox = New-Object System.Windows.Forms.NumericUpDown; $colorToleranceBox.Minimum = 10; $colorToleranceBox.Maximum = 100; $colorToleranceBox.Value = 35
+$matchPercentBox = New-Object System.Windows.Forms.NumericUpDown; $matchPercentBox.Minimum = 50; $matchPercentBox.Maximum = 100; $matchPercentBox.Value = 91
+$colorToleranceBox = New-Object System.Windows.Forms.NumericUpDown; $colorToleranceBox.Minimum = 10; $colorToleranceBox.Maximum = 100; $colorToleranceBox.Value = 22
 $retryCountBox = New-Object System.Windows.Forms.NumericUpDown; $retryCountBox.Minimum = 1; $retryCountBox.Maximum = 20; $retryCountBox.Value = 5
 $retryIntervalBox = New-Object System.Windows.Forms.NumericUpDown; $retryIntervalBox.Minimum = 500; $retryIntervalBox.Maximum = 10000; $retryIntervalBox.Increment = 100; $retryIntervalBox.Value = 1000
 $stepDelayBox = New-Object System.Windows.Forms.NumericUpDown; $stepDelayBox.Minimum = 100; $stepDelayBox.Maximum = 10000; $stepDelayBox.Increment = 100; $stepDelayBox.Value = 900
