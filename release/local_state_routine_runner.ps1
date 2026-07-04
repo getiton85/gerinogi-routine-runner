@@ -161,7 +161,7 @@ $script:IgnoreZonePath = Join-Path $PSScriptRoot 'ignore_zones.csv'
 $script:UserSettingsPath = Join-Path $PSScriptRoot 'user_settings.json'
 $script:ClickTracePath = Join-Path $PSScriptRoot 'click_trace_log.csv'
 $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
-$script:AppVersion = '1.0.30'
+$script:AppVersion = '1.0.31'
 $script:IgnoreZones = New-Object System.Collections.Generic.List[object]
 $script:MaxIgnoreZones = 4
 $script:LastUltimateAt = [datetime]::MinValue
@@ -1294,6 +1294,100 @@ function Invoke-FoodButtonIfVisible([System.Windows.Forms.Screen]$Screen, [Syste
     }
     return $true
 }
+function Get-RoutineScanOrder([bool]$InsidePhase) {
+    $order = New-Object System.Collections.Generic.List[string]
+    $order.Add('나가기') | Out-Null
+    $order.Add('완료 확인') | Out-Null
+    if ($InsidePhase) {
+        $order.Add('식사 버튼') | Out-Null
+        $order.Add('궁극기') | Out-Null
+    }
+    $order.Add('퀘스트') | Out-Null
+    $order.Add('상태 기준') | Out-Null
+    $order.Add('입장') | Out-Null
+    $order.Add('던전') | Out-Null
+    $order.Add('어비스') | Out-Null
+    $order.Add('메뉴') | Out-Null
+    return [string[]]$order
+}
+function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [bool]$InsidePhase) {
+    $order = Get-RoutineScanOrder $InsidePhase
+    foreach ($slot in $order) {
+        if (Test-StopRequested) { return $null }
+        if ($slot -eq '궁극기' -and $null -eq $script:Samples[$slot]) { continue }
+        if ($null -eq $script:Samples[$slot]) { continue }
+        $rect = Find-ValidSlotOnce $slot $Screen $true
+        if (-not $rect.IsEmpty) {
+            Write-RoutineTrace $script:CurrentCycle 'state-scan' $slot 'candidate' $rect ('inside=' + $InsidePhase)
+            return [pscustomobject]@{ Slot = $slot; Rect = $rect }
+        }
+    }
+    Write-RoutineTrace $script:CurrentCycle 'state-scan' '' 'none' ([System.Drawing.Rectangle]::Empty) ('inside=' + $InsidePhase + '; checked=' + ($order -join '|'))
+    return $null
+}
+function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]$Screen, [System.Windows.Forms.Label]$StatusLabel, [ref]$InsidePhase) {
+    if ($null -eq $Candidate) { return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = '' } }
+    $slot = [string]$Candidate.Slot
+    $rect = $Candidate.Rect
+    Mark-ActiveSlot $slot
+    switch ($slot) {
+        '나가기' {
+            $exitResult = Invoke-ExitActionUntilClosed $Screen $StatusLabel $rect
+            if ($exitResult.Closed) {
+                $InsidePhase.Value = $false
+                Set-ProgressStep 10
+                return [pscustomobject]@{ Clicks = [int]$exitResult.Clicks; Completed = $true; Message = '순환 완료' }
+            }
+            return [pscustomobject]@{ Clicks = [int]$exitResult.Clicks; Completed = $false; Message = '나가기 재탐색' }
+        }
+        '완료 확인' {
+            $StatusLabel.Text = '완료 확인 감지: 클릭'
+            [System.Windows.Forms.Application]::DoEvents()
+            Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'click-before' $rect ''
+            [void](Click-SlotTarget $slot $rect ([int]$stepDelayBox.Value))
+            Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'click-after' $rect ''
+            $InsidePhase.Value = $true
+            Set-ProgressStep 8
+            return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = '완료 확인 클릭' }
+        }
+        '식사 버튼' {
+            if (-not $InsidePhase.Value) { return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = '식사 무시: 내부 진행 아님' } }
+            if (Invoke-FoodButtonIfVisible $Screen $StatusLabel) { return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = '식사 버튼 처리' } }
+            return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = '식사 버튼 재검사 필요' }
+        }
+        '궁극기' {
+            if (-not $InsidePhase.Value) { return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = '궁극기 무시: 내부 진행 아님' } }
+            if (Invoke-UltimateIfVisible $Screen $StatusLabel) { return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = '궁극기 입력' } }
+            return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = '궁극기 재검사 필요' }
+        }
+        '상태 기준' {
+            $script:SlotPoints[$slot] = $null
+            $StatusLabel.Text = '상태 기준 감지: 클릭 없이 다음 상태 탐색'
+            [System.Windows.Forms.Application]::DoEvents()
+            Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'observe-only' $rect ''
+            Set-ProgressStep 5
+            return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = '상태 기준 확인' }
+        }
+        '퀘스트' {
+            $StatusLabel.Text = '퀘스트 감지: 진행 시작'
+            [System.Windows.Forms.Application]::DoEvents()
+            Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'click-before' $rect ''
+            [void](Click-SlotTarget $slot $rect ([int]$stepDelayBox.Value) 120)
+            Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'click-after' $rect ''
+            $InsidePhase.Value = $true
+            Set-ProgressStep 7
+            return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = '퀘스트 클릭' }
+        }
+        default {
+            $StatusLabel.Text = $slot + ' 감지: 클릭'
+            [System.Windows.Forms.Application]::DoEvents()
+            Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'click-before' $rect ''
+            [void](Click-SlotTarget $slot $rect ([int]$stepDelayBox.Value))
+            Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'click-after' $rect ''
+            return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = $slot + ' 클릭' }
+        }
+    }
+}
 function Ensure-LogHeader { if (-not [System.IO.File]::Exists($script:LogPath)) { 'started_at,ended_at,target_title,matched_window,monitor,requested_cycles,completed_cycles,completed_clicks,interval_ms,elapsed_seconds,average_cycle_seconds,status,message' | Set-Content -LiteralPath $script:LogPath -Encoding UTF8 } }
 function Csv([string]$Value) { if ($null -eq $Value) { $Value = '' }; return '"' + $Value.Replace('"', '""') + '"' }
 function Ensure-RoutineTraceHeader { if (-not [System.IO.File]::Exists($script:RoutineTracePath)) { 'time,cycle,phase,slot,event,x,y,detail' | Set-Content -LiteralPath $script:RoutineTracePath -Encoding UTF8 } }
@@ -2043,6 +2137,7 @@ function Start-StateRoutine {
     $script:Running=$true; $script:StopRequested=$false; $startButton.Enabled=$false; $started=Get-Date; $timer=[System.Diagnostics.Stopwatch]::StartNew(); $completedCycles=0; $completedClicks=0; $status='completed'; $message=''
     try {
         $cycle=0
+        $insidePhase = $false
         while(-not $script:StopRequested) {
             $cycle++
             $script:CurrentCycle = $cycle
@@ -2050,63 +2145,21 @@ function Start-StateRoutine {
             if($script:StopRequested){ $status='stopped'; $message='사용자 중단'; break }
             [void][NativeInput]::SetForegroundWindow($target.Handle)
             [void](Sleep-WithStop 150)
-            $stageSlots = @('메뉴','어비스','던전','입장','상태 기준','퀘스트')
-            for ($stageIndex = 0; $stageIndex -lt $stageSlots.Count; $stageIndex++) {
-                if($script:StopRequested){ $status='stopped'; $message='사용자 중단'; break }
-                $slot = $stageSlots[$stageIndex]
-                Mark-ActiveSlot $slot
-                Write-RoutineTrace $cycle 'slot' $slot 'enter' ([System.Drawing.Rectangle]::Empty) ''
-                if($slot -eq '퀘스트') {
-                    $statusLabel.Text='퀘스트 전 8초 대기 중'
-                    [System.Windows.Forms.Application]::DoEvents()
-                    if (-not (Sleep-WithStop 8000)) { $status='stopped'; $message='사용자 중단'; break }
-                }
-                $rect=Wait-FindSlot $slot $screen ([int]$retryCountBox.Value) ([int]$retryIntervalBox.Value) $statusLabel
-                if($rect.IsEmpty){
-                    if($script:StopRequested){ $status='stopped'; $message='사용자 중단'; break }
-                    $visibleStage = Find-FirstVisibleSlot $stageSlots $screen $true
-                    if ($null -ne $visibleStage) {
-                        $nextIndex = [Array]::IndexOf($stageSlots, $visibleStage.Slot)
-                        if ($nextIndex -ge 0) {
-                            Write-RoutineTrace $cycle 'slot' $slot 'jump-to-visible' $visibleStage.Rect ('visible=' + $visibleStage.Slot)
-                            $statusLabel.Text = $slot + ' 대신 ' + $visibleStage.Slot + ' 감지: 해당 단계로 복구'
-                            [System.Windows.Forms.Application]::DoEvents()
-                            $stageIndex = $nextIndex - 1
-                            continue
-                        }
-                    }
-                    if($slot -ne '상태 기준' -and (Click-SlotTarget $slot $rect ([int]$stepDelayBox.Value))){ $completedClicks++; continue }
-                    if($slot -eq '메뉴' -and $beepCheck.Checked){Signal-ShortBeep}
-                    $status='blocked'; $message=$slot+' 이미지를 찾지 못함'; break
-                }
-                $pointResult=Check-SlotPointMatch $slot $rect
-                if(-not $pointResult.Ok){ Write-RoutineTrace $cycle 'slot' $slot 'point-warning' $rect $pointResult.Message }
-                if($slot -eq '상태 기준'){
-                    $script:SlotPoints[$slot] = $null
-                    $statusLabel.Text='상태 기준 확인됨: 클릭 없이 퀘스트로 진행'
-                    [System.Windows.Forms.Application]::DoEvents()
-                    [void](Sleep-WithStop 500)
-                    continue
-                }
-                Write-RoutineTrace $cycle 'slot' $slot 'click-before' $rect ''
-                if($slot -eq '퀘스트'){ [void](Click-SlotTarget $slot $rect ([int]$stepDelayBox.Value) 120) } else { [void](Click-SlotTarget $slot $rect ([int]$stepDelayBox.Value)) }
-                Write-RoutineTrace $cycle 'slot' $slot 'click-after' $rect ''
-                $completedClicks++
-                if($slot -eq '퀘스트'){
-                    $statusLabel.Text='완료/나가기 후처리 대기 중'
-                    Set-ProgressStep 7
-                    [System.Windows.Forms.Application]::DoEvents()
-                    $postResult = Invoke-PostClearFlow $screen $statusLabel
-                    $completedClicks += [int]$postResult.Clicks
-                    if ($script:StopRequested -or -not $postResult.Closed) { $status='stopped'; $message=$postResult.Message; break }
-                }
+            $candidate = Find-RoutineCandidate $screen $insidePhase
+            if ($null -eq $candidate) {
+                $statusLabel.Text = '상태 판단 중: 일치 항목 없음'
+                [System.Windows.Forms.Application]::DoEvents()
+                [void](Sleep-WithStop ([Math]::Max(120, [Math]::Min(500, [int]$retryIntervalBox.Value))))
+                continue
             }
-            if($status -ne 'completed'){ break }
-            Write-RoutineTrace $cycle 'cycle' '' 'completed' ([System.Drawing.Rectangle]::Empty) ('clicks=' + $completedClicks)
-            $completedCycles++
-            Set-ProgressStep 10
-            $sleepWatch = [System.Diagnostics.Stopwatch]::StartNew()
-            while((-not $script:StopRequested) -and $sleepWatch.ElapsedMilliseconds -lt [int]$intervalBox.Value) { Start-Sleep -Milliseconds 250; [System.Windows.Forms.Application]::DoEvents() }
+            $actionResult = Invoke-RoutineCandidateAction $candidate $screen $statusLabel ([ref]$insidePhase)
+            $completedClicks += [int]$actionResult.Clicks
+            if ($actionResult.Completed) {
+                $completedCycles++
+                Write-RoutineTrace $cycle 'cycle' '' 'completed' ([System.Drawing.Rectangle]::Empty) ('clicks=' + $completedClicks + '; message=' + $actionResult.Message)
+                $sleepWatch = [System.Diagnostics.Stopwatch]::StartNew()
+                while((-not $script:StopRequested) -and $sleepWatch.ElapsedMilliseconds -lt [int]$intervalBox.Value) { Start-Sleep -Milliseconds 100; [System.Windows.Forms.Application]::DoEvents() }
+            }
         }
         if($script:StopRequested -and $status -eq 'completed'){ $status='stopped'; $message='사용자 중단' }
     }
