@@ -19,7 +19,7 @@ $script:SlotPointPath = Join-Path $PSScriptRoot 'slot_points.csv'
 $script:UserSettingsPath = Join-Path $PSScriptRoot 'user_settings.json'
 $script:ClickTracePath = Join-Path $PSScriptRoot 'click_trace_log.csv'
 $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
-$script:AppVersion = '1.0.7'
+$script:AppVersion = '1.0.9'
 $script:UpdateManifestPath = Join-Path $PSScriptRoot 'update_manifest_url.txt'
 $script:BackupDir = Join-Path $PSScriptRoot 'update_backup'
 $script:NewLine = [Environment]::NewLine
@@ -686,6 +686,59 @@ function Wait-CheckedSlotAppear([string]$Slot, [System.Windows.Forms.Screen]$Scr
     Write-RoutineTrace $script:CurrentCycle 'wait-valid' $Slot 'timeout' ([System.Drawing.Rectangle]::Empty) ('elapsed_ms=' + [int]$watch.ElapsedMilliseconds)
     return [System.Drawing.Rectangle]::Empty
 }
+function Test-RectNear([System.Drawing.Rectangle]$A, [System.Drawing.Rectangle]$B, [int]$LimitPx) {
+    if ($A.IsEmpty -or $B.IsEmpty) { return $false }
+    $ax = [int]($A.Left + $A.Width / 2)
+    $ay = [int]($A.Top + $A.Height / 2)
+    $bx = [int]($B.Left + $B.Width / 2)
+    $by = [int]($B.Top + $B.Height / 2)
+    $dx = [Math]::Abs($ax - $bx)
+    $dy = [Math]::Abs($ay - $by)
+    $distance = [Math]::Sqrt(($dx * $dx) + ($dy * $dy))
+    return ($distance -le $LimitPx)
+}
+function Wait-ConfirmedCompleteSlot([System.Windows.Forms.Screen]$Screen, [System.Windows.Forms.Label]$StatusLabel) {
+    $attempt = 0
+    while (-not $script:StopRequested) {
+        $attempt++
+        $first = Wait-CheckedSlotAppear '완료 확인' $Screen 0 5000 $StatusLabel
+        if ($first.IsEmpty) { return [System.Drawing.Rectangle]::Empty }
+        Write-RoutineTrace $script:CurrentCycle 'complete-confirm' '완료 확인' 'candidate-1' $first ('attempt=' + $attempt)
+        $StatusLabel.Text = '완료 확인 후보 재검증 중'
+        [System.Windows.Forms.Application]::DoEvents()
+        Start-Sleep -Milliseconds 1800
+        $second = Wait-CheckedSlotAppear '완료 확인' $Screen 4500 500 $StatusLabel
+        if ($second.IsEmpty) {
+            Write-RoutineTrace $script:CurrentCycle 'complete-confirm' '완료 확인' 'candidate-lost' $first 'second check not found'
+            continue
+        }
+        if (-not (Test-RectNear $first $second 90)) {
+            Write-RoutineTrace $script:CurrentCycle 'complete-confirm' '완료 확인' 'candidate-moved' $second 'center moved too far'
+            continue
+        }
+        Write-RoutineTrace $script:CurrentCycle 'complete-confirm' '완료 확인' 'confirmed' $second ('attempt=' + $attempt)
+        return $second
+    }
+    return [System.Drawing.Rectangle]::Empty
+}
+function Try-CompleteAndFindExit([System.Windows.Forms.Screen]$Screen, [System.Windows.Forms.Label]$StatusLabel, [System.Drawing.Rectangle]$CompleteRect) {
+    $StatusLabel.Text='완료 확인 검증 통과: 클릭 후 종료 버튼 확인'
+    [System.Windows.Forms.Application]::DoEvents()
+    Mark-ActiveSlot '완료 확인'
+    Write-RoutineTrace $script:CurrentCycle 'complete' '완료 확인' 'click-before' $CompleteRect ''
+    [void](Click-SlotTarget '완료 확인' $CompleteRect ([int]$stepDelayBox.Value))
+    Write-RoutineTrace $script:CurrentCycle 'complete' '완료 확인' 'click-after' $CompleteRect ''
+    Mark-ActiveSlot '나가기'
+    Start-Sleep -Milliseconds 2500
+    [System.Windows.Forms.Application]::DoEvents()
+    $exitRect = Wait-CheckedSlotAppear '나가기' $Screen 9000 1000 $StatusLabel
+    if (-not $exitRect.IsEmpty) { return $exitRect }
+    Write-RoutineTrace $script:CurrentCycle 'complete' '완료 확인' 'false-positive' $CompleteRect 'exit not visible after complete click; resume waiting'
+    $StatusLabel.Text='완료 확인 오판으로 판단: 대기로 복귀'
+    [System.Windows.Forms.Application]::DoEvents()
+    Start-Sleep -Milliseconds 2000
+    return [System.Drawing.Rectangle]::Empty
+}
 function Click-Rect([System.Drawing.Rectangle]$Rect, [int]$DelayMs, [int]$HoldOverrideMs = -1) { Invoke-LeftClick -X ([int]($Rect.Left + $Rect.Width / 2)) -Y ([int]($Rect.Top + $Rect.Height / 2)) -HoldOverrideMs $HoldOverrideMs; Start-Sleep -Milliseconds $DelayMs }
 function Invoke-FoodButtonIfVisible([System.Windows.Forms.Screen]$Screen, [System.Windows.Forms.Label]$StatusLabel) {
     if ($null -eq $script:Samples['식사 버튼']) { return $false }
@@ -948,7 +1001,9 @@ $gameTable.Controls.Add($buttonPanel, 0, 3)
 $updatePanel = New-Object System.Windows.Forms.TableLayoutPanel; $updatePanel.Dock = 'Fill'; $updatePanel.ColumnCount = 2; $updatePanel.RowCount = 1
 $updatePanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
 $updatePanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Absolute, 130))) | Out-Null
+$versionLabel = New-Object System.Windows.Forms.Label; $versionLabel.Text = '현버전 ' + $script:AppVersion; $versionLabel.Dock = 'Fill'; $versionLabel.TextAlign = 'MiddleRight'; $versionLabel.ForeColor = [System.Drawing.Color]::FromArgb(35,55,65); $versionLabel.Font = New-Object System.Drawing.Font('Malgun Gothic', 8, [System.Drawing.FontStyle]::Bold); $versionLabel.Padding = New-Object System.Windows.Forms.Padding(0,0,8,0)
 $updateButton = New-Object System.Windows.Forms.Button; $updateButton.Text = '업데이트 확인'; $updateButton.Dock = 'Fill'; $updateButton.Margin = New-Object System.Windows.Forms.Padding(3); $updateButton.FlatStyle = 'Flat'; $updateButton.BackColor = [System.Drawing.Color]::FromArgb(54,91,109); $updateButton.ForeColor = [System.Drawing.Color]::White; $updateButton.Font = New-Object System.Drawing.Font('Malgun Gothic', 8, [System.Drawing.FontStyle]::Bold)
+$updatePanel.Controls.Add($versionLabel, 0, 0)
 $updatePanel.Controls.Add($updateButton, 1, 0)
 $gameTable.Controls.Add($updatePanel, 0, 4)
 
@@ -1260,29 +1315,15 @@ function Start-StateRoutine {
                     $statusLabel.Text='완료 확인 발견 대기 중: 제한 없음, 5초 간격'
                     Set-ProgressStep 7
                     [System.Windows.Forms.Application]::DoEvents()
-                    $completeRect = Wait-CheckedSlotAppear '완료 확인' $screen 0 5000 $statusLabel
-                    if($completeRect.IsEmpty){ if($script:StopRequested){ Write-RoutineTrace $cycle 'complete' '완료 확인' 'stopped' ([System.Drawing.Rectangle]::Empty) 'user stopped while waiting'; $status='stopped'; $message='사용자 중단' } else { Write-RoutineTrace $cycle 'complete' '완료 확인' 'blocked' ([System.Drawing.Rectangle]::Empty) 'not found'; $status='blocked'; $message='완료 확인 이미지를 찾지 못함' }; break }
-                    $statusLabel.Text='완료 확인 발견: 즉시 클릭'
-                    [System.Windows.Forms.Application]::DoEvents()
-                    Mark-ActiveSlot '완료 확인'
-                    Write-RoutineTrace $cycle 'complete' '완료 확인' 'click-before' $completeRect ''
-                    [void](Click-SlotTarget '완료 확인' $completeRect ([int]$stepDelayBox.Value))
-                    Write-RoutineTrace $cycle 'complete' '완료 확인' 'click-after' $completeRect ''
-                    $completedClicks++
-                    Mark-ActiveSlot '나가기'
-                    Start-Sleep -Milliseconds 3000
-                    [System.Windows.Forms.Application]::DoEvents()
-                    $exitRect=Wait-CheckedSlotAppear '나가기' $screen 8000 1000 $statusLabel
-                    if($exitRect.IsEmpty -and -not $script:StopRequested){
-                        Write-RoutineTrace $cycle 'complete' '완료 확인' 'retry-click-before' $completeRect 'exit not visible after first click'
-                        $statusLabel.Text='완료 확인 반응 없음: 한 번 더 클릭'
-                        [System.Windows.Forms.Application]::DoEvents()
-                        [void](Click-SlotTarget '완료 확인' $completeRect ([int]$stepDelayBox.Value))
-                        Write-RoutineTrace $cycle 'complete' '완료 확인' 'retry-click-after' $completeRect ''
+                    $exitRect = [System.Drawing.Rectangle]::Empty
+                    while((-not $script:StopRequested) -and $exitRect.IsEmpty){
+                        $completeRect = Wait-ConfirmedCompleteSlot $screen $statusLabel
+                        if($completeRect.IsEmpty){ if($script:StopRequested){ Write-RoutineTrace $cycle 'complete' '완료 확인' 'stopped' ([System.Drawing.Rectangle]::Empty) 'user stopped while waiting'; $status='stopped'; $message='사용자 중단' } else { Write-RoutineTrace $cycle 'complete' '완료 확인' 'blocked' ([System.Drawing.Rectangle]::Empty) 'not found'; $status='blocked'; $message='완료 확인 이미지를 찾지 못함' }; break }
+                        $exitRect = Try-CompleteAndFindExit $screen $statusLabel $completeRect
                         $completedClicks++
-                        $exitRect=Wait-CheckedSlotAppear '나가기' $screen 60000 2000 $statusLabel
                     }
-                    if($exitRect.IsEmpty){ Write-RoutineTrace $cycle 'exit' '나가기' 'timeout-blocked' ([System.Drawing.Rectangle]::Empty) 'not found after complete retry'; $status='blocked'; $message='나가기 이미지를 찾지 못함: 완료 확인 재클릭 후에도 반응 없음'; break }
+                    if($status -ne 'completed'){ break }
+                    if($exitRect.IsEmpty){ if($script:StopRequested){ $status='stopped'; $message='사용자 중단' } else { Write-RoutineTrace $cycle 'exit' '나가기' 'timeout-blocked' ([System.Drawing.Rectangle]::Empty) 'not found after verified complete'; $status='blocked'; $message='나가기 이미지를 찾지 못함'; }; break }
                     Write-RoutineTrace $cycle 'exit' '나가기' 'click-before' $exitRect ''
                     [void](Click-SlotTarget '나가기' $exitRect ([int]$stepDelayBox.Value))
                     Write-RoutineTrace $cycle 'exit' '나가기' 'click-after' $exitRect ''

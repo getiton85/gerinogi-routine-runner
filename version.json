@@ -1,5 +1,5 @@
 ﻿{
-    "version":  "1.0.7",
+    "version":  "1.0.9",
     "files":  [
                   {
                       "path":  "gerinogi.ico",
@@ -9,7 +9,7 @@
                   {
                       "path":  "local_state_routine_runner.ps1",
                       "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/release/local_state_routine_runner.ps1",
-                      "sha256":  "a7bc0827ca10235280269d8a95f94df3a336cd3c2fdef46c8c62a58987766677"
+                      "sha256":  "84c76480c38ddf7d6fe2204dbfb659df09bbf7421438a319e2fb2ac83025f879"
                   },
                   {
                       "path":  "state_samples/1단계_20260703_143209_143.png",
