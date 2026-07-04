@@ -154,7 +154,7 @@ $script:IgnoreZonePath = Join-Path $PSScriptRoot 'ignore_zones.csv'
 $script:UserSettingsPath = Join-Path $PSScriptRoot 'user_settings.json'
 $script:ClickTracePath = Join-Path $PSScriptRoot 'click_trace_log.csv'
 $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
-$script:AppVersion = '1.0.26'
+$script:AppVersion = '1.0.28'
 $script:IgnoreZones = New-Object System.Collections.Generic.List[object]
 $script:MaxIgnoreZones = 4
 $script:LastUltimateAt = [datetime]::MinValue
@@ -1170,6 +1170,18 @@ function Invoke-UltimateIfVisible([System.Windows.Forms.Screen]$Screen, [System.
     Invoke-NumberSixKey
     return $true
 }
+function Find-FirstVisibleSlot([string[]]$SlotsToCheck, [System.Windows.Forms.Screen]$Screen, [bool]$UsePointCheck = $true) {
+    foreach ($slot in $SlotsToCheck) {
+        if ($null -eq $script:Samples[$slot]) { continue }
+        $rect = Find-ValidSlotOnce $slot $Screen $UsePointCheck
+        if (-not $rect.IsEmpty) {
+            Write-RoutineTrace $script:CurrentCycle 'recover-scan' $slot 'found' $rect ''
+            return [pscustomobject]@{ Slot = $slot; Rect = $rect }
+        }
+    }
+    Write-RoutineTrace $script:CurrentCycle 'recover-scan' '' 'none' ([System.Drawing.Rectangle]::Empty) ('checked=' + ($SlotsToCheck -join '|'))
+    return $null
+}
 function Invoke-ExitActionUntilClosed([System.Windows.Forms.Screen]$Screen, [System.Windows.Forms.Label]$StatusLabel, [System.Drawing.Rectangle]$ExitRect) {
     for ($try = 1; $try -le 2; $try++) {
         $StatusLabel.Text = '나가기 감지: 종료 처리 ' + $try + '/2'
@@ -1203,6 +1215,7 @@ function Invoke-PostClearFlow([System.Windows.Forms.Screen]$Screen, [System.Wind
     while (-not $script:StopRequested) {
         [System.Windows.Forms.Application]::DoEvents()
         [void](Invoke-UltimateIfVisible $Screen $StatusLabel)
+        [void](Invoke-FoodButtonIfVisible $Screen $StatusLabel)
 
         Mark-ActiveSlot '나가기'
         $exitRect = Find-StableValidSlot '나가기' $Screen $true 700 90
@@ -1227,6 +1240,20 @@ function Invoke-PostClearFlow([System.Windows.Forms.Screen]$Screen, [System.Wind
             $clicks++
             [void](Sleep-WithStop 1200)
             continue
+        }
+
+        $visible = Find-FirstVisibleSlot @('식사 버튼','1단계','2단계','3단계','4단계','상태 기준','5단계') $Screen $true
+        if ($null -ne $visible) {
+            if ($visible.Slot -eq '식사 버튼') {
+                [void](Invoke-FoodButtonIfVisible $Screen $StatusLabel)
+                continue
+            }
+            if ($visible.Slot -eq '1단계') {
+                Write-RoutineTrace $script:CurrentCycle 'post-clear' '1단계' 'already-returned' $visible.Rect 'treat as closed'
+                return [pscustomobject]@{ Closed = $true; Clicks = $clicks; Message = '다음 순환 화면 감지' }
+            }
+            Write-RoutineTrace $script:CurrentCycle 'post-clear' $visible.Slot 'unexpected-visible' $visible.Rect 'restart next cycle from visible state'
+            return [pscustomobject]@{ Closed = $true; Clicks = $clicks; Message = '복구 화면 감지: ' + $visible.Slot }
         }
 
         $StatusLabel.Text = '완료/나가기 동시 대기 중'
@@ -1431,13 +1458,19 @@ function Write-WorkerLog([string]$Message) {
     $line = (Get-Date).ToString('s') + ' ' + $Message
     Add-Content -LiteralPath (Join-Path $BackupRoot 'update_worker.log') -Value $line -Encoding UTF8
 }
+function Add-DownloadCacheBuster([string]$Url, [string]$Hash) {
+    if ([string]::IsNullOrWhiteSpace($Url)) { return $Url }
+    $token = if ([string]::IsNullOrWhiteSpace($Hash)) { [guid]::NewGuid().ToString('N') } else { $Hash }
+    $separator = if ($Url.Contains('?')) { '&' } else { '?' }
+    return ($Url + $separator + 'cache_bust=' + [System.Uri]::EscapeDataString($token))
+}
 try {
     Write-WorkerLog 'waiting parent process'
     if ($ParentPid -gt 0) {
         try { Wait-Process -Id $ParentPid -Timeout 20 -ErrorAction SilentlyContinue } catch { }
     }
     Start-Sleep -Milliseconds 800
-    $manifest = Get-Content -LiteralPath $ManifestPath -Raw | ConvertFrom-Json
+    $manifest = Get-Content -LiteralPath $ManifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
     if ($null -eq $manifest.files) { throw 'files 목록이 없습니다.' }
     $client = New-Object System.Net.WebClient
     $client.Headers.Add('User-Agent', 'GerinogiRoutineExternalUpdater')
@@ -1453,11 +1486,14 @@ try {
             if (-not $destFull.StartsWith($rootFull, [StringComparison]::OrdinalIgnoreCase)) { throw '허용되지 않는 대상 경로: ' + $rel }
             $tmp = $destFull + '.download'
             New-Item -ItemType Directory -Force -Path ([System.IO.Path]::GetDirectoryName($destFull)) | Out-Null
+            $expectedHash = if ($file.sha256) { ([string]$file.sha256).ToLowerInvariant() } else { '' }
+            $downloadUrl = Add-DownloadCacheBuster $src $expectedHash
             Write-WorkerLog ('download ' + $rel)
-            $client.DownloadFile($src, $tmp)
+            $client.DownloadFile($downloadUrl, $tmp)
             if ($file.sha256) {
                 $hash = (Get-FileHash -LiteralPath $tmp -Algorithm SHA256).Hash.ToLowerInvariant()
-                if ($hash -ne ([string]$file.sha256).ToLowerInvariant()) {
+                if ($hash -ne $expectedHash) {
+                    Write-WorkerLog ('hash mismatch ' + $rel + ' expected=' + $expectedHash + ' actual=' + $hash)
                     Remove-Item -LiteralPath $tmp -Force
                     throw '해시 검증 실패: ' + $rel
                 }
@@ -1889,7 +1925,9 @@ function Start-StateRoutine {
             if($script:StopRequested){ $status='stopped'; $message='사용자 중단'; break }
             [void][NativeInput]::SetForegroundWindow($target.Handle)
             Start-Sleep -Milliseconds 150
-            foreach($slot in @('1단계','2단계','3단계','4단계','상태 기준','5단계')) {
+            $stageSlots = @('1단계','2단계','3단계','4단계','상태 기준','5단계')
+            for ($stageIndex = 0; $stageIndex -lt $stageSlots.Count; $stageIndex++) {
+                $slot = $stageSlots[$stageIndex]
                 Mark-ActiveSlot $slot
                 Write-RoutineTrace $cycle 'slot' $slot 'enter' ([System.Drawing.Rectangle]::Empty) ''
                 if($slot -eq '5단계') {
@@ -1898,7 +1936,22 @@ function Start-StateRoutine {
                     Start-Sleep -Milliseconds 8000
                 }
                 $rect=Wait-FindSlot $slot $screen ([int]$retryCountBox.Value) ([int]$retryIntervalBox.Value) $statusLabel
-                if($rect.IsEmpty){ if($slot -ne '상태 기준' -and (Click-SlotTarget $slot $rect ([int]$stepDelayBox.Value))){ $completedClicks++; continue }; if($slot -eq '1단계' -and $beepCheck.Checked){Signal-ShortBeep}; $status='blocked'; $message=$slot+' 이미지를 찾지 못함'; break }
+                if($rect.IsEmpty){
+                    $visibleStage = Find-FirstVisibleSlot $stageSlots $screen $true
+                    if ($null -ne $visibleStage) {
+                        $nextIndex = [Array]::IndexOf($stageSlots, $visibleStage.Slot)
+                        if ($nextIndex -ge 0) {
+                            Write-RoutineTrace $cycle 'slot' $slot 'jump-to-visible' $visibleStage.Rect ('visible=' + $visibleStage.Slot)
+                            $statusLabel.Text = $slot + ' 대신 ' + $visibleStage.Slot + ' 감지: 해당 단계로 복구'
+                            [System.Windows.Forms.Application]::DoEvents()
+                            $stageIndex = $nextIndex - 1
+                            continue
+                        }
+                    }
+                    if($slot -ne '상태 기준' -and (Click-SlotTarget $slot $rect ([int]$stepDelayBox.Value))){ $completedClicks++; continue }
+                    if($slot -eq '1단계' -and $beepCheck.Checked){Signal-ShortBeep}
+                    $status='blocked'; $message=$slot+' 이미지를 찾지 못함'; break
+                }
                 $pointResult=Check-SlotPointMatch $slot $rect
                 if(-not $pointResult.Ok){ Write-RoutineTrace $cycle 'slot' $slot 'point-warning' $rect $pointResult.Message }
                 if($slot -eq '상태 기준'){
