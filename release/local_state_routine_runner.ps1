@@ -161,7 +161,8 @@ $script:IgnoreZonePath = Join-Path $PSScriptRoot 'ignore_zones.csv'
 $script:UserSettingsPath = Join-Path $PSScriptRoot 'user_settings.json'
 $script:ClickTracePath = Join-Path $PSScriptRoot 'click_trace_log.csv'
 $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
-$script:AppVersion = '1.0.36'
+$script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
+$script:AppVersion = '1.0.37'
 $script:IgnoreZones = New-Object System.Collections.Generic.List[object]
 $script:MaxIgnoreZones = 4
 $script:LastUltimateAt = [datetime]::MinValue
@@ -172,6 +173,7 @@ $script:BackupDir = Join-Path $PSScriptRoot 'update_backup'
 $script:NewLine = [Environment]::NewLine
 New-Item -ItemType Directory -Force -Path $script:SampleDir | Out-Null
 New-Item -ItemType Directory -Force -Path $script:BackupDir | Out-Null
+New-Item -ItemType Directory -Force -Path $script:DiagnosticDir | Out-Null
 foreach ($slot in $script:MultiSampleSlots) { New-Item -ItemType Directory -Force -Path (Join-Path $script:SampleDir ($slot.Replace(' ', '_') + '_samples')) | Out-Null }
 
 $nativeSource = @'
@@ -1117,8 +1119,12 @@ function Find-Slot([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
                 continue
             }
             $script:LastMatchedSample = [System.IO.Path]::GetFileName($samplePath) + ' / ' + [VisionFinder]::LastMode + ' ' + ('{0:P1}' -f [VisionFinder]::LastScore)
+            Save-DiagnosticFrame $Slot 'found' $bounds $rect ($script:LastMatchedSample)
             return $rect
         }
+    }
+    if (($script:CurrentCycle % 10) -eq 0) {
+        Save-DiagnosticFrame $Slot 'miss' $bounds ([System.Drawing.Rectangle]::Empty) 'no match in slot search bounds'
     }
     $script:LastMatchedSample = ''
     return [System.Drawing.Rectangle]::Empty
@@ -1513,6 +1519,37 @@ function Write-RoutineTrace([int]$Cycle, [string]$Phase, [string]$Slot, [string]
     if ($null -ne $Rect -and -not $Rect.IsEmpty) { $x = [int]($Rect.Left + $Rect.Width / 2); $y = [int]($Rect.Top + $Rect.Height / 2) }
     $line = @((Get-Date).ToString('s'), $Cycle, (Csv $Phase), (Csv $Slot), (Csv $Event), $x, $y, (Csv $Detail)) -join ','
     Add-Content -LiteralPath $script:RoutineTracePath -Value $line -Encoding UTF8
+}
+function Save-DiagnosticFrame([string]$Slot, [string]$Event, [System.Drawing.Rectangle]$Bounds, [System.Drawing.Rectangle]$MatchRect, [string]$Detail) {
+    if ($null -eq $Bounds -or $Bounds.IsEmpty -or $Bounds.Width -lt 4 -or $Bounds.Height -lt 4) { return }
+    try {
+        New-Item -ItemType Directory -Force -Path $script:DiagnosticDir | Out-Null
+        $safeSlot = if ([string]::IsNullOrWhiteSpace($Slot)) { 'none' } else { $Slot -replace '[\\/:*?"<>| ]', '_' }
+        $safeEvent = if ([string]::IsNullOrWhiteSpace($Event)) { 'event' } else { $Event -replace '[\\/:*?"<>| ]', '_' }
+        $name = ('{0:yyyyMMdd_HHmmss_fff}_c{1}_{2}_{3}.png' -f (Get-Date), $script:CurrentCycle, $safeSlot, $safeEvent)
+        $path = Join-Path $script:DiagnosticDir $name
+        $bmp = [VisionFinder]::Capture($Bounds)
+        try {
+            if ($null -ne $MatchRect -and -not $MatchRect.IsEmpty) {
+                $g = [System.Drawing.Graphics]::FromImage($bmp)
+                try {
+                    $pen = New-Object System.Drawing.Pen([System.Drawing.Color]::Red, 3)
+                    $local = [System.Drawing.Rectangle]::new([int]($MatchRect.Left - $Bounds.Left), [int]($MatchRect.Top - $Bounds.Top), [int]$MatchRect.Width, [int]$MatchRect.Height)
+                    $g.DrawRectangle($pen, $local)
+                    $pen.Dispose()
+                    $font = New-Object System.Drawing.Font('Malgun Gothic', 10, [System.Drawing.FontStyle]::Bold)
+                    $brush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::Yellow)
+                    $g.DrawString(($Slot + ' ' + $Event), $font, $brush, 6, 6)
+                    $brush.Dispose()
+                    $font.Dispose()
+                } finally { $g.Dispose() }
+            }
+            $bmp.Save($path, [System.Drawing.Imaging.ImageFormat]::Png)
+        } finally { $bmp.Dispose() }
+        Write-RoutineTrace $script:CurrentCycle 'diagnostic-frame' $Slot $Event ([System.Drawing.Rectangle]::Empty) (([System.IO.Path]::GetFileName($path)) + '; ' + $Detail)
+    } catch {
+        Write-RoutineTrace $script:CurrentCycle 'diagnostic-frame' $Slot 'save-failed' ([System.Drawing.Rectangle]::Empty) $_.Exception.Message
+    }
 }
 function Write-RunLog($Started, $Ended, $TitlePart, $MatchedTitle, $MonitorName, $Requested, $CompletedCycles, $CompletedClicks, $Interval, $Elapsed, $Average, $Status, $Message) { Ensure-LogHeader; $line = @($Started.ToString('s'), $Ended.ToString('s'), (Csv $TitlePart), (Csv $MatchedTitle), (Csv $MonitorName), $Requested, $CompletedCycles, $CompletedClicks, $Interval, ('{0:F3}' -f $Elapsed), ('{0:F3}' -f $Average), (Csv $Status), (Csv $Message)) -join ','; Add-Content -LiteralPath $script:LogPath -Value $line -Encoding UTF8 }
 
@@ -2183,7 +2220,14 @@ function Refresh-Slots {
 function Add-SlotSample { $screen = $screens[$monitorBox.SelectedIndex]; $script:LastCaptureMessage = ''; Capture-Slot $script:SelectedSlot $screen; Refresh-Slots; if (-not [string]::IsNullOrWhiteSpace($script:LastCaptureMessage)) { $statusLabel.Text = $script:LastCaptureMessage } else { $statusLabel.Text = $script:SelectedSlot + ' 이미지가 저장되었습니다.' } }
 function Import-SelectedSlotFile { $dialog = New-Object System.Windows.Forms.OpenFileDialog; $dialog.Title = '슬롯 이미지 선택'; $dialog.InitialDirectory = $script:SampleDir; $dialog.Filter = 'Image files (*.png;*.jpg;*.jpeg;*.bmp)|*.png;*.jpg;*.jpeg;*.bmp'; if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { Assign-ImageFileToSlot $script:SelectedSlot $dialog.FileName; Refresh-Slots; $statusLabel.Text = $script:SelectedSlot + ' 슬롯에 이미지 파일을 연결했습니다.' } }
 function Reload-SavedSamplesToSlots { $count = Load-SavedSamples; Refresh-Slots; $statusLabel.Text = '저장 폴더에서 ' + $count + '개 슬롯을 불러왔습니다.' }
-function Run-ClickDiagnostic { if (-not [System.IO.File]::Exists($script:ClickTracePath)) { 'time,x,y,mode,down_sent,up_sent,error_code,note' | Set-Content -LiteralPath $script:ClickTracePath -Encoding UTF8 }; Ensure-RoutineTraceHeader; Start-Process -FilePath $script:RoutineTracePath; Start-Process -FilePath $script:ClickTracePath }
+function Run-ClickDiagnostic {
+    if (-not [System.IO.File]::Exists($script:ClickTracePath)) { 'time,x,y,mode,down_sent,up_sent,error_code,note' | Set-Content -LiteralPath $script:ClickTracePath -Encoding UTF8 }
+    Ensure-RoutineTraceHeader
+    New-Item -ItemType Directory -Force -Path $script:DiagnosticDir | Out-Null
+    Start-Process -FilePath $script:RoutineTracePath
+    Start-Process -FilePath $script:ClickTracePath
+    Start-Process -FilePath $script:DiagnosticDir
+}
 function Run-LocateSelectedSlot {
     if ($monitorBox.SelectedIndex -lt 0) { return }
     $screen = $screens[$monitorBox.SelectedIndex]
