@@ -1,0 +1,35 @@
+﻿{
+    "version":  "1.0.0",
+    "files":  [
+                  {
+                      "path":  "local_state_routine_runner.ps1",
+                      "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/release/local_state_routine_runner.ps1",
+                      "sha256":  "06561dcd8ce674d6a937599ded60790dd39cef28a038c82a5f5be43d0b353451"
+                  },
+                  {
+                      "path":  "상태루틴 실행.vbs",
+                      "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/release/%EC%83%81%ED%83%9C%EB%A3%A8%ED%8B%B4%20%EC%8B%A4%ED%96%89.vbs",
+                      "sha256":  "3143bb875e59b4b982f74eed5e8b5a08c0adbecc793e61b5b69d8d90322fee07"
+                  },
+                  {
+                      "path":  "상태루틴 관리자 실행.vbs",
+                      "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/release/%EC%83%81%ED%83%9C%EB%A3%A8%ED%8B%B4%20%EA%B4%80%EB%A6%AC%EC%9E%90%20%EC%8B%A4%ED%96%89.vbs",
+                      "sha256":  "5149a0dfbf3063bee6a74299eec740ab8f82eacba9ed6042fcfd1db9f8ff3f4b"
+                  },
+                  {
+                      "path":  "상태루틴 실행.bat",
+                      "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/release/%EC%83%81%ED%83%9C%EB%A3%A8%ED%8B%B4%20%EC%8B%A4%ED%96%89.bat",
+                      "sha256":  "637166881ad26e4450b7a6161524d39f4efce7c328bc06121598159e51ea1545"
+                  },
+                  {
+                      "path":  "상태루틴 관리자 실행.bat",
+                      "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/release/%EC%83%81%ED%83%9C%EB%A3%A8%ED%8B%B4%20%EA%B4%80%EB%A6%AC%EC%9E%90%20%EC%8B%A4%ED%96%89.bat",
+                      "sha256":  "ecbe5c542f488552e7275f120931849abb1f2382d6ba99a71f5dc9d804bc7aba"
+                  },
+                  {
+                      "path":  "update_manifest_url.txt",
+                      "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/release/update_manifest_url.txt",
+                      "sha256":  "eb59f3b41811b5375bef1a456e00fcd0fd1b65e00cab655058684452fdc71dbf"
+                  }
+              ]
+}
