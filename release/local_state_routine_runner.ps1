@@ -37,7 +37,7 @@ function New-DefaultUiConfig {
             brandLink = '0,82,155'
         }
         tabs = [ordered]@{
-            main = '게임셋팅'
+            main = '실험셋팅'
             options = '세부옵션'
         }
         labels = [ordered]@{
@@ -69,9 +69,9 @@ function New-DefaultUiConfig {
             update = '업데이트 확인'
         }
         progress = [ordered]@{
-            labels = @('1','2','3','4','상태','5','대기','완료','종료','순환')
+            labels = @('메뉴','어비','던전','입장','상태','퀘','대기','완료','종료','순환')
         }
-        slots = @('상태 기준','식사 버튼','1단계','2단계','3단계','4단계','5단계','완료 확인','나가기','궁극기')
+        slots = @('상태 기준','식사 버튼','메뉴','어비스','던전','입장','퀘스트','완료 확인','나가기','궁극기')
         brand = [ordered]@{
             title = '내 멋대로 게리노기'
             linkText = 'getiton85.github.io/gerinogi-pob'
@@ -132,7 +132,14 @@ function Get-UiColor([string]$Path, [System.Drawing.Color]$Fallback) {
 }
 
 $script:UiConfig = Load-UiConfig
-$script:DefaultSlots = @('상태 기준','식사 버튼','1단계','2단계','3단계','4단계','5단계','완료 확인','나가기','궁극기')
+$script:DefaultSlots = @('상태 기준','식사 버튼','메뉴','어비스','던전','입장','퀘스트','완료 확인','나가기','궁극기')
+$script:SlotAliases = @{
+    '메뉴' = @('1단계')
+    '어비스' = @('2단계')
+    '던전' = @('3단계')
+    '입장' = @('4단계')
+    '퀘스트' = @('5단계')
+}
 $configuredSlots = @(Get-UiValue 'slots' $script:DefaultSlots)
 $requiredSlotCount = ($script:DefaultSlots | Where-Object { $configuredSlots -contains $_ }).Count
 if ($requiredSlotCount -eq $script:DefaultSlots.Count) { $script:Slots = $configuredSlots } else { $script:Slots = $script:DefaultSlots }
@@ -146,7 +153,7 @@ $script:StopRequested = $false
 $script:TargetHandle = [IntPtr]::Zero
 $script:CurrentCycle = 0
 $script:SampleDir = Join-Path $PSScriptRoot 'state_samples'
-$script:MultiSampleSlots = @('완료 확인')
+$script:MultiSampleSlots = @()
 $script:LogPath = Join-Path $PSScriptRoot 'local_state_routine_log.csv'
 $script:SlotPointPath = Join-Path $PSScriptRoot 'slot_points.csv'
 $script:SlotRegionPath = Join-Path $PSScriptRoot 'slot_regions.csv'
@@ -154,7 +161,7 @@ $script:IgnoreZonePath = Join-Path $PSScriptRoot 'ignore_zones.csv'
 $script:UserSettingsPath = Join-Path $PSScriptRoot 'user_settings.json'
 $script:ClickTracePath = Join-Path $PSScriptRoot 'click_trace_log.csv'
 $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
-$script:AppVersion = '1.0.28'
+$script:AppVersion = '1.0.30'
 $script:IgnoreZones = New-Object System.Collections.Generic.List[object]
 $script:MaxIgnoreZones = 4
 $script:LastUltimateAt = [datetime]::MinValue
@@ -532,12 +539,31 @@ function Open-MultiSampleFolder([string]$Slot) {
 function Get-MultiSampleCount([string]$Slot) {
     return (Get-MultiSampleFiles $Slot).Count
 }
+function Get-SlotLoadNames([string]$Slot) {
+    $names = New-Object System.Collections.Generic.List[string]
+    [void]$names.Add($Slot)
+    if ($script:SlotAliases.ContainsKey($Slot)) {
+        foreach ($alias in $script:SlotAliases[$Slot]) { [void]$names.Add([string]$alias) }
+    }
+    return @($names)
+}
+function Resolve-SlotName([string]$Name) {
+    if ($script:Slots -contains $Name) { return $Name }
+    foreach ($slot in $script:SlotAliases.Keys) {
+        if ($script:SlotAliases[$slot] -contains $Name) { return $slot }
+    }
+    return $null
+}
 function Load-SavedSamples {
     if (-not [System.IO.Directory]::Exists($script:SampleDir)) { return 0 }
     $loaded = 0
     foreach ($slot in $script:Slots) {
-        $prefix = $slot.Replace(' ', '_') + '_'
-        $latest = Get-ChildItem -LiteralPath $script:SampleDir -File -Filter '*.png' | Where-Object { $_.Name.StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase) } | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+        $latest = $null
+        foreach ($loadName in (Get-SlotLoadNames $slot)) {
+            $prefix = $loadName.Replace(' ', '_') + '_'
+            $candidate = Get-ChildItem -LiteralPath $script:SampleDir -File -Filter '*.png' | Where-Object { $_.Name.StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase) } | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+            if ($null -ne $candidate -and ($null -eq $latest -or $candidate.LastWriteTime -gt $latest.LastWriteTime)) { $latest = $candidate }
+        }
         if ($null -ne $latest) {
             try { $img = Load-ImageUnlocked $latest.FullName; $w = $img.Width; $h = $img.Height; $img.Dispose(); $script:Samples[$slot] = [pscustomobject]@{ Path = $latest.FullName; Name = $latest.Name; Width = $w; Height = $h }; $loaded++ }
             catch { $script:Samples[$slot] = $null }
@@ -706,24 +732,6 @@ function Capture-Slot([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
     Start-Sleep -Milliseconds 180
     $bmp = [VisionFinder]::Capture($rect)
     try {
-        if ($script:MultiSampleSlots -contains $Slot) {
-            $safe = $Slot.Replace(' ', '_')
-            $primaryName = $safe + '_' + (Get-Date -Format 'yyyyMMdd_HHmmss_fff') + '.png'
-            $primaryPath = Join-Path $script:SampleDir $primaryName
-            $bmp.Save($primaryPath, [System.Drawing.Imaging.ImageFormat]::Png)
-            if ($script:Samples[$Slot] -and [System.IO.File]::Exists($script:Samples[$Slot].Path)) { [System.IO.File]::Delete($script:Samples[$Slot].Path) }
-            $script:Samples[$Slot] = [pscustomobject]@{ Path = $primaryPath; Name = $primaryName; Width = $rect.Width; Height = $rect.Height }
-            $path = Get-NextMultiSamplePath $Slot
-            if ($null -eq $path) {
-                [System.Windows.Forms.MessageBox]::Show($Slot + ' 추가 샘플은 최대 10장까지 저장합니다. 기존 파일을 삭제하거나 교체한 뒤 다시 촬영하세요.', '추가 샘플') | Out-Null
-                $script:LastCaptureMessage = $Slot + ' 기본 이미지와 구역이 갱신되었습니다. 추가 샘플은 이미 10장입니다.'
-                return
-            }
-            $bmp.Save($path, [System.Drawing.Imaging.ImageFormat]::Png)
-            $count = Get-MultiSampleCount $Slot
-            $script:LastCaptureMessage = $Slot + ' 기본 이미지 갱신 + 추가 샘플 ' + $count + '/10 저장: ' + [System.IO.Path]::GetFileName($path)
-            return
-        }
         $safe = $Slot.Replace(' ', '_')
         $name = $safe + '_' + (Get-Date -Format 'yyyyMMdd_HHmmss_fff') + '.png'
         $path = Join-Path $script:SampleDir $name
@@ -805,13 +813,14 @@ function Load-SlotPoints {
     if (-not [System.IO.File]::Exists($script:SlotPointPath)) { return 0 }
     $loaded = 0
     foreach ($row in (Import-Csv -LiteralPath $script:SlotPointPath)) {
-        if (($script:Slots -contains $row.slot) -and $row.slot -ne '상태 기준') {
+        $resolvedSlot = Resolve-SlotName ([string]$row.slot)
+        if (($null -ne $resolvedSlot) -and $resolvedSlot -ne '상태 기준') {
             $mode = if ($row.PSObject.Properties.Name -contains 'mode' -and -not [string]::IsNullOrWhiteSpace($row.mode)) { [string]$row.mode } else { 'screen' }
             $windowWidth = 0
             $windowHeight = 0
             if ($row.PSObject.Properties.Name -contains 'window_width' -and -not [string]::IsNullOrWhiteSpace($row.window_width)) { $windowWidth = [int]$row.window_width }
             if ($row.PSObject.Properties.Name -contains 'window_height' -and -not [string]::IsNullOrWhiteSpace($row.window_height)) { $windowHeight = [int]$row.window_height }
-            $script:SlotPoints[$row.slot] = [pscustomobject]@{ X = [int]$row.x; Y = [int]$row.y; Mode = $mode; WindowWidth = $windowWidth; WindowHeight = $windowHeight }
+            $script:SlotPoints[$resolvedSlot] = [pscustomobject]@{ X = [int]$row.x; Y = [int]$row.y; Mode = $mode; WindowWidth = $windowWidth; WindowHeight = $windowHeight }
             $loaded++
         }
     }
@@ -822,14 +831,15 @@ function Load-SlotRegions {
     if (-not [System.IO.File]::Exists($script:SlotRegionPath)) { return 0 }
     $loaded = 0
     foreach ($row in (Import-Csv -LiteralPath $script:SlotRegionPath)) {
-        if ($script:Slots -contains $row.slot) {
+        $resolvedSlot = Resolve-SlotName ([string]$row.slot)
+        if ($null -ne $resolvedSlot) {
             try {
                 $mode = if ($row.PSObject.Properties.Name -contains 'mode' -and -not [string]::IsNullOrWhiteSpace($row.mode)) { [string]$row.mode } else { 'screen' }
                 $windowWidth = 0
                 $windowHeight = 0
                 if ($row.PSObject.Properties.Name -contains 'window_width' -and -not [string]::IsNullOrWhiteSpace($row.window_width)) { $windowWidth = [int]$row.window_width }
                 if ($row.PSObject.Properties.Name -contains 'window_height' -and -not [string]::IsNullOrWhiteSpace($row.window_height)) { $windowHeight = [int]$row.window_height }
-                $script:SlotRegions[$row.slot] = [pscustomobject]@{ X = [int]$row.x; Y = [int]$row.y; Width = [int]$row.width; Height = [int]$row.height; Mode = $mode; WindowWidth = $windowWidth; WindowHeight = $windowHeight }
+                $script:SlotRegions[$resolvedSlot] = [pscustomobject]@{ X = [int]$row.x; Y = [int]$row.y; Width = [int]$row.width; Height = [int]$row.height; Mode = $mode; WindowWidth = $windowWidth; WindowHeight = $windowHeight }
                 $loaded++
             } catch { }
         }
@@ -1172,6 +1182,7 @@ function Invoke-UltimateIfVisible([System.Windows.Forms.Screen]$Screen, [System.
 }
 function Find-FirstVisibleSlot([string[]]$SlotsToCheck, [System.Windows.Forms.Screen]$Screen, [bool]$UsePointCheck = $true) {
     foreach ($slot in $SlotsToCheck) {
+        if (Test-StopRequested) { return $null }
         if ($null -eq $script:Samples[$slot]) { continue }
         $rect = Find-ValidSlotOnce $slot $Screen $UsePointCheck
         if (-not $rect.IsEmpty) {
@@ -1242,14 +1253,14 @@ function Invoke-PostClearFlow([System.Windows.Forms.Screen]$Screen, [System.Wind
             continue
         }
 
-        $visible = Find-FirstVisibleSlot @('식사 버튼','1단계','2단계','3단계','4단계','상태 기준','5단계') $Screen $true
+        $visible = Find-FirstVisibleSlot @('식사 버튼','메뉴','어비스','던전','입장','상태 기준','퀘스트') $Screen $true
         if ($null -ne $visible) {
             if ($visible.Slot -eq '식사 버튼') {
                 [void](Invoke-FoodButtonIfVisible $Screen $StatusLabel)
                 continue
             }
-            if ($visible.Slot -eq '1단계') {
-                Write-RoutineTrace $script:CurrentCycle 'post-clear' '1단계' 'already-returned' $visible.Rect 'treat as closed'
+            if ($visible.Slot -eq '메뉴') {
+                Write-RoutineTrace $script:CurrentCycle 'post-clear' '메뉴' 'already-returned' $visible.Rect 'treat as closed'
                 return [pscustomobject]@{ Closed = $true; Clicks = $clicks; Message = '다음 순환 화면 감지' }
             }
             Write-RoutineTrace $script:CurrentCycle 'post-clear' $visible.Slot 'unexpected-visible' $visible.Rect 'restart next cycle from visible state'
@@ -1257,7 +1268,7 @@ function Invoke-PostClearFlow([System.Windows.Forms.Screen]$Screen, [System.Wind
         }
 
         $StatusLabel.Text = '완료/나가기 동시 대기 중'
-        Start-Sleep -Milliseconds 500
+        [void](Sleep-WithStop 500)
     }
     Write-RoutineTrace $script:CurrentCycle 'post-clear' '' 'stopped' ([System.Drawing.Rectangle]::Empty) ('clicks=' + $clicks)
     return [pscustomobject]@{ Closed = $false; Clicks = $clicks; Message = '사용자 중단' }
@@ -1428,11 +1439,125 @@ function Invoke-AppUpdateCheck([bool]$Silent) {
         $msg = '새 버전이 있습니다.' + $script:NewLine + '현재: ' + $script:AppVersion + $script:NewLine + '최신: ' + $manifest.version + $script:NewLine + '업데이트할까요?'
         if ([System.Windows.Forms.MessageBox]::Show($msg, '업데이트 확인', [System.Windows.Forms.MessageBoxButtons]::YesNo) -ne [System.Windows.Forms.DialogResult]::Yes) { return }
         $mode = if ($manifest.update_mode) { [string]$manifest.update_mode } else { 'files' }
-        if ($mode -eq 'installer') { Invoke-AppInstallerUpdate $manifest } else { Invoke-AppUpdateApply $manifest }
+        if ($mode -eq 'installer') {
+            Invoke-AppInstallerUpdate $manifest
+        } elseif ($mode -eq 'package') {
+            Invoke-AppPackageUpdate $manifest
+        } else {
+            Invoke-AppUpdateApply $manifest
+        }
     }
     catch {
         if (-not $Silent) { [System.Windows.Forms.MessageBox]::Show('업데이트 확인 실패: ' + $_.Exception.Message, '업데이트 확인') | Out-Null }
     }
+}
+function Invoke-AppPackageUpdate($Manifest) {
+    if ($script:Running) { [System.Windows.Forms.MessageBox]::Show('실행 중에는 업데이트할 수 없습니다. 먼저 중단하세요.', '업데이트') | Out-Null; return }
+    $package = $Manifest.package
+    if ($null -eq $package -or [string]::IsNullOrWhiteSpace([string]$package.url)) { throw 'package.url 값이 없습니다.' }
+    $stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+    $targetBackup = Join-Path $script:BackupDir $stamp
+    New-Item -ItemType Directory -Force -Path $targetBackup | Out-Null
+    $manifestPath = Join-Path $targetBackup 'manifest.json'
+    $workerPath = Join-Path $targetBackup 'package_update_worker.ps1'
+    $restartPath = Join-Path $PSScriptRoot '상태루틴 실행.vbs'
+    if (-not [System.IO.File]::Exists($restartPath)) { $restartPath = Join-Path $PSScriptRoot '상태루틴 실행.bat' }
+    ($Manifest | ConvertTo-Json -Depth 8) | Set-Content -LiteralPath $manifestPath -Encoding UTF8
+    $worker = @'
+param(
+    [string]$Root,
+    [string]$ManifestPath,
+    [string]$BackupRoot,
+    [int]$ParentPid,
+    [string]$RestartPath
+)
+$ErrorActionPreference = 'Stop'
+function Write-WorkerLog([string]$Message) {
+    $line = (Get-Date).ToString('s') + ' ' + $Message
+    Add-Content -LiteralPath (Join-Path $BackupRoot 'update_worker.log') -Value $line -Encoding UTF8
+}
+function Add-DownloadCacheBuster([string]$Url, [string]$Hash) {
+    if ([string]::IsNullOrWhiteSpace($Url)) { return $Url }
+    $token = if ([string]::IsNullOrWhiteSpace($Hash)) { [guid]::NewGuid().ToString('N') } else { $Hash }
+    $separator = if ($Url.Contains('?')) { '&' } else { '?' }
+    return ($Url + $separator + 'cache_bust=' + [System.Uri]::EscapeDataString($token))
+}
+function Copy-PackageDirectory([string]$Source, [string]$Destination, [string]$BackupRoot) {
+    foreach ($dir in Get-ChildItem -LiteralPath $Source -Directory -Recurse) {
+        $relative = $dir.FullName.Substring($Source.Length).TrimStart('\','/')
+        New-Item -ItemType Directory -Force -Path (Join-Path $Destination $relative) | Out-Null
+    }
+    foreach ($file in Get-ChildItem -LiteralPath $Source -File -Recurse) {
+        $relative = $file.FullName.Substring($Source.Length).TrimStart('\','/')
+        if ($relative -match '(^|\\)(slot_points|slot_regions|ignore_zones|local_state_routine_log|routine_trace_log|click_trace_log)\\.csv$') { continue }
+        if ($relative -match '(^|\\)user_settings\\.json$') { continue }
+        if ($relative -match '^state_samples\\' -and (Test-Path (Join-Path $Destination $relative))) { continue }
+        $target = Join-Path $Destination $relative
+        New-Item -ItemType Directory -Force -Path ([System.IO.Path]::GetDirectoryName($target)) | Out-Null
+        if ([System.IO.File]::Exists($target)) {
+            $backupPath = Join-Path $BackupRoot $relative
+            New-Item -ItemType Directory -Force -Path ([System.IO.Path]::GetDirectoryName($backupPath)) | Out-Null
+            Copy-Item -LiteralPath $target -Destination $backupPath -Force
+        }
+        Copy-Item -LiteralPath $file.FullName -Destination $target -Force
+    }
+}
+try {
+    Write-WorkerLog 'waiting parent process'
+    if ($ParentPid -gt 0) {
+        try { Wait-Process -Id $ParentPid -Timeout 20 -ErrorAction SilentlyContinue } catch { }
+    }
+    Start-Sleep -Milliseconds 800
+    $manifest = Get-Content -LiteralPath $ManifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
+    if ($null -eq $manifest.package) { throw 'package 정보가 없습니다.' }
+    $packageUrl = [string]$manifest.package.url
+    $expectedHash = if ($manifest.package.sha256) { ([string]$manifest.package.sha256).ToLowerInvariant() } else { '' }
+    $packagePath = Join-Path $BackupRoot 'update_package.zip'
+    $extractRoot = Join-Path $BackupRoot 'package_extract'
+    $client = New-Object System.Net.WebClient
+    $client.Headers.Add('User-Agent', 'GerinogiRoutinePackageUpdater')
+    try {
+        Write-WorkerLog 'download package'
+        $client.DownloadFile((Add-DownloadCacheBuster $packageUrl $expectedHash), $packagePath)
+    }
+    finally { $client.Dispose() }
+    if (-not [string]::IsNullOrWhiteSpace($expectedHash)) {
+        $hash = (Get-FileHash -LiteralPath $packagePath -Algorithm SHA256).Hash.ToLowerInvariant()
+        if ($hash -ne $expectedHash) {
+            Write-WorkerLog ('package hash mismatch expected=' + $expectedHash + ' actual=' + $hash)
+            throw '패키지 해시 검증 실패'
+        }
+    }
+    Add-Type -AssemblyName System.IO.Compression.FileSystem
+    [System.IO.Compression.ZipFile]::ExtractToDirectory($packagePath, $extractRoot)
+    $releaseRoot = Join-Path $extractRoot 'release'
+    if (-not [System.IO.Directory]::Exists($releaseRoot)) {
+        if ([System.IO.File]::Exists((Join-Path $extractRoot 'local_state_routine_runner.ps1'))) {
+            $releaseRoot = $extractRoot
+        } else {
+            throw '패키지 안에 release 폴더가 없습니다.'
+        }
+    }
+    Copy-PackageDirectory $releaseRoot $Root $BackupRoot
+    Write-WorkerLog 'package update complete'
+    if (-not [string]::IsNullOrWhiteSpace($RestartPath) -and [System.IO.File]::Exists($RestartPath)) {
+        Start-Process -FilePath $RestartPath -WorkingDirectory $Root
+    }
+}
+catch {
+    Write-WorkerLog ('failed: ' + $_.Exception.Message)
+    Add-Type -AssemblyName System.Windows.Forms
+    [System.Windows.Forms.MessageBox]::Show('업데이트 실패: ' + $_.Exception.Message + [Environment]::NewLine + '로그: ' + (Join-Path $BackupRoot 'update_worker.log'), '업데이트') | Out-Null
+    if (-not [string]::IsNullOrWhiteSpace($RestartPath) -and [System.IO.File]::Exists($RestartPath)) {
+        Start-Process -FilePath $RestartPath -WorkingDirectory $Root
+    }
+}
+'@
+    Set-Content -LiteralPath $workerPath -Value $worker -Encoding UTF8
+    [System.Windows.Forms.MessageBox]::Show('업데이트 패키지를 적용하기 위해 프로그램을 종료합니다.' + $script:NewLine + '잠시 후 자동으로 다시 실행됩니다.', '업데이트') | Out-Null
+    Start-Process -FilePath 'powershell.exe' -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File', $workerPath, '-Root', $PSScriptRoot, '-ManifestPath', $manifestPath, '-BackupRoot', $targetBackup, '-ParentPid', ([System.Diagnostics.Process]::GetCurrentProcess().Id), '-RestartPath', $restartPath) -WindowStyle Hidden
+    $script:StopRequested = $true
+    $form.Close()
 }
 function Invoke-AppUpdateApply($Manifest) {
     if ($script:Running) { [System.Windows.Forms.MessageBox]::Show('실행 중에는 업데이트할 수 없습니다. 먼저 중단하세요.', '업데이트') | Out-Null; return }
@@ -1538,7 +1663,7 @@ $form.MinimumSize = New-Object System.Drawing.Size((Get-UiInt 'window.minWidth' 
 $form.Font = New-Object System.Drawing.Font($uiFontName, $uiFontSize)
 $form.TopMost = Get-UiBool 'app.topMost' $true
 $tabs = New-Object System.Windows.Forms.TabControl; $tabs.Dock = 'Fill'; $tabs.Appearance = 'Normal'
-$gamePage = New-Object System.Windows.Forms.TabPage; $gamePage.Text = [string](Get-UiValue 'tabs.main' '게임셋팅'); $gamePage.Padding = New-Object System.Windows.Forms.Padding(8); $gamePage.BackColor = $uiBackground
+$gamePage = New-Object System.Windows.Forms.TabPage; $gamePage.Text = [string](Get-UiValue 'tabs.main' '실험셋팅'); $gamePage.Padding = New-Object System.Windows.Forms.Padding(8); $gamePage.BackColor = $uiBackground
 $optionPage = New-Object System.Windows.Forms.TabPage; $optionPage.Text = [string](Get-UiValue 'tabs.options' '세부옵션'); $optionPage.Padding = New-Object System.Windows.Forms.Padding(8)
 [void]$tabs.TabPages.Add($gamePage); [void]$tabs.TabPages.Add($optionPage); $form.Controls.Add($tabs)
 
@@ -1635,8 +1760,8 @@ $progressGroup = New-Object System.Windows.Forms.GroupBox; $progressGroup.Text =
 $progressPanel = New-Object System.Windows.Forms.TableLayoutPanel; $progressPanel.Dock = 'Fill'; $progressPanel.ColumnCount = 10; $progressPanel.RowCount = 1
 for ($pi = 0; $pi -lt 10; $pi++) { $progressPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 10))) | Out-Null }
 $script:ProgressCells = @()
-$progressNames = @(Get-UiValue 'progress.labels' @('1','2','3','4','상태','5','대기','완료','종료','순환'))
-if ($progressNames.Count -lt 10) { $progressNames = @('1','2','3','4','상태','5','대기','완료','종료','순환') }
+$progressNames = @(Get-UiValue 'progress.labels' @('메뉴','어비','던전','입장','상태','퀘','대기','완료','종료','순환'))
+if ($progressNames.Count -lt 10) { $progressNames = @('메뉴','어비','던전','입장','상태','퀘','대기','완료','종료','순환') }
 $progressActiveColor = Get-UiColor 'colors.progressActive' ([System.Drawing.Color]::FromArgb(0,122,204))
 $progressInactiveColor = Get-UiColor 'colors.progressInactive' ([System.Drawing.Color]::FromArgb(245,247,250))
 $progressActiveTextColor = Get-UiColor 'colors.progressActiveText' ([System.Drawing.Color]::White)
@@ -1825,7 +1950,7 @@ function Get-SelectedTargetWindow([string]$TitlePart) {
     return Find-WindowByTitlePart $TitlePart
 }
 function Select-Slot([string]$Slot) { $script:SelectedSlot = $Slot; if ($slotBox.SelectedItem -ne $Slot) { $slotBox.SelectedItem = $Slot }; Refresh-Slots }
-function Mark-ActiveSlot([string]$Slot) { $script:ActiveSlot = $Slot; switch ($Slot) { '1단계' { Set-ProgressStep 1 } '2단계' { Set-ProgressStep 2 } '3단계' { Set-ProgressStep 3 } '4단계' { Set-ProgressStep 4 } '상태 기준' { Set-ProgressStep 5 } '5단계' { Set-ProgressStep 6 } '완료 확인' { Set-ProgressStep 8 } '나가기' { Set-ProgressStep 9 } default { } }; Refresh-Slots }
+function Mark-ActiveSlot([string]$Slot) { $script:ActiveSlot = $Slot; switch ($Slot) { '메뉴' { Set-ProgressStep 1 } '어비스' { Set-ProgressStep 2 } '던전' { Set-ProgressStep 3 } '입장' { Set-ProgressStep 4 } '상태 기준' { Set-ProgressStep 5 } '퀘스트' { Set-ProgressStep 6 } '완료 확인' { Set-ProgressStep 8 } '나가기' { Set-ProgressStep 9 } default { } }; Refresh-Slots }
 function Handle-FileDrop([string]$Slot, $Data) { $paths = $Data.GetData([System.Windows.Forms.DataFormats]::FileDrop); if ($paths -and $paths.Length -gt 0) { Select-Slot $Slot; Assign-ImageFileToSlot $Slot $paths[0]; Refresh-Slots; $statusLabel.Text = $Slot + ' 슬롯에 이미지 파일을 연결했습니다.' } }
 function Add-DropHandlers($Control, [string]$Slot) { $Control.AllowDrop = $true; $Control.Add_DragEnter({ if ($_.Data.GetDataPresent([System.Windows.Forms.DataFormats]::FileDrop)) { $_.Effect = [System.Windows.Forms.DragDropEffects]::Copy } }.GetNewClosure()); $Control.Add_DragDrop({ Handle-FileDrop $Slot $_.Data }.GetNewClosure()) }
 function Refresh-Slots {
@@ -1839,7 +1964,7 @@ function Refresh-Slots {
         if ($slot -eq $script:ActiveSlot) { $label.ForeColor = [System.Drawing.Color]::DarkGreen; $label.Font = New-Object System.Drawing.Font('Malgun Gothic', 7, [System.Drawing.FontStyle]::Bold) } elseif ($slot -eq $script:SelectedSlot) { $label.ForeColor = [System.Drawing.Color]::DarkBlue; $label.Font = New-Object System.Drawing.Font('Malgun Gothic', 7, [System.Drawing.FontStyle]::Bold) } else { $label.Font = New-Object System.Drawing.Font('Malgun Gothic', 7) }
         Add-DropHandlers $label $slot
         if ($script:Samples[$slot]) { $image = Load-ImageUnlocked $script:Samples[$slot].Path; $card.Tag = $image; $pic = New-Object System.Windows.Forms.PictureBox; $pic.Image = $image; $pic.SizeMode = 'Zoom'; $pic.Width = 66; $pic.Height = 52; $pic.Left = 3; $pic.Top = 3; Add-DropHandlers $pic $slot; $pic.Add_Click({ Select-Slot $slot }.GetNewClosure()); $card.Controls.Add($pic) }
-        $pointLabel = New-Object System.Windows.Forms.Label; $point = $script:SlotPoints[$slot]; $region = $script:SlotRegions[$slot]; $regionMark = if ($null -ne $region) { ' / 구역' } else { '' }; if ($slot -eq '완료 확인') { $extraCount = Get-MultiSampleCount $slot; if ($extraCount -gt 0) { $pointLabel.Text = ([string]$extraCount) + '/10장' + $regionMark } elseif ($null -eq $point) { $pointLabel.Text = '0/10장' + $regionMark } else { $pointLabel.Text = '0/10장' + $regionMark } } elseif ($slot -eq '상태 기준') { $pointLabel.Text = '좌표 제외' + $regionMark } elseif ($null -eq $point) { $pointLabel.Text = '좌표 없음' + $regionMark } else { $pointLabel.Text = (Get-CoordinateModeLabel $point.Mode) + ' X=' + $point.X + ', Y=' + $point.Y + $regionMark }; $pointLabel.TextAlign = 'MiddleCenter'; $pointLabel.Width = 66; $pointLabel.Height = 13; $pointLabel.Left = 3; $pointLabel.Top = 70; $pointLabel.ForeColor = [System.Drawing.Color]::DimGray; $pointLabel.Font = New-Object System.Drawing.Font('Malgun Gothic', 6); Add-DropHandlers $pointLabel $slot; $pointLabel.Add_Click({ Select-Slot $slot }.GetNewClosure()); $card.Add_Click({ Select-Slot $slot }.GetNewClosure()); $label.Add_Click({ Select-Slot $slot }.GetNewClosure()); $card.Controls.Add($label); $card.Controls.Add($pointLabel); $slotPanel.Controls.Add($card)
+        $pointLabel = New-Object System.Windows.Forms.Label; $point = $script:SlotPoints[$slot]; $region = $script:SlotRegions[$slot]; $regionMark = if ($null -ne $region) { ' / 구역' } else { '' }; if ($slot -eq '상태 기준') { $pointLabel.Text = '좌표 제외' + $regionMark } elseif ($null -eq $point) { $pointLabel.Text = '좌표 없음' + $regionMark } else { $pointLabel.Text = (Get-CoordinateModeLabel $point.Mode) + ' X=' + $point.X + ', Y=' + $point.Y + $regionMark }; $pointLabel.TextAlign = 'MiddleCenter'; $pointLabel.Width = 66; $pointLabel.Height = 13; $pointLabel.Left = 3; $pointLabel.Top = 70; $pointLabel.ForeColor = [System.Drawing.Color]::DimGray; $pointLabel.Font = New-Object System.Drawing.Font('Malgun Gothic', 6); Add-DropHandlers $pointLabel $slot; $pointLabel.Add_Click({ Select-Slot $slot }.GetNewClosure()); $card.Add_Click({ Select-Slot $slot }.GetNewClosure()); $label.Add_Click({ Select-Slot $slot }.GetNewClosure()); $card.Controls.Add($label); $card.Controls.Add($pointLabel); $slotPanel.Controls.Add($card)
     }
 }
 function Add-SlotSample { $screen = $screens[$monitorBox.SelectedIndex]; $script:LastCaptureMessage = ''; Capture-Slot $script:SelectedSlot $screen; Refresh-Slots; if (-not [string]::IsNullOrWhiteSpace($script:LastCaptureMessage)) { $statusLabel.Text = $script:LastCaptureMessage } else { $statusLabel.Text = $script:SelectedSlot + ' 이미지가 저장되었습니다.' } }
@@ -1871,7 +1996,7 @@ $slotBox.Add_SelectedIndexChanged({ if ($slotBox.SelectedItem) { $script:Selecte
 $addButton.Add_Click({ Add-SlotSample })
 $pointButton.Add_Click({ Save-CurrentPointForSelectedSlot })
 $fileButton.Add_Click({ Import-SelectedSlotFile })
-$reloadButton.Add_Click({ if ($script:SelectedSlot -eq '완료 확인') { Open-MultiSampleFolder $script:SelectedSlot } else { Reload-SavedSamplesToSlots } })
+$reloadButton.Add_Click({ Reload-SavedSamplesToSlots })
 $deleteButton.Add_Click({ $slot=$script:SelectedSlot; if($script:Samples[$slot] -and [System.IO.File]::Exists($script:Samples[$slot].Path)){[System.IO.File]::Delete($script:Samples[$slot].Path)}; $script:Samples[$slot]=$null; $script:SlotRegions[$slot]=$null; Save-SlotRegions; Refresh-Slots })
 $locateButton.Add_Click({ Run-LocateSelectedSlot })
 $probeButton.Add_Click({ Run-ActualClickProbe })
@@ -1892,7 +2017,7 @@ $loadedPointsOnStart = Load-SlotPoints
 $loadedRegionsOnStart = Load-SlotRegions
 $loadedIgnoreZonesOnStart = Load-IgnoreZones
 Refresh-Slots
-$statusLabel.Text = '저장 폴더에서 ' + $loadedOnStart + '개 슬롯, 좌표 ' + $loadedPointsOnStart + '개, 슬롯구역 ' + $loadedRegionsOnStart + '개, 제외구역 ' + $loadedIgnoreZonesOnStart + '개, 완료 확인 추가샘플 ' + (Get-MultiSampleCount '완료 확인') + '개를 불러왔습니다.'
+$statusLabel.Text = '저장 폴더에서 ' + $loadedOnStart + '개 슬롯, 좌표 ' + $loadedPointsOnStart + '개, 슬롯구역 ' + $loadedRegionsOnStart + '개, 제외구역 ' + $loadedIgnoreZonesOnStart + '개를 불러왔습니다.'
 function Start-StateRoutine {
     if ($script:Running) { [System.Windows.Forms.MessageBox]::Show('이미 실행 중입니다.', '실행') | Out-Null; return }
     foreach ($slot in $script:Slots) { if ($slot -eq '궁극기') { continue }; if ($null -eq $script:Samples[$slot]) { [System.Windows.Forms.MessageBox]::Show($slot + ' 슬롯 이미지가 필요합니다.', '실행') | Out-Null; return } }
@@ -1924,19 +2049,21 @@ function Start-StateRoutine {
             Write-RoutineTrace $cycle 'cycle' '' 'start' ([System.Drawing.Rectangle]::Empty) ''
             if($script:StopRequested){ $status='stopped'; $message='사용자 중단'; break }
             [void][NativeInput]::SetForegroundWindow($target.Handle)
-            Start-Sleep -Milliseconds 150
-            $stageSlots = @('1단계','2단계','3단계','4단계','상태 기준','5단계')
+            [void](Sleep-WithStop 150)
+            $stageSlots = @('메뉴','어비스','던전','입장','상태 기준','퀘스트')
             for ($stageIndex = 0; $stageIndex -lt $stageSlots.Count; $stageIndex++) {
+                if($script:StopRequested){ $status='stopped'; $message='사용자 중단'; break }
                 $slot = $stageSlots[$stageIndex]
                 Mark-ActiveSlot $slot
                 Write-RoutineTrace $cycle 'slot' $slot 'enter' ([System.Drawing.Rectangle]::Empty) ''
-                if($slot -eq '5단계') {
-                    $statusLabel.Text='5단계 전 8초 대기 중'
+                if($slot -eq '퀘스트') {
+                    $statusLabel.Text='퀘스트 전 8초 대기 중'
                     [System.Windows.Forms.Application]::DoEvents()
-                    Start-Sleep -Milliseconds 8000
+                    if (-not (Sleep-WithStop 8000)) { $status='stopped'; $message='사용자 중단'; break }
                 }
                 $rect=Wait-FindSlot $slot $screen ([int]$retryCountBox.Value) ([int]$retryIntervalBox.Value) $statusLabel
                 if($rect.IsEmpty){
+                    if($script:StopRequested){ $status='stopped'; $message='사용자 중단'; break }
                     $visibleStage = Find-FirstVisibleSlot $stageSlots $screen $true
                     if ($null -ne $visibleStage) {
                         $nextIndex = [Array]::IndexOf($stageSlots, $visibleStage.Slot)
@@ -1949,23 +2076,23 @@ function Start-StateRoutine {
                         }
                     }
                     if($slot -ne '상태 기준' -and (Click-SlotTarget $slot $rect ([int]$stepDelayBox.Value))){ $completedClicks++; continue }
-                    if($slot -eq '1단계' -and $beepCheck.Checked){Signal-ShortBeep}
+                    if($slot -eq '메뉴' -and $beepCheck.Checked){Signal-ShortBeep}
                     $status='blocked'; $message=$slot+' 이미지를 찾지 못함'; break
                 }
                 $pointResult=Check-SlotPointMatch $slot $rect
                 if(-not $pointResult.Ok){ Write-RoutineTrace $cycle 'slot' $slot 'point-warning' $rect $pointResult.Message }
                 if($slot -eq '상태 기준'){
                     $script:SlotPoints[$slot] = $null
-                    $statusLabel.Text='상태 기준 확인됨: 클릭 없이 5단계로 진행'
+                    $statusLabel.Text='상태 기준 확인됨: 클릭 없이 퀘스트로 진행'
                     [System.Windows.Forms.Application]::DoEvents()
-                    Start-Sleep -Milliseconds 500
+                    [void](Sleep-WithStop 500)
                     continue
                 }
                 Write-RoutineTrace $cycle 'slot' $slot 'click-before' $rect ''
-                if($slot -eq '5단계'){ [void](Click-SlotTarget $slot $rect ([int]$stepDelayBox.Value) 120) } else { [void](Click-SlotTarget $slot $rect ([int]$stepDelayBox.Value)) }
+                if($slot -eq '퀘스트'){ [void](Click-SlotTarget $slot $rect ([int]$stepDelayBox.Value) 120) } else { [void](Click-SlotTarget $slot $rect ([int]$stepDelayBox.Value)) }
                 Write-RoutineTrace $cycle 'slot' $slot 'click-after' $rect ''
                 $completedClicks++
-                if($slot -eq '5단계'){
+                if($slot -eq '퀘스트'){
                     $statusLabel.Text='완료/나가기 후처리 대기 중'
                     Set-ProgressStep 7
                     [System.Windows.Forms.Application]::DoEvents()
