@@ -161,7 +161,7 @@ $script:IgnoreZonePath = Join-Path $PSScriptRoot 'ignore_zones.csv'
 $script:UserSettingsPath = Join-Path $PSScriptRoot 'user_settings.json'
 $script:ClickTracePath = Join-Path $PSScriptRoot 'click_trace_log.csv'
 $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
-$script:AppVersion = '1.0.31'
+$script:AppVersion = '1.0.32'
 $script:IgnoreZones = New-Object System.Collections.Generic.List[object]
 $script:MaxIgnoreZones = 4
 $script:LastUltimateAt = [datetime]::MinValue
@@ -1325,6 +1325,25 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [bool]$Insi
     Write-RoutineTrace $script:CurrentCycle 'state-scan' '' 'none' ([System.Drawing.Rectangle]::Empty) ('inside=' + $InsidePhase + '; checked=' + ($order -join '|'))
     return $null
 }
+function Get-StateActionSettleMs([string]$Slot) {
+    switch ($Slot) {
+        '메뉴' { return 900 }
+        '어비스' { return 900 }
+        '던전' { return 900 }
+        '입장' { return 1800 }
+        '상태 기준' { return 450 }
+        '퀘스트' { return 2500 }
+        '완료 확인' { return 1800 }
+        '식사 버튼' { return 900 }
+        '궁극기' { return 600 }
+        default { return 900 }
+    }
+}
+function Wait-StateActionSettle([string]$Slot) {
+    $delay = Get-StateActionSettleMs $Slot
+    Write-RoutineTrace $script:CurrentCycle 'state-action' $Slot 'settle-wait' ([System.Drawing.Rectangle]::Empty) ('ms=' + $delay)
+    [void](Sleep-WithStop $delay)
+}
 function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]$Screen, [System.Windows.Forms.Label]$StatusLabel, [ref]$InsidePhase) {
     if ($null -eq $Candidate) { return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = '' } }
     $slot = [string]$Candidate.Slot
@@ -1348,16 +1367,17 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'click-after' $rect ''
             $InsidePhase.Value = $true
             Set-ProgressStep 8
+            Wait-StateActionSettle $slot
             return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = '완료 확인 클릭' }
         }
         '식사 버튼' {
             if (-not $InsidePhase.Value) { return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = '식사 무시: 내부 진행 아님' } }
-            if (Invoke-FoodButtonIfVisible $Screen $StatusLabel) { return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = '식사 버튼 처리' } }
+            if (Invoke-FoodButtonIfVisible $Screen $StatusLabel) { Wait-StateActionSettle $slot; return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = '식사 버튼 처리' } }
             return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = '식사 버튼 재검사 필요' }
         }
         '궁극기' {
             if (-not $InsidePhase.Value) { return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = '궁극기 무시: 내부 진행 아님' } }
-            if (Invoke-UltimateIfVisible $Screen $StatusLabel) { return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = '궁극기 입력' } }
+            if (Invoke-UltimateIfVisible $Screen $StatusLabel) { Wait-StateActionSettle $slot; return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = '궁극기 입력' } }
             return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = '궁극기 재검사 필요' }
         }
         '상태 기준' {
@@ -1366,6 +1386,7 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
             [System.Windows.Forms.Application]::DoEvents()
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'observe-only' $rect ''
             Set-ProgressStep 5
+            Wait-StateActionSettle $slot
             return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = '상태 기준 확인' }
         }
         '퀘스트' {
@@ -1376,6 +1397,7 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'click-after' $rect ''
             $InsidePhase.Value = $true
             Set-ProgressStep 7
+            Wait-StateActionSettle $slot
             return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = '퀘스트 클릭' }
         }
         default {
@@ -1384,6 +1406,7 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'click-before' $rect ''
             [void](Click-SlotTarget $slot $rect ([int]$stepDelayBox.Value))
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'click-after' $rect ''
+            Wait-StateActionSettle $slot
             return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = $slot + ' 클릭' }
         }
     }
@@ -1634,6 +1657,8 @@ try {
     }
     Copy-PackageDirectory $releaseRoot $Root $BackupRoot
     Write-WorkerLog 'package update complete'
+    Add-Type -AssemblyName System.Windows.Forms
+    [System.Windows.Forms.MessageBox]::Show('패치가 완료되었습니다.' + [Environment]::NewLine + '새 버전으로 다시 실행합니다.', '업데이트') | Out-Null
     if (-not [string]::IsNullOrWhiteSpace($RestartPath) -and [System.IO.File]::Exists($RestartPath)) {
         Start-Process -FilePath $RestartPath -WorkingDirectory $Root
     }
@@ -1727,6 +1752,8 @@ try {
     }
     finally { $client.Dispose() }
     Write-WorkerLog 'update complete'
+    Add-Type -AssemblyName System.Windows.Forms
+    [System.Windows.Forms.MessageBox]::Show('패치가 완료되었습니다.' + [Environment]::NewLine + '새 버전으로 다시 실행합니다.', '업데이트') | Out-Null
     if (-not [string]::IsNullOrWhiteSpace($RestartPath) -and [System.IO.File]::Exists($RestartPath)) {
         Start-Process -FilePath $RestartPath -WorkingDirectory $Root
     }
