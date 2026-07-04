@@ -161,7 +161,7 @@ $script:IgnoreZonePath = Join-Path $PSScriptRoot 'ignore_zones.csv'
 $script:UserSettingsPath = Join-Path $PSScriptRoot 'user_settings.json'
 $script:ClickTracePath = Join-Path $PSScriptRoot 'click_trace_log.csv'
 $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
-$script:AppVersion = '1.0.33'
+$script:AppVersion = '1.0.34'
 $script:IgnoreZones = New-Object System.Collections.Generic.List[object]
 $script:MaxIgnoreZones = 4
 $script:LastUltimateAt = [datetime]::MinValue
@@ -289,7 +289,8 @@ public static class VisionFinder {
                 }
                 int maskThreshold = (minCh[maskChannel] + maxCh[maskChannel]) / 2;
                 int maskMargin = Math.Max(18, maskRange / 5);
-                double bestScore = -1; int bestX = -1, bestY = -1; string bestMode = "";
+                double bestPrimaryScore = -1; int bestPrimaryX = -1, bestPrimaryY = -1; string bestPrimaryMode = "";
+                double bestFallbackScore = -1; int bestFallbackX = -1, bestFallbackY = -1; string bestFallbackMode = "";
                 int grayTolerance = Math.Max(tolerance, 22);
                 int edgeTolerance = Math.Max(tolerance * 2, 55);
                 int contrastSlack = Math.Max(tolerance, 30);
@@ -331,26 +332,35 @@ public static class VisionFinder {
                         double edgeScore = edgeTotal > 0 ? (double)edgeOk / edgeTotal : 0.0;
                         double maskScore = maskTotal > 0 ? (double)maskOk / maskTotal : 0.0;
 
-                        double score = originalScore;
-                        string mode = "original";
-                        if (grayScore * 0.99 > score) { score = grayScore * 0.99; mode = "gray"; }
-                        if (contrastScore * 0.90 > score) { score = contrastScore * 0.90; mode = "contrast"; }
-                        if (maskTotal >= Math.Max(8, sampleCount / 4) && maskScore * 0.98 > score) { score = maskScore * 0.98; mode = "channel-mask"; }
-                        if (edgeTotal >= Math.Max(4, sampleCount / 12) && edgeScore * 0.88 > score) { score = edgeScore * 0.88; mode = "edge"; }
-
                         bool originalStrong = originalScore >= requiredScore;
                         bool grayStrong = grayScore >= requiredScore;
                         bool maskStrong = maskTotal >= Math.Max(8, sampleCount / 4) && maskScore >= Math.Max(requiredScore + 0.04, 0.91);
                         bool edgeStrong = edgeTotal >= Math.Max(4, sampleCount / 12) && edgeScore >= Math.Max(requiredScore + 0.05, 0.92);
                         bool supportOk = originalScore >= requiredScore - 0.10 || grayScore >= requiredScore - 0.06 || contrastScore >= requiredScore - 0.04 || edgeStrong;
-                        bool verificationOk = originalStrong || grayStrong || (maskStrong && supportOk);
-                        if (verificationOk && score > bestScore) { bestScore = score; bestX = x; bestY = y; bestMode = mode; }
+                        if (originalStrong || grayStrong) {
+                            double primaryScore = originalScore;
+                            string primaryMode = "original";
+                            if (grayScore * 0.99 > primaryScore) { primaryScore = grayScore * 0.99; primaryMode = "gray"; }
+                            if (primaryScore > bestPrimaryScore) { bestPrimaryScore = primaryScore; bestPrimaryX = x; bestPrimaryY = y; bestPrimaryMode = primaryMode; }
+                        } else if (maskStrong && supportOk) {
+                            double fallbackScore = maskScore * 0.98;
+                            string fallbackMode = "channel-mask";
+                            if (edgeStrong && edgeScore * 0.88 > fallbackScore) { fallbackScore = edgeScore * 0.88; fallbackMode = "channel-mask+edge"; }
+                            if (fallbackScore > bestFallbackScore) { bestFallbackScore = fallbackScore; bestFallbackX = x; bestFallbackY = y; bestFallbackMode = fallbackMode; }
+                        }
                     }
                 }
-                if (bestScore < requiredScore) return Rectangle.Empty;
-                LastMode = bestMode;
-                LastScore = bestScore;
-                return new Rectangle(screenBounds.Left + bestX, screenBounds.Top + bestY, tw, th);
+                if (bestPrimaryScore >= requiredScore) {
+                    LastMode = "primary-" + bestPrimaryMode;
+                    LastScore = bestPrimaryScore;
+                    return new Rectangle(screenBounds.Left + bestPrimaryX, screenBounds.Top + bestPrimaryY, tw, th);
+                }
+                if (bestFallbackScore >= requiredScore) {
+                    LastMode = "fallback-" + bestFallbackMode;
+                    LastScore = bestFallbackScore;
+                    return new Rectangle(screenBounds.Left + bestFallbackX, screenBounds.Top + bestFallbackY, tw, th);
+                }
+                return Rectangle.Empty;
             } finally { screen.UnlockBits(sd); sample.UnlockBits(td); }
         }
     }
@@ -1015,6 +1025,9 @@ function Get-CurrentSearchBounds([System.Windows.Forms.Screen]$Screen) {
     if ($fullMonitorCheck -and $fullMonitorCheck.Checked) { return $Screen.Bounds }
     return Get-SearchBounds $Screen
 }
+function Test-SlotRequiresRegion([string]$Slot) {
+    return @('메뉴','어비스','던전','입장','퀘스트','완료 확인','나가기','식사 버튼','궁극기') -contains $Slot
+}
 function Get-SlotRegionScreenRect([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
     $region = $script:SlotRegions[$Slot]
     if ($null -eq $region) { return [System.Drawing.Rectangle]::Empty }
@@ -1052,6 +1065,9 @@ function Get-SlotSearchBounds([string]$Slot, [System.Windows.Forms.Screen]$Scree
         $limited = Intersect-RectWithin $regionRect $bounds
         if (-not $limited.IsEmpty) { return $limited }
     }
+    if (Test-SlotRequiresRegion $Slot) {
+        return [System.Drawing.Rectangle]::Empty
+    }
     if ($Slot -eq '식사 버튼') {
         $x = [int]$bounds.Left
         $y = [int]$bounds.Top
@@ -1084,6 +1100,10 @@ function Get-SlotSearchBounds([string]$Slot, [System.Windows.Forms.Screen]$Scree
 }
 function Find-Slot([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
     $bounds = Get-SlotSearchBounds $Slot $Screen
+    if ($bounds.IsEmpty) {
+        Write-RoutineTrace $script:CurrentCycle 'vision' $Slot 'no-search-region' ([System.Drawing.Rectangle]::Empty) 'slot region is required'
+        return [System.Drawing.Rectangle]::Empty
+    }
     $paths = @()
     if ($script:Samples[$Slot]) { $paths += $script:Samples[$Slot].Path }
     foreach ($file in (Get-MultiSampleFiles $Slot)) { $paths += $file.FullName }
