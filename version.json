@@ -1,10 +1,6 @@
 ﻿{
-    "version":  "1.0.16",
-    "update_mode":  "installer",
-    "installer":  {
-                      "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/%EC%83%81%ED%83%9C%EB%A3%A8%ED%8B%B4%20%EC%84%A4%EC%B9%98_1.0.16.exe",
-                      "sha256":  "84af04b3191e821d4dd87a0043f42ea90bdbf36897d4e9b971d69760ede41c9d"
-                  },
+    "version":  "1.0.26",
+    "update_mode":  "files",
     "files":  [
                   {
                       "path":  "gerinogi.ico",
@@ -14,7 +10,7 @@
                   {
                       "path":  "local_state_routine_runner.ps1",
                       "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/release/local_state_routine_runner.ps1",
-                      "sha256":  "65381b58f791896391599e56ef15bdbefe56a6d69868bc597fa01f0910f7d75c"
+                      "sha256":  "8f0511dbb878195e11971e6a3d909c6ce40348d82da8461a27e5435e970d2fb9"
                   },
                   {
                       "path":  "state_samples/1단계_20260703_143209_143.png",
@@ -110,6 +106,11 @@
                       "path":  "state_samples/완료_확인_samples/완료_확인_10.png",
                       "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/release/state_samples/%EC%99%84%EB%A3%8C_%ED%99%95%EC%9D%B8_samples/%EC%99%84%EB%A3%8C_%ED%99%95%EC%9D%B8_10.png",
                       "sha256":  "bdb72130fce3bcdf050c6f73336c331a5780e51ada11f5ee47b006e6256591b5"
+                  },
+                  {
+                      "path":  "ui_config.json",
+                      "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/release/ui_config.json",
+                      "sha256":  "5fa93b5f97bf5b7cfdcd4acee6f4ff7a8c0d6ff130170de78b5f0de4a90c368e"
                   },
                   {
                       "path":  "update_manifest_url.txt",

@@ -1,0 +1,74 @@
+{
+  "app": {
+    "title": "Local State Routine Runner",
+    "versionPrefix": "현버전 ",
+    "fontName": "Malgun Gothic",
+    "fontSize": 8,
+    "topMost": true
+  },
+  "window": {
+    "width": 460,
+    "height": 920,
+    "minWidth": 420,
+    "minHeight": 760
+  },
+  "colors": {
+    "background": "125,211,185",
+    "actionPrimary": "255,221,87",
+    "actionSecondary": "245,190,65",
+    "actionTertiary": "238,139,48",
+    "actionBorder": "170,122,24",
+    "actionText": "30,30,30",
+    "updateButton": "54,91,109",
+    "versionText": "35,55,65",
+    "progressActive": "0,122,204",
+    "progressInactive": "245,247,250",
+    "progressActiveText": "255,255,255",
+    "progressInactiveText": "0,0,0",
+    "brandText": "24,42,38",
+    "brandOutline": "255,255,255",
+    "brandLink": "0,82,155"
+  },
+  "tabs": {
+    "main": "게임셋팅",
+    "options": "세부옵션"
+  },
+  "labels": {
+    "targetGroup": "대상",
+    "targetWindow": "대상 창",
+    "monitor": "모니터",
+    "slotSelect": "슬롯 선택",
+    "slotPreview": "슬롯 미리보기",
+    "progress": "진행 상황",
+    "settings": "셋팅"
+  },
+  "buttons": {
+    "searchWindows": "검색",
+    "capture": "촬영(F8)",
+    "point": "좌표(F7)",
+    "start": "시작(F5)",
+    "stop": "중단(F6)",
+    "file": "파일",
+    "folder": "폴더",
+    "delete": "삭제",
+    "locate": "위치",
+    "probe": "클릭확인",
+    "diagnostic": "진단",
+    "log": "로그",
+    "exit": "종료",
+    "ignore": "제외(F9)",
+    "showIgnore": "제외확인",
+    "clearIgnore": "제외삭제",
+    "update": "업데이트 확인"
+  },
+  "progress": {
+    "labels": ["1", "2", "3", "4", "상태", "5", "대기", "완료", "종료", "순환"]
+  },
+  "slots": ["상태 기준", "식사 버튼", "1단계", "2단계", "3단계", "4단계", "5단계", "완료 확인", "나가기", "궁극기"],
+  "brand": {
+    "title": "내 멋대로 게리노기",
+    "linkText": "getiton85.github.io/gerinogi-pob",
+    "url": "https://getiton85.github.io/gerinogi-pob/",
+    "imagePath": "C:\\Users\\freem\\Pictures\\Mabinogi Mobile\\screenshots\\MabinogiMobile_2026070318471243.png"
+  }
+}
