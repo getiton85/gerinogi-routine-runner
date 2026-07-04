@@ -162,7 +162,7 @@ $script:UserSettingsPath = Join-Path $PSScriptRoot 'user_settings.json'
 $script:ClickTracePath = Join-Path $PSScriptRoot 'click_trace_log.csv'
 $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
 $script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
-$script:AppVersion = '1.0.37'
+$script:AppVersion = '1.0.38'
 $script:IgnoreZones = New-Object System.Collections.Generic.List[object]
 $script:MaxIgnoreZones = 4
 $script:LastUltimateAt = [datetime]::MinValue
@@ -1112,7 +1112,13 @@ function Find-Slot([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
     $paths = @($paths | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique)
     if ($paths.Count -eq 0) { return [System.Drawing.Rectangle]::Empty }
     foreach ($samplePath in $paths) {
-        $rect = [VisionFinder]::FindSample($bounds, $samplePath, 4, 8, (Get-ColorTolerance), (Get-MatchRequired))
+        $slotTolerance = Get-ColorTolerance
+        $slotRequired = Get-MatchRequired
+        if ($Slot -eq '궁극기') {
+            $slotTolerance = [Math]::Max($slotTolerance, 38)
+            $slotRequired = [Math]::Min($slotRequired, 0.82)
+        }
+        $rect = [VisionFinder]::FindSample($bounds, $samplePath, 4, 8, $slotTolerance, $slotRequired)
         if (-not $rect.IsEmpty) {
             if (Test-RectInIgnoreZone $rect) {
                 Write-RoutineTrace $script:CurrentCycle 'vision' $Slot 'ignored-zone' $rect ([System.IO.Path]::GetFileName($samplePath))
@@ -1138,11 +1144,14 @@ function Test-StopRequested {
     return $false
 }
 function Sleep-WithStop([int]$Milliseconds) {
+    if ($Milliseconds -le 0) { return $true }
     $watch = [System.Diagnostics.Stopwatch]::StartNew()
     while ($watch.ElapsedMilliseconds -lt $Milliseconds) {
         if (Test-StopRequested) { return $false }
         [System.Windows.Forms.Application]::DoEvents()
-        Start-Sleep -Milliseconds ([Math]::Min(100, $Milliseconds - [int]$watch.ElapsedMilliseconds))
+        $remaining = $Milliseconds - [int]$watch.ElapsedMilliseconds
+        if ($remaining -le 0) { break }
+        Start-Sleep -Milliseconds ([Math]::Max(1, [Math]::Min(100, $remaining)))
     }
     return $true
 }
@@ -1387,12 +1396,16 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
             Write-RoutineTrace $script:CurrentCycle 'stage-scan' '상태 기준' 'inside-lock' $stateRect 'stage=내부; allowed=식사 버튼|궁극기|상태 기준'
             foreach ($slot in @('식사 버튼','궁극기')) {
                 if (Test-StopRequested) { return $null }
-                if ($null -eq $script:Samples[$slot]) { continue }
+                if ($null -eq $script:Samples[$slot]) {
+                    Write-RoutineTrace $script:CurrentCycle 'stage-scan' $slot 'missing-sample-inside' ([System.Drawing.Rectangle]::Empty) 'state marker visible'
+                    continue
+                }
                 $rect = Find-ValidSlotOnce $slot $Screen $true
                 if (-not $rect.IsEmpty) {
                     Write-RoutineTrace $script:CurrentCycle 'stage-scan' $slot 'candidate-inside-only' $rect 'state marker visible'
                     return [pscustomobject]@{ Slot = $slot; Rect = $rect; Stage = $Stage }
                 }
+                Write-RoutineTrace $script:CurrentCycle 'stage-scan' $slot 'miss-inside' ([System.Drawing.Rectangle]::Empty) 'state marker visible'
             }
             return [pscustomobject]@{ Slot = '상태 기준'; Rect = $stateRect; Stage = $Stage }
         }
