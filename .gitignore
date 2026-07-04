@@ -1,10 +1,2 @@
 ﻿release/*.csv
 release/update_backup/
-release/state_samples/*.png
-release/state_samples/*.jpg
-release/state_samples/*.jpeg
-release/state_samples/*.bmp
-release/state_samples/*_samples/*.png
-release/state_samples/*_samples/*.jpg
-release/state_samples/*_samples/*.jpeg
-release/state_samples/*_samples/*.bmp
