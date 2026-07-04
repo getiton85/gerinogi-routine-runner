@@ -19,7 +19,7 @@ $script:SlotPointPath = Join-Path $PSScriptRoot 'slot_points.csv'
 $script:UserSettingsPath = Join-Path $PSScriptRoot 'user_settings.json'
 $script:ClickTracePath = Join-Path $PSScriptRoot 'click_trace_log.csv'
 $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
-$script:AppVersion = '1.0.9'
+$script:AppVersion = '1.0.10'
 $script:UpdateManifestPath = Join-Path $PSScriptRoot 'update_manifest_url.txt'
 $script:BackupDir = Join-Path $PSScriptRoot 'update_backup'
 $script:NewLine = [Environment]::NewLine
@@ -885,35 +885,83 @@ function Invoke-AppUpdateApply($Manifest) {
     $stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
     $targetBackup = Join-Path $script:BackupDir $stamp
     New-Item -ItemType Directory -Force -Path $targetBackup | Out-Null
+    $manifestPath = Join-Path $targetBackup 'manifest.json'
+    $workerPath = Join-Path $targetBackup 'update_worker.ps1'
+    $restartPath = Join-Path $PSScriptRoot '상태루틴 실행.vbs'
+    if (-not [System.IO.File]::Exists($restartPath)) { $restartPath = Join-Path $PSScriptRoot '상태루틴 실행.bat' }
+    ($Manifest | ConvertTo-Json -Depth 8) | Set-Content -LiteralPath $manifestPath -Encoding UTF8
+    $worker = @'
+param(
+    [string]$Root,
+    [string]$ManifestPath,
+    [string]$BackupRoot,
+    [int]$ParentPid,
+    [string]$RestartPath
+)
+$ErrorActionPreference = 'Stop'
+function Write-WorkerLog([string]$Message) {
+    $line = (Get-Date).ToString('s') + ' ' + $Message
+    Add-Content -LiteralPath (Join-Path $BackupRoot 'update_worker.log') -Value $line -Encoding UTF8
+}
+try {
+    Write-WorkerLog 'waiting parent process'
+    if ($ParentPid -gt 0) {
+        try { Wait-Process -Id $ParentPid -Timeout 20 -ErrorAction SilentlyContinue } catch { }
+    }
+    Start-Sleep -Milliseconds 800
+    $manifest = Get-Content -LiteralPath $ManifestPath -Raw | ConvertFrom-Json
+    if ($null -eq $manifest.files) { throw 'files 목록이 없습니다.' }
     $client = New-Object System.Net.WebClient
-    $client.Headers.Add('User-Agent', 'GerinogiRoutineUpdater/' + $script:AppVersion)
+    $client.Headers.Add('User-Agent', 'GerinogiRoutineExternalUpdater')
     try {
-        foreach ($file in $Manifest.files) {
+        foreach ($file in $manifest.files) {
             $rel = [string]$file.path
             $src = [string]$file.url
             if ([string]::IsNullOrWhiteSpace($rel) -or [string]::IsNullOrWhiteSpace($src)) { continue }
             if ($rel.Contains('..') -or [System.IO.Path]::IsPathRooted($rel)) { throw '허용되지 않는 파일 경로: ' + $rel }
-            $dest = Join-Path $PSScriptRoot $rel
+            $dest = Join-Path $Root $rel
             $destFull = [System.IO.Path]::GetFullPath($dest)
-            $rootFull = [System.IO.Path]::GetFullPath($PSScriptRoot)
+            $rootFull = [System.IO.Path]::GetFullPath($Root)
             if (-not $destFull.StartsWith($rootFull, [StringComparison]::OrdinalIgnoreCase)) { throw '허용되지 않는 대상 경로: ' + $rel }
             $tmp = $destFull + '.download'
             New-Item -ItemType Directory -Force -Path ([System.IO.Path]::GetDirectoryName($destFull)) | Out-Null
+            Write-WorkerLog ('download ' + $rel)
             $client.DownloadFile($src, $tmp)
             if ($file.sha256) {
                 $hash = (Get-FileHash -LiteralPath $tmp -Algorithm SHA256).Hash.ToLowerInvariant()
-                if ($hash -ne ([string]$file.sha256).ToLowerInvariant()) { Remove-Item -LiteralPath $tmp -Force; throw '해시 검증 실패: ' + $rel }
+                if ($hash -ne ([string]$file.sha256).ToLowerInvariant()) {
+                    Remove-Item -LiteralPath $tmp -Force
+                    throw '해시 검증 실패: ' + $rel
+                }
             }
             if ([System.IO.File]::Exists($destFull)) {
-                $backupPath = Join-Path $targetBackup $rel
+                $backupPath = Join-Path $BackupRoot $rel
                 New-Item -ItemType Directory -Force -Path ([System.IO.Path]::GetDirectoryName($backupPath)) | Out-Null
                 Copy-Item -LiteralPath $destFull -Destination $backupPath -Force
             }
             Move-Item -LiteralPath $tmp -Destination $destFull -Force
         }
-        [System.Windows.Forms.MessageBox]::Show('업데이트가 적용되었습니다. 프로그램을 다시 실행해주세요.', '업데이트') | Out-Null
     }
     finally { $client.Dispose() }
+    Write-WorkerLog 'update complete'
+    if (-not [string]::IsNullOrWhiteSpace($RestartPath) -and [System.IO.File]::Exists($RestartPath)) {
+        Start-Process -FilePath $RestartPath -WorkingDirectory $Root
+    }
+}
+catch {
+    Write-WorkerLog ('failed: ' + $_.Exception.Message)
+    Add-Type -AssemblyName System.Windows.Forms
+    [System.Windows.Forms.MessageBox]::Show('업데이트 실패: ' + $_.Exception.Message + [Environment]::NewLine + '로그: ' + (Join-Path $BackupRoot 'update_worker.log'), '업데이트') | Out-Null
+    if (-not [string]::IsNullOrWhiteSpace($RestartPath) -and [System.IO.File]::Exists($RestartPath)) {
+        Start-Process -FilePath $RestartPath -WorkingDirectory $Root
+    }
+}
+'@
+    Set-Content -LiteralPath $workerPath -Value $worker -Encoding UTF8
+    [System.Windows.Forms.MessageBox]::Show('업데이트를 위해 프로그램을 종료합니다.' + $script:NewLine + '잠시 후 자동으로 다시 실행됩니다.', '업데이트') | Out-Null
+    Start-Process -FilePath 'powershell.exe' -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File', $workerPath, '-Root', $PSScriptRoot, '-ManifestPath', $manifestPath, '-BackupRoot', $targetBackup, '-ParentPid', ([System.Diagnostics.Process]::GetCurrentProcess().Id), '-RestartPath', $restartPath) -WindowStyle Hidden
+    $script:StopRequested = $true
+    $form.Close()
 }
 $form = New-Object System.Windows.Forms.Form
 $form.Text = 'Local State Routine Runner'; $form.StartPosition = 'CenterScreen'; $form.Size = New-Object System.Drawing.Size(460, 920); $form.MinimumSize = New-Object System.Drawing.Size(420, 760); $form.Font = New-Object System.Drawing.Font('Malgun Gothic', 8); $form.TopMost = $true
