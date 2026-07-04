@@ -161,7 +161,7 @@ $script:IgnoreZonePath = Join-Path $PSScriptRoot 'ignore_zones.csv'
 $script:UserSettingsPath = Join-Path $PSScriptRoot 'user_settings.json'
 $script:ClickTracePath = Join-Path $PSScriptRoot 'click_trace_log.csv'
 $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
-$script:AppVersion = '1.0.34'
+$script:AppVersion = '1.0.35'
 $script:IgnoreZones = New-Object System.Collections.Generic.List[object]
 $script:MaxIgnoreZones = 4
 $script:LastUltimateAt = [datetime]::MinValue
@@ -1357,12 +1357,13 @@ function Invoke-FoodButtonIfVisible([System.Windows.Forms.Screen]$Screen, [Syste
 }
 function Get-RoutineScanOrder([bool]$InsidePhase) {
     $order = New-Object System.Collections.Generic.List[string]
+    if ($InsidePhase) {
+        $order.Add('나가기') | Out-Null
+        $order.Add('완료 확인') | Out-Null
+        return [string[]]$order
+    }
     $order.Add('나가기') | Out-Null
     $order.Add('완료 확인') | Out-Null
-    if ($InsidePhase) {
-        $order.Add('식사 버튼') | Out-Null
-        $order.Add('궁극기') | Out-Null
-    }
     $order.Add('퀘스트') | Out-Null
     $order.Add('상태 기준') | Out-Null
     $order.Add('입장') | Out-Null
@@ -1372,6 +1373,22 @@ function Get-RoutineScanOrder([bool]$InsidePhase) {
     return [string[]]$order
 }
 function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [bool]$InsidePhase) {
+    if ($null -ne $script:Samples['상태 기준']) {
+        $stateRect = Find-ValidSlotOnce '상태 기준' $Screen $true
+        if (-not $stateRect.IsEmpty) {
+            Write-RoutineTrace $script:CurrentCycle 'state-scan' '상태 기준' 'inside-lock' $stateRect ('inside=' + $InsidePhase + '; allowed=식사 버튼|궁극기')
+            foreach ($slot in @('식사 버튼','궁극기')) {
+                if (Test-StopRequested) { return $null }
+                if ($null -eq $script:Samples[$slot]) { continue }
+                $rect = Find-ValidSlotOnce $slot $Screen $true
+                if (-not $rect.IsEmpty) {
+                    Write-RoutineTrace $script:CurrentCycle 'state-scan' $slot 'candidate-inside-only' $rect 'state marker visible'
+                    return [pscustomobject]@{ Slot = $slot; Rect = $rect }
+                }
+            }
+            return [pscustomobject]@{ Slot = '상태 기준'; Rect = $stateRect }
+        }
+    }
     $order = Get-RoutineScanOrder $InsidePhase
     foreach ($slot in $order) {
         if (Test-StopRequested) { return $null }
@@ -1426,7 +1443,7 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'click-before' $rect ''
             [void](Click-SlotTarget $slot $rect ([int]$stepDelayBox.Value))
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'click-after' $rect ''
-            $InsidePhase.Value = $true
+            $InsidePhase.Value = $false
             Set-ProgressStep 8
             Wait-StateActionSettle $slot
             return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = '완료 확인 클릭' }
@@ -1443,9 +1460,10 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
         }
         '상태 기준' {
             $script:SlotPoints[$slot] = $null
-            $StatusLabel.Text = '상태 기준 감지: 클릭 없이 다음 상태 탐색'
+            $StatusLabel.Text = '상태 기준 감지: 내부 진행 중, 식사/궁극기만 감시'
             [System.Windows.Forms.Application]::DoEvents()
-            Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'observe-only' $rect ''
+            Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'inside-observe-only' $rect 'blocked other slots while visible'
+            $InsidePhase.Value = $true
             Set-ProgressStep 5
             Wait-StateActionSettle $slot
             return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = '상태 기준 확인' }
