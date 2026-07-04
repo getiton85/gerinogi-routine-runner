@@ -1,40 +1,15 @@
 ﻿{
-    "version":  "1.0.2",
+    "version":  "1.0.7",
     "files":  [
+                  {
+                      "path":  "gerinogi.ico",
+                      "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/release/gerinogi.ico",
+                      "sha256":  "d812591653eb423de9c2c57b3774fdd9c0c0e9c9d197a6e7f95937008463226c"
+                  },
                   {
                       "path":  "local_state_routine_runner.ps1",
                       "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/release/local_state_routine_runner.ps1",
-                      "sha256":  "8f2074aa8f5a72c2650df920c8de80d78d499a6769a377f83b970a12d873574c"
-                  },
-                  {
-                      "path":  "상태루틴 실행.vbs",
-                      "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/release/%EC%83%81%ED%83%9C%EB%A3%A8%ED%8B%B4%20%EC%8B%A4%ED%96%89.vbs",
-                      "sha256":  "426c7147e6c3cdae39e353cedd8899180248c882dc6602d0cf0ca850971f8832"
-                  },
-                  {
-                      "path":  "상태루틴 관리자 실행.vbs",
-                      "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/release/%EC%83%81%ED%83%9C%EB%A3%A8%ED%8B%B4%20%EA%B4%80%EB%A6%AC%EC%9E%90%20%EC%8B%A4%ED%96%89.vbs",
-                      "sha256":  "1e0e191c6ea1753d31f1117cb5f48838861c287eb1c3f3bc87a7d1992debbb03"
-                  },
-                  {
-                      "path":  "상태루틴 실행.bat",
-                      "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/release/%EC%83%81%ED%83%9C%EB%A3%A8%ED%8B%B4%20%EC%8B%A4%ED%96%89.bat",
-                      "sha256":  "637166881ad26e4450b7a6161524d39f4efce7c328bc06121598159e51ea1545"
-                  },
-                  {
-                      "path":  "상태루틴 관리자 실행.bat",
-                      "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/release/%EC%83%81%ED%83%9C%EB%A3%A8%ED%8B%B4%20%EA%B4%80%EB%A6%AC%EC%9E%90%20%EC%8B%A4%ED%96%89.bat",
-                      "sha256":  "ecbe5c542f488552e7275f120931849abb1f2382d6ba99a71f5dc9d804bc7aba"
-                  },
-                  {
-                      "path":  "상태루틴 디버그 실행.bat",
-                      "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/release/%EC%83%81%ED%83%9C%EB%A3%A8%ED%8B%B4%20%EB%94%94%EB%B2%84%EA%B7%B8%20%EC%8B%A4%ED%96%89.bat",
-                      "sha256":  "998ee7dde11fb9a827f896877151ca1ffb2594117a08bf7eb97b7e142be43ab6"
-                  },
-                  {
-                      "path":  "update_manifest_url.txt",
-                      "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/release/update_manifest_url.txt",
-                      "sha256":  "eb59f3b41811b5375bef1a456e00fcd0fd1b65e00cab655058684452fdc71dbf"
+                      "sha256":  "a7bc0827ca10235280269d8a95f94df3a336cd3c2fdef46c8c62a58987766677"
                   },
                   {
                       "path":  "state_samples/1단계_20260703_143209_143.png",
@@ -130,6 +105,36 @@
                       "path":  "state_samples/완료_확인_samples/완료_확인_10.png",
                       "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/release/state_samples/%EC%99%84%EB%A3%8C_%ED%99%95%EC%9D%B8_samples/%EC%99%84%EB%A3%8C_%ED%99%95%EC%9D%B8_10.png",
                       "sha256":  "bdb72130fce3bcdf050c6f73336c331a5780e51ada11f5ee47b006e6256591b5"
+                  },
+                  {
+                      "path":  "update_manifest_url.txt",
+                      "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/release/update_manifest_url.txt",
+                      "sha256":  "eb59f3b41811b5375bef1a456e00fcd0fd1b65e00cab655058684452fdc71dbf"
+                  },
+                  {
+                      "path":  "상태루틴 관리자 실행.bat",
+                      "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/release/%EC%83%81%ED%83%9C%EB%A3%A8%ED%8B%B4%20%EA%B4%80%EB%A6%AC%EC%9E%90%20%EC%8B%A4%ED%96%89.bat",
+                      "sha256":  "ecbe5c542f488552e7275f120931849abb1f2382d6ba99a71f5dc9d804bc7aba"
+                  },
+                  {
+                      "path":  "상태루틴 관리자 실행.vbs",
+                      "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/release/%EC%83%81%ED%83%9C%EB%A3%A8%ED%8B%B4%20%EA%B4%80%EB%A6%AC%EC%9E%90%20%EC%8B%A4%ED%96%89.vbs",
+                      "sha256":  "1e0e191c6ea1753d31f1117cb5f48838861c287eb1c3f3bc87a7d1992debbb03"
+                  },
+                  {
+                      "path":  "상태루틴 디버그 실행.bat",
+                      "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/release/%EC%83%81%ED%83%9C%EB%A3%A8%ED%8B%B4%20%EB%94%94%EB%B2%84%EA%B7%B8%20%EC%8B%A4%ED%96%89.bat",
+                      "sha256":  "998ee7dde11fb9a827f896877151ca1ffb2594117a08bf7eb97b7e142be43ab6"
+                  },
+                  {
+                      "path":  "상태루틴 실행.bat",
+                      "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/release/%EC%83%81%ED%83%9C%EB%A3%A8%ED%8B%B4%20%EC%8B%A4%ED%96%89.bat",
+                      "sha256":  "637166881ad26e4450b7a6161524d39f4efce7c328bc06121598159e51ea1545"
+                  },
+                  {
+                      "path":  "상태루틴 실행.vbs",
+                      "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/release/%EC%83%81%ED%83%9C%EB%A3%A8%ED%8B%B4%20%EC%8B%A4%ED%96%89.vbs",
+                      "sha256":  "426c7147e6c3cdae39e353cedd8899180248c882dc6602d0cf0ca850971f8832"
                   }
               ]
 }
