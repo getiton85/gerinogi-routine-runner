@@ -162,7 +162,7 @@ $script:UserSettingsPath = Join-Path $PSScriptRoot 'user_settings.json'
 $script:ClickTracePath = Join-Path $PSScriptRoot 'click_trace_log.csv'
 $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
 $script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
-$script:AppVersion = '1.0.38'
+$script:AppVersion = '1.0.39'
 $script:IgnoreZones = New-Object System.Collections.Generic.List[object]
 $script:MaxIgnoreZones = 4
 $script:LastUltimateAt = [datetime]::MinValue
@@ -1482,13 +1482,26 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
         }
         '식사 버튼' {
             if (-not $InsidePhase.Value) { return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = '식사 무시: 내부 진행 아님'; NextStage = '' } }
-            if (Invoke-FoodButtonIfVisible $Screen $StatusLabel) { Wait-StateActionSettle $slot; return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = '식사 버튼 처리'; NextStage = $nextStage } }
-            return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = '식사 버튼 재검사 필요'; NextStage = '내부' }
+            $StatusLabel.Text = '식사 버튼 감지: B 입력'
+            [System.Windows.Forms.Application]::DoEvents()
+            Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'send-b-direct' $rect 'candidate already verified'
+            Invoke-BKey 'food candidate detected'
+            Wait-StateActionSettle $slot
+            return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = '식사 B 입력'; NextStage = $nextStage }
         }
         '궁극기' {
             if (-not $InsidePhase.Value) { return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = '궁극기 무시: 내부 진행 아님'; NextStage = '' } }
-            if (Invoke-UltimateIfVisible $Screen $StatusLabel) { Wait-StateActionSettle $slot; return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = '궁극기 입력'; NextStage = $nextStage } }
-            return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = '궁극기 재검사 필요'; NextStage = '내부' }
+            if (((Get-Date) - $script:LastUltimateAt).TotalSeconds -lt 6) {
+                Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'cooldown-skip' $rect 'less than 6 seconds since last input'
+                return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = '궁극기 재입력 대기'; NextStage = '내부' }
+            }
+            $script:LastUltimateAt = Get-Date
+            $StatusLabel.Text = '궁극기 감지: 6번 입력'
+            [System.Windows.Forms.Application]::DoEvents()
+            Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'send-6-direct' $rect 'candidate already verified'
+            Invoke-NumberSixKey
+            Wait-StateActionSettle $slot
+            return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = '궁극기 6 입력'; NextStage = $nextStage }
         }
         '상태 기준' {
             $script:SlotPoints[$slot] = $null
