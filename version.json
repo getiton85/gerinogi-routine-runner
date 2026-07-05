@@ -1,8 +1,8 @@
 ﻿{
-    "version":  "1.0.58",
+    "version":  "1.0.59",
     "update_mode":  "package",
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/state_routine_update_package_1.0.58_193338.zip?v=9427d32cb33c4bbbe45de7b7152a3a5a1babe8f2930229e085c1c39ea0192a37",
-                    "sha256":  "9427d32cb33c4bbbe45de7b7152a3a5a1babe8f2930229e085c1c39ea0192a37"
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/state_routine_update_package_1.0.59_202854.zip?v=655437ed493a72d8f9c4764d9924f8bd37cf87c96031545c3fc6519748e93945",
+                    "sha256":  "655437ed493a72d8f9c4764d9924f8bd37cf87c96031545c3fc6519748e93945"
                 }
 }

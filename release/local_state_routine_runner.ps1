@@ -197,7 +197,7 @@ $script:ClickTracePath = Join-Path $PSScriptRoot 'click_trace_log.csv'
 $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
 $script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $PSScriptRoot 'reports'
-$script:AppVersion = '1.0.58'
+$script:AppVersion = '1.0.59'
 $script:IgnoreZones = New-Object System.Collections.Generic.List[object]
 $script:MaxIgnoreZones = 4
 $script:SelectedUltimateProfileIndex = 0
@@ -1167,6 +1167,22 @@ function Check-SlotPointMatch([string]$Slot, [System.Drawing.Rectangle]$Rect) {
     $dy = [Math]::Abs($compareY - $expectedY)
     $distance = [Math]::Sqrt(($dx * $dx) + ($dy * $dy))
     $limit = Get-PointTolerance
+    if ($Slot -eq '완료 확인') {
+        $region = $script:SlotRegions[$slotKey]
+        if ($null -ne $region) {
+            $regionWidth = [double]$region.Width
+            $regionHeight = [double]$region.Height
+            if ($mode -eq 'window' -and [int]$region.WindowWidth -gt 0 -and [int]$region.WindowHeight -gt 0) {
+                $bounds = Get-ActiveTargetBounds
+                if (-not $bounds.IsEmpty) {
+                    $regionWidth = $regionWidth * ([double]$bounds.Width / [double]$region.WindowWidth)
+                    $regionHeight = $regionHeight * ([double]$bounds.Height / [double]$region.WindowHeight)
+                }
+            }
+            $regionBasedLimit = [Math]::Ceiling(([Math]::Max($regionWidth, $regionHeight) / 2.0) + 10)
+            $limit = [Math]::Max($limit, [int]$regionBasedLimit)
+        }
+    }
     if ($distance -le $limit) { return [pscustomobject]@{ Ok = $true; Message = '' } }
     return [pscustomobject]@{ Ok = $false; Message = ($Slot + ' 좌표 검증 실패(' + $basis + ' 기준): 이미지 중심 X=' + ([int]$compareX) + ', Y=' + ([int]$compareY) + ' / 저장 X=' + ([int]$expectedX) + ', Y=' + ([int]$expectedY) + ' / 거리 ' + ('{0:F1}' -f $distance) + 'px') }
 }
