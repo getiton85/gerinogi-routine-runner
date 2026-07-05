@@ -145,6 +145,12 @@ $requiredSlotCount = ($script:DefaultSlots | Where-Object { $configuredSlots -co
 if ($requiredSlotCount -eq $script:DefaultSlots.Count) { $script:Slots = $configuredSlots } else { $script:Slots = $script:DefaultSlots }
 $script:Samples = @{}
 $script:SlotPoints = @{}
+$script:MultiSampleLimits = @{
+    '완료 확인' = 10
+    '나가기' = 3
+    '식사 버튼' = 3
+    '궁극기' = 3
+}
 foreach ($slot in $script:Slots) { $script:Samples[$slot] = $null; $script:SlotPoints[$slot] = $null }
 $script:SelectedSlot = '상태 기준'
 $script:ActiveSlot = ''
@@ -153,7 +159,6 @@ $script:StopRequested = $false
 $script:TargetHandle = [IntPtr]::Zero
 $script:CurrentCycle = 0
 $script:SampleDir = Join-Path $PSScriptRoot 'state_samples'
-$script:MultiSampleSlots = @()
 $script:LogPath = Join-Path $PSScriptRoot 'local_state_routine_log.csv'
 $script:SlotPointPath = Join-Path $PSScriptRoot 'slot_points.csv'
 $script:SlotRegionPath = Join-Path $PSScriptRoot 'slot_regions.csv'
@@ -162,7 +167,7 @@ $script:UserSettingsPath = Join-Path $PSScriptRoot 'user_settings.json'
 $script:ClickTracePath = Join-Path $PSScriptRoot 'click_trace_log.csv'
 $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
 $script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
-$script:AppVersion = '1.0.39'
+$script:AppVersion = '1.0.41'
 $script:IgnoreZones = New-Object System.Collections.Generic.List[object]
 $script:MaxIgnoreZones = 4
 $script:LastUltimateAt = [datetime]::MinValue
@@ -174,7 +179,6 @@ $script:NewLine = [Environment]::NewLine
 New-Item -ItemType Directory -Force -Path $script:SampleDir | Out-Null
 New-Item -ItemType Directory -Force -Path $script:BackupDir | Out-Null
 New-Item -ItemType Directory -Force -Path $script:DiagnosticDir | Out-Null
-foreach ($slot in $script:MultiSampleSlots) { New-Item -ItemType Directory -Force -Path (Join-Path $script:SampleDir ($slot.Replace(' ', '_') + '_samples')) | Out-Null }
 
 $nativeSource = @'
 using System;
@@ -415,12 +419,6 @@ function Get-WindowCenter([IntPtr]$Handle) {
     if ($bounds.IsEmpty) { return $null }
     return [System.Drawing.Point]::new([int]($bounds.Left + $bounds.Width / 2), [int]($bounds.Top + $bounds.Height / 2))
 }
-function Check-PointOnScreen([System.Drawing.Point]$Point, [System.Windows.Forms.Screen]$Screen) { return $Screen.Bounds.Contains($Point) }
-function Check-WindowOnScreen([IntPtr]$Handle, [System.Windows.Forms.Screen]$Screen) {
-    $center = Get-WindowCenter $Handle
-    if ($null -eq $center) { return $false }
-    return Check-PointOnScreen $center $Screen
-}
 function Get-SearchBounds([System.Windows.Forms.Screen]$Screen) {
     if ($script:TargetHandle -ne [IntPtr]::Zero) {
         $windowBounds = Get-WindowBounds $script:TargetHandle
@@ -552,7 +550,6 @@ function Invoke-BKey([string]$Reason) {
     Write-RoutineTrace $script:CurrentCycle 'key' '식사 버튼' 'send-b' ([System.Drawing.Rectangle]::Empty) $Reason
     Start-Sleep -Milliseconds 180
 }
-function Signal-ShortBeep { [void][NativeInput]::MessageBeep(0) }
 function Load-ImageUnlocked([string]$Path) {
     $bytes = [System.IO.File]::ReadAllBytes($Path)
     $stream = New-Object System.IO.MemoryStream(,$bytes)
@@ -574,24 +571,7 @@ function Assign-ImageFileToSlot([string]$Slot, [string]$SourcePath) {
     $probe = Load-ImageUnlocked $dest
     try { $script:Samples[$Slot] = [pscustomobject]@{ Path = $dest; Name = [System.IO.Path]::GetFileName($dest); Width = $probe.Width; Height = $probe.Height } }
     finally { $probe.Dispose() }
-}
-function Get-MultiSampleFolder([string]$Slot) {
-    return (Join-Path $script:SampleDir ($Slot.Replace(' ', '_') + '_samples'))
-}
-function Get-MultiSampleFiles([string]$Slot) {
-    if ($script:MultiSampleSlots -notcontains $Slot) { return @() }
-    $folder = Get-MultiSampleFolder $Slot
-    if (-not [System.IO.Directory]::Exists($folder)) { New-Item -ItemType Directory -Force -Path $folder | Out-Null; return @() }
-    return @(Get-ChildItem -LiteralPath $folder -File | Where-Object { $_.Extension.ToLowerInvariant() -in @('.png','.jpg','.jpeg','.bmp') } | Sort-Object Name)
-}
-function Open-MultiSampleFolder([string]$Slot) {
-    $folder = Get-MultiSampleFolder $Slot
-    New-Item -ItemType Directory -Force -Path $folder | Out-Null
-    Start-Process -FilePath $folder
-    $statusLabel.Text = $Slot + ' 다중 샘플 폴더를 열었습니다. PNG/JPG/BMP 이미지를 여러 장 넣어두세요.'
-}
-function Get-MultiSampleCount([string]$Slot) {
-    return (Get-MultiSampleFiles $Slot).Count
+    Add-MultiSampleCopy $Slot $dest
 }
 function Get-SlotLoadNames([string]$Slot) {
     $names = New-Object System.Collections.Generic.List[string]
@@ -624,6 +604,42 @@ function Load-SavedSamples {
         }
     }
     return $loaded
+}
+function Test-MultiSampleSlot([string]$Slot) {
+    return $script:MultiSampleLimits.ContainsKey($Slot)
+}
+function Get-MultiSampleFolder([string]$Slot) {
+    if (-not (Test-MultiSampleSlot $Slot)) { return $null }
+    $safe = $Slot.Replace(' ', '_')
+    return Join-Path $script:SampleDir ($safe + '_samples')
+}
+function Add-MultiSampleCopy([string]$Slot, [string]$SourcePath) {
+    if (-not (Test-MultiSampleSlot $Slot)) { return }
+    if (-not [System.IO.File]::Exists($SourcePath)) { return }
+    $folder = Get-MultiSampleFolder $Slot
+    if ([string]::IsNullOrWhiteSpace($folder)) { return }
+    [System.IO.Directory]::CreateDirectory($folder) | Out-Null
+    $safe = $Slot.Replace(' ', '_')
+    $dest = Join-Path $folder ($safe + '_' + (Get-Date -Format 'yyyyMMdd_HHmmss_fff') + '.png')
+    [System.IO.File]::Copy($SourcePath, $dest, $true)
+    $limit = [int]$script:MultiSampleLimits[$Slot]
+    Get-ChildItem -LiteralPath $folder -File -Filter '*.png' |
+        Sort-Object LastWriteTime -Descending |
+        Select-Object -Skip $limit |
+        ForEach-Object { try { [System.IO.File]::Delete($_.FullName) } catch {} }
+}
+function Get-SlotSamplePaths([string]$Slot) {
+    $paths = New-Object System.Collections.Generic.List[string]
+    if ($script:Samples[$Slot] -and [System.IO.File]::Exists($script:Samples[$Slot].Path)) {
+        [void]$paths.Add([string]$script:Samples[$Slot].Path)
+    }
+    $folder = Get-MultiSampleFolder $Slot
+    if (-not [string]::IsNullOrWhiteSpace($folder) -and [System.IO.Directory]::Exists($folder)) {
+        foreach ($file in (Get-ChildItem -LiteralPath $folder -File -Filter '*.png' | Sort-Object LastWriteTime -Descending)) {
+            [void]$paths.Add($file.FullName)
+        }
+    }
+    return @($paths | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique)
 }
 function Select-ScreenRegion([System.Windows.Forms.Screen]$Screen) {
     $overlay = New-Object System.Windows.Forms.Form
@@ -767,17 +783,6 @@ function Show-IgnoreZones {
     }
     $statusLabel.Text = '제외 구역 ' + $shown + '개를 화면에 표시했습니다.'
 }
-function Get-NextMultiSamplePath([string]$Slot) {
-    $folder = Get-MultiSampleFolder $Slot
-    New-Item -ItemType Directory -Force -Path $folder | Out-Null
-    $safe = $Slot.Replace(' ', '_')
-    for ($i = 1; $i -le 10; $i++) {
-        $name = ('{0}_{1:00}.png' -f $safe, $i)
-        $candidate = Join-Path $folder $name
-        if (-not [System.IO.File]::Exists($candidate)) { return $candidate }
-    }
-    return $null
-}
 function Capture-Slot([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
     $rect = Select-ScreenRegion $Screen
     if ($rect.IsEmpty) { return }
@@ -792,6 +797,7 @@ function Capture-Slot([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
         $bmp.Save($path, [System.Drawing.Imaging.ImageFormat]::Png)
         if ($script:Samples[$Slot] -and [System.IO.File]::Exists($script:Samples[$Slot].Path)) { [System.IO.File]::Delete($script:Samples[$Slot].Path) }
         $script:Samples[$Slot] = [pscustomobject]@{ Path = $path; Name = $name; Width = $rect.Width; Height = $rect.Height }
+        Add-MultiSampleCopy $Slot $path
         $script:LastCaptureMessage = $Slot + ' 이미지가 저장되었습니다.'
     }
     finally { $bmp.Dispose() }
@@ -1106,10 +1112,7 @@ function Find-Slot([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
         Write-RoutineTrace $script:CurrentCycle 'vision' $Slot 'no-search-region' ([System.Drawing.Rectangle]::Empty) 'slot region is required'
         return [System.Drawing.Rectangle]::Empty
     }
-    $paths = @()
-    if ($script:Samples[$Slot]) { $paths += $script:Samples[$Slot].Path }
-    foreach ($file in (Get-MultiSampleFiles $Slot)) { $paths += $file.FullName }
-    $paths = @($paths | Where-Object { -not [string]::IsNullOrWhiteSpace($_) } | Select-Object -Unique)
+    $paths = Get-SlotSamplePaths $Slot
     if ($paths.Count -eq 0) { return [System.Drawing.Rectangle]::Empty }
     foreach ($samplePath in $paths) {
         $slotTolerance = Get-ColorTolerance
@@ -1155,70 +1158,10 @@ function Sleep-WithStop([int]$Milliseconds) {
     }
     return $true
 }
-function Wait-FindSlot([string]$Slot, [System.Windows.Forms.Screen]$Screen, [int]$RetryCount, [int]$RetryMs, [System.Windows.Forms.Label]$StatusLabel) {
-    for ($attempt = 1; $attempt -le $RetryCount; $attempt++) {
-        [System.Windows.Forms.Application]::DoEvents()
-        if (Test-StopRequested) { Write-RoutineTrace $script:CurrentCycle 'wait-find' $Slot 'stopped' ([System.Drawing.Rectangle]::Empty) ('attempt=' + $attempt); return [System.Drawing.Rectangle]::Empty }
-        $rect = Find-Slot $Slot $Screen
-        if (-not $rect.IsEmpty) { Write-RoutineTrace $script:CurrentCycle 'wait-find' $Slot 'found' $rect ('attempt=' + $attempt); return $rect }
-        Write-RoutineTrace $script:CurrentCycle 'wait-find' $Slot 'miss' ([System.Drawing.Rectangle]::Empty) ('attempt=' + $attempt + '/' + $RetryCount)
-        $StatusLabel.Text = $Slot + ' 탐색 중 (' + $attempt + '/' + $RetryCount + ')'
-        Start-Sleep -Milliseconds $RetryMs
-    }
-    Write-RoutineTrace $script:CurrentCycle 'wait-find' $Slot 'timeout' ([System.Drawing.Rectangle]::Empty) ('retry=' + $RetryCount)
-    return [System.Drawing.Rectangle]::Empty
-}
-function Wait-SlotGone([string]$Slot, [System.Windows.Forms.Screen]$Screen, [int]$TimeoutMs, [int]$CheckMs, [System.Windows.Forms.Label]$StatusLabel) {
-    $watch = [System.Diagnostics.Stopwatch]::StartNew()
-    while ($watch.ElapsedMilliseconds -lt $TimeoutMs) {
-        [System.Windows.Forms.Application]::DoEvents()
-        if (Test-StopRequested) { return $false }
-        $rect = Find-Slot $Slot $Screen
-        if ($rect.IsEmpty) { return $true }
-        $StatusLabel.Text = $Slot + ' 사라짐 대기 중 (' + [int]($watch.ElapsedMilliseconds / 1000) + '초)'
-        Start-Sleep -Milliseconds $CheckMs
-    }
-    return $false
-}
-function Wait-CheckedSlotAppear([string]$Slot, [System.Windows.Forms.Screen]$Screen, [int]$TimeoutMs, [int]$CheckMs, [System.Windows.Forms.Label]$StatusLabel, [bool]$AllowFood = $true) {
-    $watch = [System.Diagnostics.Stopwatch]::StartNew()
-    $attempt = 0
-    $limitText = if ($TimeoutMs -le 0) { 'unlimited' } else { [string]$TimeoutMs }
-    Write-RoutineTrace $script:CurrentCycle 'wait-valid' $Slot 'start' ([System.Drawing.Rectangle]::Empty) ('timeout_ms=' + $limitText + '; check_ms=' + $CheckMs)
-    while (($TimeoutMs -le 0) -or ($watch.ElapsedMilliseconds -lt $TimeoutMs)) {
-        $attempt++
-        [System.Windows.Forms.Application]::DoEvents()
-        if (Test-StopRequested) { Write-RoutineTrace $script:CurrentCycle 'wait-valid' $Slot 'stopped' ([System.Drawing.Rectangle]::Empty) ('elapsed_ms=' + [int]$watch.ElapsedMilliseconds); return [System.Drawing.Rectangle]::Empty }
-        if ($AllowFood -and $Slot -ne '식사 버튼') { [void](Invoke-FoodButtonIfVisible $Screen $StatusLabel) }
-        $rect = Find-Slot $Slot $Screen
-        if (-not $rect.IsEmpty) {
-            $pointResult = Check-SlotPointMatch $Slot $rect
-            if ($pointResult.Ok) { Write-RoutineTrace $script:CurrentCycle 'wait-valid' $Slot 'found-valid' $rect ('attempt=' + $attempt + '; elapsed_ms=' + [int]$watch.ElapsedMilliseconds); return $rect }
-            Write-RoutineTrace $script:CurrentCycle 'wait-valid' $Slot 'found-invalid' $rect $pointResult.Message
-        } else {
-            Write-RoutineTrace $script:CurrentCycle 'wait-valid' $Slot 'miss' ([System.Drawing.Rectangle]::Empty) ('attempt=' + $attempt + '; elapsed_ms=' + [int]$watch.ElapsedMilliseconds)
-        }
-        $StatusLabel.Text = $Slot + ' 유효 이미지 대기 중 (' + [int]($watch.ElapsedMilliseconds / 1000) + '초)'
-        Start-Sleep -Milliseconds $CheckMs
-    }
-    Write-RoutineTrace $script:CurrentCycle 'wait-valid' $Slot 'timeout' ([System.Drawing.Rectangle]::Empty) ('elapsed_ms=' + [int]$watch.ElapsedMilliseconds)
-    return [System.Drawing.Rectangle]::Empty
-}
-function Test-RectNear([System.Drawing.Rectangle]$A, [System.Drawing.Rectangle]$B, [int]$LimitPx) {
-    if ($A.IsEmpty -or $B.IsEmpty) { return $false }
-    $ax = [int]($A.Left + $A.Width / 2)
-    $ay = [int]($A.Top + $A.Height / 2)
-    $bx = [int]($B.Left + $B.Width / 2)
-    $by = [int]($B.Top + $B.Height / 2)
-    $dx = [Math]::Abs($ax - $bx)
-    $dy = [Math]::Abs($ay - $by)
-    $distance = [Math]::Sqrt(($dx * $dx) + ($dy * $dy))
-    return ($distance -le $LimitPx)
-}
-function Find-ValidSlotOnce([string]$Slot, [System.Windows.Forms.Screen]$Screen, [bool]$UsePointCheck = $true) {
+function Find-ValidSlotOnce([string]$Slot, [System.Windows.Forms.Screen]$Screen, [bool]$UsePointCheck = $false) {
     $rect = Find-Slot $Slot $Screen
     if ($rect.IsEmpty) { return [System.Drawing.Rectangle]::Empty }
-    if ($UsePointCheck) {
+    if ($UsePointCheck -and -not (Test-SlotRequiresRegion $Slot)) {
         $pointResult = Check-SlotPointMatch $Slot $rect
         if (-not $pointResult.Ok) {
             Write-RoutineTrace $script:CurrentCycle 'single-find' $Slot 'found-invalid' $rect $pointResult.Message
@@ -1227,47 +1170,6 @@ function Find-ValidSlotOnce([string]$Slot, [System.Windows.Forms.Screen]$Screen,
     }
     Write-RoutineTrace $script:CurrentCycle 'single-find' $Slot 'found-valid' $rect ''
     return $rect
-}
-function Find-StableValidSlot([string]$Slot, [System.Windows.Forms.Screen]$Screen, [bool]$UsePointCheck = $true, [int]$DelayMs = 700, [int]$NearPx = 90) {
-    $first = Find-ValidSlotOnce $Slot $Screen $UsePointCheck
-    if ($first.IsEmpty) { return [System.Drawing.Rectangle]::Empty }
-    [void](Sleep-WithStop $DelayMs)
-    if ($script:StopRequested) { return [System.Drawing.Rectangle]::Empty }
-    $second = Find-ValidSlotOnce $Slot $Screen $UsePointCheck
-    if ($second.IsEmpty) {
-        Write-RoutineTrace $script:CurrentCycle 'stable-find' $Slot 'lost' $first ''
-        return [System.Drawing.Rectangle]::Empty
-    }
-    if (-not (Test-RectNear $first $second $NearPx)) {
-        Write-RoutineTrace $script:CurrentCycle 'stable-find' $Slot 'moved' $second 'candidate moved'
-        return [System.Drawing.Rectangle]::Empty
-    }
-    Write-RoutineTrace $script:CurrentCycle 'stable-find' $Slot 'confirmed' $second ''
-    return $second
-}
-function Invoke-UltimateIfVisible([System.Windows.Forms.Screen]$Screen, [System.Windows.Forms.Label]$StatusLabel) {
-    if ($null -eq $script:Samples['궁극기']) { return $false }
-    if (((Get-Date) - $script:LastUltimateAt).TotalSeconds -lt 6) { return $false }
-    $rect = Find-StableValidSlot '궁극기' $Screen $true 250 110
-    if ($rect.IsEmpty) { return $false }
-    $script:LastUltimateAt = Get-Date
-    $StatusLabel.Text = '궁극기 감지: 6번 입력'
-    [System.Windows.Forms.Application]::DoEvents()
-    Invoke-NumberSixKey
-    return $true
-}
-function Find-FirstVisibleSlot([string[]]$SlotsToCheck, [System.Windows.Forms.Screen]$Screen, [bool]$UsePointCheck = $true) {
-    foreach ($slot in $SlotsToCheck) {
-        if (Test-StopRequested) { return $null }
-        if ($null -eq $script:Samples[$slot]) { continue }
-        $rect = Find-ValidSlotOnce $slot $Screen $UsePointCheck
-        if (-not $rect.IsEmpty) {
-            Write-RoutineTrace $script:CurrentCycle 'recover-scan' $slot 'found' $rect ''
-            return [pscustomobject]@{ Slot = $slot; Rect = $rect }
-        }
-    }
-    Write-RoutineTrace $script:CurrentCycle 'recover-scan' '' 'none' ([System.Drawing.Rectangle]::Empty) ('checked=' + ($SlotsToCheck -join '|'))
-    return $null
 }
 function Invoke-ExitActionUntilClosed([System.Windows.Forms.Screen]$Screen, [System.Windows.Forms.Label]$StatusLabel, [System.Drawing.Rectangle]$ExitRect) {
     for ($try = 1; $try -le 2; $try++) {
@@ -1295,80 +1197,6 @@ function Invoke-ExitActionUntilClosed([System.Windows.Forms.Screen]$Screen, [Sys
     }
     Write-RoutineTrace $script:CurrentCycle 'post-clear' '나가기' 'space-no-effect' $afterSpace ''
     return [pscustomobject]@{ Closed = $false; Clicks = 3; Rect = $afterSpace }
-}
-function Invoke-PostClearFlow([System.Windows.Forms.Screen]$Screen, [System.Windows.Forms.Label]$StatusLabel) {
-    $clicks = 0
-    Write-RoutineTrace $script:CurrentCycle 'post-clear' '' 'start' ([System.Drawing.Rectangle]::Empty) 'complete and exit are handled in one state'
-    while (-not $script:StopRequested) {
-        [System.Windows.Forms.Application]::DoEvents()
-        [void](Invoke-UltimateIfVisible $Screen $StatusLabel)
-        [void](Invoke-FoodButtonIfVisible $Screen $StatusLabel)
-
-        Mark-ActiveSlot '나가기'
-        $exitRect = Find-StableValidSlot '나가기' $Screen $true 700 90
-        if (-not $exitRect.IsEmpty) {
-            $exitResult = Invoke-ExitActionUntilClosed $Screen $StatusLabel $exitRect
-            $clicks += [int]$exitResult.Clicks
-            if ($exitResult.Closed) {
-                return [pscustomobject]@{ Closed = $true; Clicks = $clicks; Message = '' }
-            }
-            Write-RoutineTrace $script:CurrentCycle 'post-clear' '나가기' 'retry-after-no-effect' $exitResult.Rect 'retry exit in same state'
-            continue
-        }
-
-        Mark-ActiveSlot '완료 확인'
-        $completeRect = Find-StableValidSlot '완료 확인' $Screen $true 900 80
-        if (-not $completeRect.IsEmpty) {
-            $StatusLabel.Text = '완료 확인 감지: 보상 화면으로 전환'
-            [System.Windows.Forms.Application]::DoEvents()
-            Write-RoutineTrace $script:CurrentCycle 'post-clear' '완료 확인' 'click-before' $completeRect ''
-            [void](Click-SlotTarget '완료 확인' $completeRect ([int]$stepDelayBox.Value))
-            Write-RoutineTrace $script:CurrentCycle 'post-clear' '완료 확인' 'click-after' $completeRect ''
-            $clicks++
-            [void](Sleep-WithStop 1200)
-            continue
-        }
-
-        $visible = Find-FirstVisibleSlot @('식사 버튼','메뉴','어비스','던전','입장','상태 기준','퀘스트') $Screen $true
-        if ($null -ne $visible) {
-            if ($visible.Slot -eq '식사 버튼') {
-                [void](Invoke-FoodButtonIfVisible $Screen $StatusLabel)
-                continue
-            }
-            if ($visible.Slot -eq '메뉴') {
-                Write-RoutineTrace $script:CurrentCycle 'post-clear' '메뉴' 'already-returned' $visible.Rect 'treat as closed'
-                return [pscustomobject]@{ Closed = $true; Clicks = $clicks; Message = '다음 순환 화면 감지' }
-            }
-            Write-RoutineTrace $script:CurrentCycle 'post-clear' $visible.Slot 'unexpected-visible' $visible.Rect 'restart next cycle from visible state'
-            return [pscustomobject]@{ Closed = $true; Clicks = $clicks; Message = '복구 화면 감지: ' + $visible.Slot }
-        }
-
-        $StatusLabel.Text = '완료/나가기 동시 대기 중'
-        [void](Sleep-WithStop 500)
-    }
-    Write-RoutineTrace $script:CurrentCycle 'post-clear' '' 'stopped' ([System.Drawing.Rectangle]::Empty) ('clicks=' + $clicks)
-    return [pscustomobject]@{ Closed = $false; Clicks = $clicks; Message = '사용자 중단' }
-}
-function Click-Rect([System.Drawing.Rectangle]$Rect, [int]$DelayMs, [int]$HoldOverrideMs = -1) { Invoke-LeftClick -X ([int]($Rect.Left + $Rect.Width / 2)) -Y ([int]($Rect.Top + $Rect.Height / 2)) -HoldOverrideMs $HoldOverrideMs; Start-Sleep -Milliseconds $DelayMs }
-function Invoke-FoodButtonIfVisible([System.Windows.Forms.Screen]$Screen, [System.Windows.Forms.Label]$StatusLabel) {
-    if ($null -eq $script:Samples['식사 버튼']) { return $false }
-    $rect = Find-Slot '식사 버튼' $Screen
-    if ($rect.IsEmpty) { return $false }
-    $pointResult = Check-SlotPointMatch '식사 버튼' $rect
-    if (-not $pointResult.Ok) { Write-RoutineTrace $script:CurrentCycle 'food' '식사 버튼' 'point-blocked' $rect $pointResult.Message; return $false }
-    Write-RoutineTrace $script:CurrentCycle 'food' '식사 버튼' 'found-click' $rect 'image and coordinate confirmed'
-    $StatusLabel.Text = '식사 버튼 감지: 클릭 후 B 보강'
-    [System.Windows.Forms.Application]::DoEvents()
-    [void](Click-SlotTarget '식사 버튼' $rect 500 120)
-    $stillFood = Find-Slot '식사 버튼' $Screen
-    if (-not $stillFood.IsEmpty) {
-        $stillPoint = Check-SlotPointMatch '식사 버튼' $stillFood
-        if ($stillPoint.Ok) {
-            Write-RoutineTrace $script:CurrentCycle 'food' '식사 버튼' 'still-visible-send-b' $stillFood 'click did not clear food prompt'
-            Invoke-BKey 'food still visible after click'
-        }
-    }
-    return $true
 }
 function Get-NextRoutineStage([string]$Slot) {
     switch ($Slot) {
