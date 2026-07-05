@@ -197,16 +197,19 @@ $script:ClickTracePath = Join-Path $PSScriptRoot 'click_trace_log.csv'
 $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
 $script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $PSScriptRoot 'reports'
-$script:AppVersion = '1.0.53'
+$script:AppVersion = '1.0.55'
 $script:IgnoreZones = New-Object System.Collections.Generic.List[object]
 $script:MaxIgnoreZones = 4
 $script:SelectedUltimateProfileIndex = 0
 $script:UltimateProfiles = @()
 for ($ui = 1; $ui -le 5; $ui++) {
     $script:UltimateProfiles += [pscustomobject]@{ Name = ('궁극기 설정 ' + $ui) }
+    $script:Samples[('궁극기_' + $ui)] = $null
+    $script:SlotPoints[('궁극기_' + $ui)] = $null
 }
 $script:SlotRegions = @{}
 foreach ($slot in $script:Slots) { $script:SlotRegions[$slot] = $null }
+for ($ui = 1; $ui -le 5; $ui++) { $script:SlotRegions[('궁극기_' + $ui)] = $null }
 $script:UpdateManifestPath = Join-Path $PSScriptRoot 'update_manifest_url.txt'
 $script:BackupDir = Join-Path $PSScriptRoot 'update_backup'
 $script:NewLine = [Environment]::NewLine
@@ -591,19 +594,47 @@ function Load-ImageUnlocked([string]$Path) {
     $copy = New-Object System.Drawing.Bitmap($image)
     $image.Dispose(); $stream.Dispose(); return $copy
 }
+function Get-UltimateSlotKey([int]$Index = -1) {
+    if ($Index -lt 0) { $Index = [int]$script:SelectedUltimateProfileIndex }
+    $Index = [Math]::Max(0, [Math]::Min(4, $Index))
+    return '궁극기_' + ($Index + 1)
+}
+function Get-EffectiveSlotKey([string]$Slot) {
+    if ($Slot -eq '궁극기') { return Get-UltimateSlotKey }
+    return $Slot
+}
+function Get-SlotStorageKeys {
+    $keys = New-Object System.Collections.Generic.List[string]
+    foreach ($slot in $script:Slots) {
+        if ($slot -eq '궁극기') {
+            for ($i = 0; $i -lt 5; $i++) { [void]$keys.Add((Get-UltimateSlotKey $i)) }
+        } else {
+            [void]$keys.Add($slot)
+        }
+    }
+    return @($keys | Select-Object -Unique)
+}
+function Get-SlotFileStem([string]$Slot) {
+    return (Get-EffectiveSlotKey $Slot).Replace(' ', '_')
+}
+function Get-SlotStatusName([string]$Slot) {
+    if ($Slot -eq '궁극기') { return $Slot + ' 설정 ' + ([int]$script:SelectedUltimateProfileIndex + 1) }
+    return $Slot
+}
 function Assign-ImageFileToSlot([string]$Slot, [string]$SourcePath) {
     if (-not [System.IO.File]::Exists($SourcePath)) { return }
     $ext = [System.IO.Path]::GetExtension($SourcePath).ToLowerInvariant()
     if ($ext -notin @('.png','.jpg','.jpeg','.bmp')) { [System.Windows.Forms.MessageBox]::Show('지원하는 이미지 파일은 PNG, JPG, BMP입니다.', '이미지 연결') | Out-Null; return }
-    $safe = $Slot.Replace(' ', '_')
+    $slotKey = Get-EffectiveSlotKey $Slot
+    $safe = Get-SlotFileStem $Slot
     $name = $safe + '_' + (Get-Date -Format 'yyyyMMdd_HHmmss_fff') + '.png'
     $dest = Join-Path $script:SampleDir $name
     $image = [System.Drawing.Image]::FromFile($SourcePath)
     try { $bitmap = New-Object System.Drawing.Bitmap($image); try { $bitmap.Save($dest, [System.Drawing.Imaging.ImageFormat]::Png) } finally { $bitmap.Dispose() } }
     finally { $image.Dispose() }
-    if ($script:Samples[$Slot] -and [System.IO.File]::Exists($script:Samples[$Slot].Path)) { [System.IO.File]::Delete($script:Samples[$Slot].Path) }
+    if ($script:Samples[$slotKey] -and [System.IO.File]::Exists($script:Samples[$slotKey].Path)) { [System.IO.File]::Delete($script:Samples[$slotKey].Path) }
     $probe = Load-ImageUnlocked $dest
-    try { $script:Samples[$Slot] = [pscustomobject]@{ Path = $dest; Name = [System.IO.Path]::GetFileName($dest); Width = $probe.Width; Height = $probe.Height } }
+    try { $script:Samples[$slotKey] = [pscustomobject]@{ Path = $dest; Name = [System.IO.Path]::GetFileName($dest); Width = $probe.Width; Height = $probe.Height } }
     finally { $probe.Dispose() }
 }
 function Get-SlotLoadNames([string]$Slot) {
@@ -621,12 +652,20 @@ function Resolve-SlotName([string]$Name) {
     }
     return $null
 }
+function Resolve-SlotStorageName([string]$Name) {
+    if ([string]::IsNullOrWhiteSpace($Name)) { return $null }
+    if ($Name -match '^궁극기_([1-5])$') { return $Name }
+    if ($Name -eq '궁극기') { return '궁극기_1' }
+    return Resolve-SlotName $Name
+}
 function Load-SavedSamples {
     if (-not [System.IO.Directory]::Exists($script:SampleDir)) { return 0 }
     $loaded = 0
-    foreach ($slot in $script:Slots) {
+    foreach ($slot in (Get-SlotStorageKeys)) {
         $latest = $null
-        foreach ($loadName in (Get-SlotLoadNames $slot)) {
+        $loadNames = @(Get-SlotLoadNames $slot)
+        if ($slot -eq '궁극기_1') { $loadNames += '궁극기' }
+        foreach ($loadName in $loadNames) {
             $prefix = $loadName.Replace(' ', '_') + '_'
             $candidate = Get-ChildItem -LiteralPath $script:SampleDir -File -Filter '*.png' | Where-Object { $_.Name.StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase) } | Sort-Object LastWriteTime -Descending | Select-Object -First 1
             if ($null -ne $candidate -and ($null -eq $latest -or $candidate.LastWriteTime -gt $latest.LastWriteTime)) { $latest = $candidate }
@@ -643,13 +682,14 @@ function Test-MultiSampleSlot([string]$Slot) {
 }
 function Get-MultiSampleFolder([string]$Slot) {
     if (-not (Test-MultiSampleSlot $Slot)) { return $null }
-    $safe = $Slot.Replace(' ', '_')
+    $safe = Get-SlotFileStem $Slot
     return Join-Path $script:SampleDir ($safe + '_samples')
 }
 function Get-SlotSamplePaths([string]$Slot) {
     $paths = New-Object System.Collections.Generic.List[string]
-    if ($script:Samples[$Slot] -and [System.IO.File]::Exists($script:Samples[$Slot].Path)) {
-        [void]$paths.Add([string]$script:Samples[$Slot].Path)
+    $slotKey = Get-EffectiveSlotKey $Slot
+    if ($script:Samples[$slotKey] -and [System.IO.File]::Exists($script:Samples[$slotKey].Path)) {
+        [void]$paths.Add([string]$script:Samples[$slotKey].Path)
     }
     $folder = Get-MultiSampleFolder $Slot
     if (-not [string]::IsNullOrWhiteSpace($folder) -and [System.IO.Directory]::Exists($folder)) {
@@ -830,13 +870,14 @@ function Capture-Slot([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
     Start-Sleep -Milliseconds 180
     $bmp = [VisionFinder]::Capture($rect)
     try {
-        $safe = $Slot.Replace(' ', '_')
+        $slotKey = Get-EffectiveSlotKey $Slot
+        $safe = Get-SlotFileStem $Slot
         $name = $safe + '_' + (Get-Date -Format 'yyyyMMdd_HHmmss_fff') + '.png'
         $path = Join-Path $script:SampleDir $name
         $bmp.Save($path, [System.Drawing.Imaging.ImageFormat]::Png)
-        if ($script:Samples[$Slot] -and [System.IO.File]::Exists($script:Samples[$Slot].Path)) { [System.IO.File]::Delete($script:Samples[$Slot].Path) }
-        $script:Samples[$Slot] = [pscustomobject]@{ Path = $path; Name = $name; Width = $rect.Width; Height = $rect.Height }
-        $script:LastCaptureMessage = $Slot + ' 이미지가 저장되었습니다.'
+        if ($script:Samples[$slotKey] -and [System.IO.File]::Exists($script:Samples[$slotKey].Path)) { [System.IO.File]::Delete($script:Samples[$slotKey].Path) }
+        $script:Samples[$slotKey] = [pscustomobject]@{ Path = $path; Name = $name; Width = $rect.Width; Height = $rect.Height }
+        $script:LastCaptureMessage = (Get-SlotStatusName $Slot) + ' 이미지가 저장되었습니다.'
     }
     finally { $bmp.Dispose() }
 }
@@ -850,7 +891,7 @@ function Capture-ExtraSlotSample([string]$Slot, [System.Windows.Forms.Screen]$Sc
     Start-Sleep -Milliseconds 180
     $bmp = [VisionFinder]::Capture($rect)
     try {
-        $safe = $Slot.Replace(' ', '_')
+        $safe = Get-SlotFileStem $Slot
         $folder = Get-MultiSampleFolder $Slot
         [System.IO.Directory]::CreateDirectory($folder) | Out-Null
         $name = $safe + '_' + (Get-Date -Format 'yyyyMMdd_HHmmss_fff') + '.png'
@@ -862,37 +903,39 @@ function Capture-ExtraSlotSample([string]$Slot, [System.Windows.Forms.Screen]$Sc
             Select-Object -Skip $limit |
             ForEach-Object { try { [System.IO.File]::Delete($_.FullName) } catch {} }
         $count = (Get-ChildItem -LiteralPath $folder -File -Filter '*.png' | Measure-Object).Count
-        $script:LastCaptureMessage = $Slot + ' 추가 샘플 저장: ' + $count + '/' + $limit
+        $script:LastCaptureMessage = (Get-SlotStatusName $Slot) + ' 추가 샘플 저장: ' + $count + '/' + $limit
     }
     finally { $bmp.Dispose() }
 }
 function Save-CapturedSlotRegion([string]$Slot, [System.Drawing.Rectangle]$Rect) {
+    $slotKey = Get-EffectiveSlotKey $Slot
     $mode = Get-CoordinateMode
     if ($mode -eq 'window') {
         $bounds = Get-ActiveTargetBounds
         if (-not $bounds.IsEmpty) {
-            $script:SlotRegions[$Slot] = [pscustomobject]@{ X = ([int]$Rect.Left - [int]$bounds.Left); Y = ([int]$Rect.Top - [int]$bounds.Top); Width = [int]$Rect.Width; Height = [int]$Rect.Height; Mode = 'window'; WindowWidth = [int]$bounds.Width; WindowHeight = [int]$bounds.Height }
+            $script:SlotRegions[$slotKey] = [pscustomobject]@{ X = ([int]$Rect.Left - [int]$bounds.Left); Y = ([int]$Rect.Top - [int]$bounds.Top); Width = [int]$Rect.Width; Height = [int]$Rect.Height; Mode = 'window'; WindowWidth = [int]$bounds.Width; WindowHeight = [int]$bounds.Height }
             Save-SlotRegions
             return
         }
     }
-    $script:SlotRegions[$Slot] = [pscustomobject]@{ X = [int]$Rect.Left; Y = [int]$Rect.Top; Width = [int]$Rect.Width; Height = [int]$Rect.Height; Mode = 'screen'; WindowWidth = 0; WindowHeight = 0 }
+    $script:SlotRegions[$slotKey] = [pscustomobject]@{ X = [int]$Rect.Left; Y = [int]$Rect.Top; Width = [int]$Rect.Width; Height = [int]$Rect.Height; Mode = 'screen'; WindowWidth = 0; WindowHeight = 0 }
     Save-SlotRegions
 }
 function Save-CapturedSlotPoint([string]$Slot, [System.Drawing.Rectangle]$Rect) {
     if ($Slot -eq '상태 기준') { return }
+    $slotKey = Get-EffectiveSlotKey $Slot
     $cx = [int]($Rect.Left + $Rect.Width / 2)
     $cy = [int]($Rect.Top + $Rect.Height / 2)
     $mode = Get-CoordinateMode
     if ($mode -eq 'window') {
         $bounds = Get-ActiveTargetBounds
         if (-not $bounds.IsEmpty) {
-            $script:SlotPoints[$Slot] = [pscustomobject]@{ X = ($cx - [int]$bounds.Left); Y = ($cy - [int]$bounds.Top); Mode = 'window'; WindowWidth = [int]$bounds.Width; WindowHeight = [int]$bounds.Height }
+            $script:SlotPoints[$slotKey] = [pscustomobject]@{ X = ($cx - [int]$bounds.Left); Y = ($cy - [int]$bounds.Top); Mode = 'window'; WindowWidth = [int]$bounds.Width; WindowHeight = [int]$bounds.Height }
             Save-SlotPoints
             return
         }
     }
-    $script:SlotPoints[$Slot] = [pscustomobject]@{ X = $cx; Y = $cy; Mode = 'screen'; WindowWidth = 0; WindowHeight = 0 }
+    $script:SlotPoints[$slotKey] = [pscustomobject]@{ X = $cx; Y = $cy; Mode = 'screen'; WindowWidth = 0; WindowHeight = 0 }
     Save-SlotPoints
 }
 function Get-MatchRequired {
@@ -906,7 +949,7 @@ function Get-ColorTolerance {
 function Save-SlotPoints {
     $rows = New-Object System.Collections.Generic.List[string]
     $rows.Add('slot,x,y,mode,window_width,window_height')
-    foreach ($slot in $script:Slots) {
+    foreach ($slot in (Get-SlotStorageKeys)) {
         if ($slot -eq '상태 기준') { continue }
         $point = $script:SlotPoints[$slot]
         if ($null -ne $point) {
@@ -921,7 +964,7 @@ function Save-SlotPoints {
 function Save-SlotRegions {
     $rows = New-Object System.Collections.Generic.List[string]
     $rows.Add('slot,x,y,width,height,mode,window_width,window_height')
-    foreach ($slot in $script:Slots) {
+    foreach ($slot in (Get-SlotStorageKeys)) {
         $region = $script:SlotRegions[$slot]
         if ($null -ne $region) {
             $mode = if ($region.Mode) { [string]$region.Mode } else { 'screen' }
@@ -933,11 +976,11 @@ function Save-SlotRegions {
     $rows | Set-Content -LiteralPath $script:SlotRegionPath -Encoding UTF8
 }
 function Load-SlotPoints {
-    foreach ($slot in $script:Slots) { $script:SlotPoints[$slot] = $null }
+    foreach ($slot in (Get-SlotStorageKeys)) { $script:SlotPoints[$slot] = $null }
     if (-not [System.IO.File]::Exists($script:SlotPointPath)) { return 0 }
     $loaded = 0
     foreach ($row in (Import-Csv -LiteralPath $script:SlotPointPath)) {
-        $resolvedSlot = Resolve-SlotName ([string]$row.slot)
+        $resolvedSlot = Resolve-SlotStorageName ([string]$row.slot)
         if (($null -ne $resolvedSlot) -and $resolvedSlot -ne '상태 기준') {
             $mode = if ($row.PSObject.Properties.Name -contains 'mode' -and -not [string]::IsNullOrWhiteSpace($row.mode)) { [string]$row.mode } else { 'screen' }
             $windowWidth = 0
@@ -951,11 +994,11 @@ function Load-SlotPoints {
     return $loaded
 }
 function Load-SlotRegions {
-    foreach ($slot in $script:Slots) { $script:SlotRegions[$slot] = $null }
+    foreach ($slot in (Get-SlotStorageKeys)) { $script:SlotRegions[$slot] = $null }
     if (-not [System.IO.File]::Exists($script:SlotRegionPath)) { return 0 }
     $loaded = 0
     foreach ($row in (Import-Csv -LiteralPath $script:SlotRegionPath)) {
-        $resolvedSlot = Resolve-SlotName ([string]$row.slot)
+        $resolvedSlot = Resolve-SlotStorageName ([string]$row.slot)
         if ($null -ne $resolvedSlot) {
             try {
                 $mode = if ($row.PSObject.Properties.Name -contains 'mode' -and -not [string]::IsNullOrWhiteSpace($row.mode)) { [string]$row.mode } else { 'screen' }
@@ -1010,28 +1053,30 @@ function Save-CurrentPointForSelectedSlot {
     if ($null -eq $point) { $statusLabel.Text = '현재 마우스 좌표를 읽지 못했습니다.'; return }
     $slot = $script:SelectedSlot
     if ($slot -eq '상태 기준') { $script:SlotPoints[$slot] = $null; Save-SlotPoints; Refresh-Slots; $statusLabel.Text = '상태 기준은 좌표 저장 대상이 아닙니다.'; return }
+    $slotKey = Get-EffectiveSlotKey $slot
     $mode = Get-CoordinateMode
     if ($mode -eq 'window') {
         $bounds = Get-ActiveTargetBounds
         if ($bounds.IsEmpty) {
             $statusLabel.Text = '대상 창을 찾지 못해 화면 기준으로 좌표를 저장했습니다.'
-            $script:SlotPoints[$slot] = [pscustomobject]@{ X = [int]$point.X; Y = [int]$point.Y; Mode = 'screen'; WindowWidth = 0; WindowHeight = 0 }
+            $script:SlotPoints[$slotKey] = [pscustomobject]@{ X = [int]$point.X; Y = [int]$point.Y; Mode = 'screen'; WindowWidth = 0; WindowHeight = 0 }
         } else {
-            $script:SlotPoints[$slot] = [pscustomobject]@{ X = ([int]$point.X - [int]$bounds.Left); Y = ([int]$point.Y - [int]$bounds.Top); Mode = 'window'; WindowWidth = [int]$bounds.Width; WindowHeight = [int]$bounds.Height }
+            $script:SlotPoints[$slotKey] = [pscustomobject]@{ X = ([int]$point.X - [int]$bounds.Left); Y = ([int]$point.Y - [int]$bounds.Top); Mode = 'window'; WindowWidth = [int]$bounds.Width; WindowHeight = [int]$bounds.Height }
         }
     } else {
-        $script:SlotPoints[$slot] = [pscustomobject]@{ X = [int]$point.X; Y = [int]$point.Y; Mode = 'screen'; WindowWidth = 0; WindowHeight = 0 }
+        $script:SlotPoints[$slotKey] = [pscustomobject]@{ X = [int]$point.X; Y = [int]$point.Y; Mode = 'screen'; WindowWidth = 0; WindowHeight = 0 }
     }
     Save-SlotPoints
     Refresh-Slots
-    $saved = $script:SlotPoints[$slot]
-    $statusLabel.Text = $slot + ' 좌표 저장(' + (Get-CoordinateModeLabel $saved.Mode) + '): X=' + $saved.X + ', Y=' + $saved.Y
+    $saved = $script:SlotPoints[$slotKey]
+    $statusLabel.Text = (Get-SlotStatusName $slot) + ' 좌표 저장(' + (Get-CoordinateModeLabel $saved.Mode) + '): X=' + $saved.X + ', Y=' + $saved.Y
 }
 function Get-PointTolerance { try { if ($pointToleranceBox) { return [int]$pointToleranceBox.Value } } catch { }; return 120 }
 function Check-SlotPointMatch([string]$Slot, [System.Drawing.Rectangle]$Rect) {
     if ($Slot -eq '상태 기준') { return [pscustomobject]@{ Ok = $true; Message = '' } }
     if (-not $pointCheck.Checked) { return [pscustomobject]@{ Ok = $true; Message = '' } }
-    $point = $script:SlotPoints[$Slot]
+    $slotKey = Get-EffectiveSlotKey $Slot
+    $point = $script:SlotPoints[$slotKey]
     if ($null -eq $point) { return [pscustomobject]@{ Ok = $true; Message = '' } }
     $cx = [int]($Rect.Left + $Rect.Width / 2)
     $cy = [int]($Rect.Top + $Rect.Height / 2)
@@ -1056,12 +1101,14 @@ function Check-SlotPointMatch([string]$Slot, [System.Drawing.Rectangle]$Rect) {
     $dy = [Math]::Abs($compareY - $expectedY)
     $distance = [Math]::Sqrt(($dx * $dx) + ($dy * $dy))
     $limit = Get-PointTolerance
+    if ($Slot -eq '스킵') { $limit = [Math]::Max($limit, 320) }
     if ($distance -le $limit) { return [pscustomobject]@{ Ok = $true; Message = '' } }
     return [pscustomobject]@{ Ok = $false; Message = ($Slot + ' 좌표 검증 실패(' + $basis + ' 기준): 이미지 중심 X=' + ([int]$compareX) + ', Y=' + ([int]$compareY) + ' / 저장 X=' + ([int]$expectedX) + ', Y=' + ([int]$expectedY) + ' / 거리 ' + ('{0:F1}' -f $distance) + 'px') }
 }
 function Get-SlotPointScreenPoint([string]$Slot) {
     if ($Slot -eq '상태 기준') { return $null }
-    $point = $script:SlotPoints[$Slot]
+    $slotKey = Get-EffectiveSlotKey $Slot
+    $point = $script:SlotPoints[$slotKey]
     if ($null -eq $point) { return $null }
     $mode = if ($point.Mode) { [string]$point.Mode } else { 'screen' }
     if ($mode -eq 'window') {
@@ -1101,7 +1148,8 @@ function Test-SlotRequiresRegion([string]$Slot) {
     return @('메뉴','어비스','던전','입장','퀘스트','완료 확인','나가기','식사 버튼','궁극기','스킵','팔라딘') -contains $Slot
 }
 function Get-SlotRegionScreenRect([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
-    $region = $script:SlotRegions[$Slot]
+    $slotKey = Get-EffectiveSlotKey $Slot
+    $region = $script:SlotRegions[$slotKey]
     if ($null -eq $region) { return [System.Drawing.Rectangle]::Empty }
     $mode = if ($region.Mode) { [string]$region.Mode } else { 'screen' }
     if ($mode -eq 'window') {
@@ -1120,6 +1168,16 @@ function Get-SlotRegionScreenRect([string]$Slot, [System.Windows.Forms.Screen]$S
         return [System.Drawing.Rectangle]::new([int]($bounds.Left + $x), [int]($bounds.Top + $y), [int]$w, [int]$h)
     }
     return [System.Drawing.Rectangle]::new([int]$region.X, [int]$region.Y, [int]$region.Width, [int]$region.Height)
+}
+function Get-SkipFallbackSearchBounds([System.Windows.Forms.Screen]$Screen) {
+    $bounds = Get-ActiveTargetBounds
+    if ($bounds.IsEmpty) { $bounds = Get-CurrentSearchBounds $Screen }
+    if ($bounds.IsEmpty) { return [System.Drawing.Rectangle]::Empty }
+    $x = [int]($bounds.Left + ($bounds.Width * 0.48))
+    $y = [int]($bounds.Top + ($bounds.Height * 0.00))
+    $w = [int]($bounds.Width * 0.50)
+    $h = [int]($bounds.Height * 0.22)
+    return [System.Drawing.Rectangle]::new($x, $y, $w, $h)
 }
 function Intersect-RectWithin([System.Drawing.Rectangle]$Rect, [System.Drawing.Rectangle]$Limit) {
     if ($Rect.IsEmpty) { return [System.Drawing.Rectangle]::Empty }
@@ -1182,6 +1240,15 @@ function Find-Slot([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
     }
     $paths = Get-SlotSamplePaths $Slot
     if ($paths.Count -eq 0) { return [System.Drawing.Rectangle]::Empty }
+    $searchBoundsList = New-Object System.Collections.Generic.List[System.Drawing.Rectangle]
+    [void]$searchBoundsList.Add($bounds)
+    if ($Slot -eq '스킵') {
+        $fallbackBounds = Get-SkipFallbackSearchBounds $Screen
+        if (-not $fallbackBounds.IsEmpty -and ($fallbackBounds.X -ne $bounds.X -or $fallbackBounds.Y -ne $bounds.Y -or $fallbackBounds.Width -ne $bounds.Width -or $fallbackBounds.Height -ne $bounds.Height)) {
+            [void]$searchBoundsList.Add($fallbackBounds)
+        }
+    }
+    foreach ($searchBounds in $searchBoundsList) {
     foreach ($samplePath in $paths) {
         $slotTolerance = Get-ColorTolerance
         $slotRequired = Get-MatchRequired
@@ -1189,16 +1256,21 @@ function Find-Slot([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
             $slotTolerance = [Math]::Max($slotTolerance, 38)
             $slotRequired = [Math]::Min($slotRequired, 0.82)
         }
-        $rect = [VisionFinder]::FindSample($bounds, $samplePath, 4, 8, $slotTolerance, $slotRequired)
+        if ($Slot -eq '스킵') {
+            $slotTolerance = [Math]::Max($slotTolerance, 58)
+            $slotRequired = [Math]::Min($slotRequired, 0.68)
+        }
+        $rect = [VisionFinder]::FindSample($searchBounds, $samplePath, 4, 8, $slotTolerance, $slotRequired)
         if (-not $rect.IsEmpty) {
             if (Test-RectInIgnoreZone $rect) {
                 Write-RoutineTrace $script:CurrentCycle 'vision' $Slot 'ignored-zone' $rect ([System.IO.Path]::GetFileName($samplePath))
                 continue
             }
             $script:LastMatchedSample = [System.IO.Path]::GetFileName($samplePath) + ' / ' + [VisionFinder]::LastMode + ' ' + ('{0:P1}' -f [VisionFinder]::LastScore)
-            Save-DiagnosticFrame $Slot 'found' $bounds $rect ($script:LastMatchedSample)
+            Save-DiagnosticFrame $Slot 'found' $searchBounds $rect ($script:LastMatchedSample)
             return $rect
         }
+    }
     }
     if (($script:CurrentCycle % 10) -eq 0) {
         Save-DiagnosticFrame $Slot 'miss' $bounds ([System.Drawing.Rectangle]::Empty) 'no match in slot search bounds'
@@ -1317,7 +1389,7 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
             Write-RoutineTrace $script:CurrentCycle 'stage-scan' '상태 기준' 'inside-lock' $stateRect 'stage=내부; allowed=스킵|식사 버튼|궁극기|팔라딘|상태 기준'
             foreach ($slot in @('스킵','식사 버튼','궁극기','팔라딘')) {
                 if (Test-StopRequested) { return $null }
-                if ($null -eq $script:Samples[$slot]) {
+                if ((Get-SlotSamplePaths $slot).Count -eq 0) {
                     Write-RoutineTrace $script:CurrentCycle 'stage-scan' $slot 'missing-sample-inside' ([System.Drawing.Rectangle]::Empty) 'state marker visible'
                     continue
                 }
@@ -1350,7 +1422,7 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
     $expectedSlot = $Stage
     if ($Stage -eq '완료') { $expectedSlot = '완료 확인' }
     if ($Stage -eq '종료') { $expectedSlot = '나가기' }
-    if ($null -eq $script:Samples[$expectedSlot]) {
+    if ((Get-SlotSamplePaths $expectedSlot).Count -eq 0) {
         Write-RoutineTrace $script:CurrentCycle 'stage-scan' $expectedSlot 'missing-sample' ([System.Drawing.Rectangle]::Empty) ('stage=' + $Stage)
         return $null
     }
@@ -2404,7 +2476,7 @@ function Apply-RoutineToggleStates {
 }
 function Select-Slot([string]$Slot) { $script:SelectedSlot = $Slot; if ($slotBox.SelectedItem -ne $Slot) { $slotBox.SelectedItem = $Slot }; Refresh-Slots }
 function Mark-ActiveSlot([string]$Slot) { $script:ActiveSlot = $Slot; switch ($Slot) { '메뉴' { Set-ProgressStep 1 } '어비스' { Set-ProgressStep 2 } '던전' { Set-ProgressStep 3 } '입장' { Set-ProgressStep 4 } '상태 기준' { Set-ProgressStep 5 } '퀘스트' { Set-ProgressStep 6 } '완료 확인' { Set-ProgressStep 8 } '나가기' { Set-ProgressStep 9 } default { } } }
-function Handle-FileDrop([string]$Slot, $Data) { $paths = $Data.GetData([System.Windows.Forms.DataFormats]::FileDrop); if ($paths -and $paths.Length -gt 0) { Select-Slot $Slot; Assign-ImageFileToSlot $Slot $paths[0]; Refresh-Slots; $statusLabel.Text = $Slot + ' 슬롯에 이미지 파일을 연결했습니다.' } }
+function Handle-FileDrop([string]$Slot, $Data) { $paths = $Data.GetData([System.Windows.Forms.DataFormats]::FileDrop); if ($paths -and $paths.Length -gt 0) { Select-Slot $Slot; Assign-ImageFileToSlot $Slot $paths[0]; Refresh-Slots; $statusLabel.Text = (Get-SlotStatusName $Slot) + ' 슬롯에 이미지 파일을 연결했습니다.' } }
 function Add-DropHandlers($Control, [string]$Slot) { $Control.AllowDrop = $true; $Control.Add_DragEnter({ if ($_.Data.GetDataPresent([System.Windows.Forms.DataFormats]::FileDrop)) { $_.Effect = [System.Windows.Forms.DragDropEffects]::Copy } }.GetNewClosure()); $Control.Add_DragDrop({ Handle-FileDrop $Slot $_.Data }.GetNewClosure()) }
 function Refresh-Slots {
     foreach ($panel in @($routeSlotPanel, $combatSlotPanel)) {
@@ -2412,14 +2484,15 @@ function Refresh-Slots {
         $panel.Controls.Clear()
     }
     foreach ($slot in $script:RouteSlots + $script:CombatSlots) {
+        $slotKey = Get-EffectiveSlotKey $slot
         $card = New-Object System.Windows.Forms.Panel; $card.Dock = 'Fill'; $card.Margin = New-Object System.Windows.Forms.Padding(3); $card.BorderStyle = 'FixedSingle'
         if (-not (Test-SlotEnabled $slot)) { $card.BackColor = [System.Drawing.Color]::Gainsboro } elseif ($slot -eq $script:ActiveSlot) { $card.BackColor = [System.Drawing.Color]::Honeydew } elseif ($slot -eq $script:SelectedSlot) { $card.BackColor = [System.Drawing.Color]::FromArgb(255,236,148) } else { $card.BackColor = [System.Drawing.Color]::White }
         Add-DropHandlers $card $slot
         $label = New-Object System.Windows.Forms.Label; $label.Text = $slot; $label.TextAlign = 'MiddleCenter'; $label.Width = 58; $label.Height = 16; $label.Left = 1; $label.Top = 56
         if ($slot -eq $script:ActiveSlot) { $label.ForeColor = [System.Drawing.Color]::DarkGreen; $label.Font = New-Object System.Drawing.Font('Malgun Gothic', 7, [System.Drawing.FontStyle]::Bold) } elseif ($slot -eq $script:SelectedSlot) { $label.ForeColor = [System.Drawing.Color]::FromArgb(120,72,0); $label.Font = New-Object System.Drawing.Font('Malgun Gothic', 7, [System.Drawing.FontStyle]::Bold) } else { $label.Font = New-Object System.Drawing.Font('Malgun Gothic', 7) }
         Add-DropHandlers $label $slot
-        if ($script:Samples[$slot]) { $image = Load-ImageUnlocked $script:Samples[$slot].Path; $card.Tag = $image; $pic = New-Object System.Windows.Forms.PictureBox; $pic.Image = $image; $pic.SizeMode = 'Zoom'; $pic.Width = 58; $pic.Height = 52; $pic.Left = 1; $pic.Top = 3; Add-DropHandlers $pic $slot; $pic.Add_Click({ Select-Slot $slot }.GetNewClosure()); $card.Controls.Add($pic) }
-        $pointLabel = New-Object System.Windows.Forms.Label; $point = $script:SlotPoints[$slot]; $region = $script:SlotRegions[$slot]; $regionMark = if ($null -ne $region) { ' / 구역' } else { '' }; if ($slot -eq '상태 기준') { $pointLabel.Text = '좌표 제외' + $regionMark } elseif ($null -eq $point) { $pointLabel.Text = '좌표 없음' + $regionMark } else { $pointLabel.Text = (Get-CoordinateModeLabel $point.Mode) + ' X=' + $point.X + ', Y=' + $point.Y + $regionMark }; $pointLabel.TextAlign = 'MiddleCenter'; $pointLabel.Width = 58; $pointLabel.Height = 13; $pointLabel.Left = 1; $pointLabel.Top = 70; $pointLabel.ForeColor = [System.Drawing.Color]::DimGray; $pointLabel.Font = New-Object System.Drawing.Font('Malgun Gothic', 6); Add-DropHandlers $pointLabel $slot; $pointLabel.Add_Click({ Select-Slot $slot }.GetNewClosure()); $card.Add_Click({ Select-Slot $slot }.GetNewClosure()); $label.Add_Click({ Select-Slot $slot }.GetNewClosure()); $card.Controls.Add($label); $card.Controls.Add($pointLabel)
+        if ($script:Samples[$slotKey]) { $image = Load-ImageUnlocked $script:Samples[$slotKey].Path; $card.Tag = $image; $pic = New-Object System.Windows.Forms.PictureBox; $pic.Image = $image; $pic.SizeMode = 'Zoom'; $pic.Width = 58; $pic.Height = 52; $pic.Left = 1; $pic.Top = 3; Add-DropHandlers $pic $slot; $pic.Add_Click({ Select-Slot $slot }.GetNewClosure()); $card.Controls.Add($pic) }
+        $pointLabel = New-Object System.Windows.Forms.Label; $point = $script:SlotPoints[$slotKey]; $region = $script:SlotRegions[$slotKey]; $regionMark = if ($null -ne $region) { ' / 구역' } else { '' }; if ($slot -eq '상태 기준') { $pointLabel.Text = '좌표 제외' + $regionMark } elseif ($null -eq $point) { $pointLabel.Text = '좌표 없음' + $regionMark } else { $pointLabel.Text = (Get-CoordinateModeLabel $point.Mode) + ' X=' + $point.X + ', Y=' + $point.Y + $regionMark }; $pointLabel.TextAlign = 'MiddleCenter'; $pointLabel.Width = 58; $pointLabel.Height = 13; $pointLabel.Left = 1; $pointLabel.Top = 70; $pointLabel.ForeColor = [System.Drawing.Color]::DimGray; $pointLabel.Font = New-Object System.Drawing.Font('Malgun Gothic', 6); Add-DropHandlers $pointLabel $slot; $pointLabel.Add_Click({ Select-Slot $slot }.GetNewClosure()); $card.Add_Click({ Select-Slot $slot }.GetNewClosure()); $label.Add_Click({ Select-Slot $slot }.GetNewClosure()); $card.Controls.Add($label); $card.Controls.Add($pointLabel)
         if ($script:RouteSlots -contains $slot) {
             $routeSlotPanel.Controls.Add($card, ([array]::IndexOf($script:RouteSlots, $slot)), 0)
         } else {
@@ -2429,7 +2502,7 @@ function Refresh-Slots {
 }
 function Add-SlotSample { $screen = $screens[$monitorBox.SelectedIndex]; $script:LastCaptureMessage = ''; Capture-Slot $script:SelectedSlot $screen; Refresh-Slots; if (-not [string]::IsNullOrWhiteSpace($script:LastCaptureMessage)) { $statusLabel.Text = $script:LastCaptureMessage } else { $statusLabel.Text = $script:SelectedSlot + ' 이미지가 저장되었습니다.' } }
 function Add-ExtraSlotSample { $screen = $screens[$monitorBox.SelectedIndex]; $script:LastCaptureMessage = ''; Capture-ExtraSlotSample $script:SelectedSlot $screen; if (-not [string]::IsNullOrWhiteSpace($script:LastCaptureMessage)) { $statusLabel.Text = $script:LastCaptureMessage } else { $statusLabel.Text = $script:SelectedSlot + ' 추가 샘플 저장이 취소되었습니다.' } }
-function Import-SelectedSlotFile { $dialog = New-Object System.Windows.Forms.OpenFileDialog; $dialog.Title = '슬롯 이미지 선택'; $dialog.InitialDirectory = $script:SampleDir; $dialog.Filter = 'Image files (*.png;*.jpg;*.jpeg;*.bmp)|*.png;*.jpg;*.jpeg;*.bmp'; if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { Assign-ImageFileToSlot $script:SelectedSlot $dialog.FileName; Refresh-Slots; $statusLabel.Text = $script:SelectedSlot + ' 슬롯에 이미지 파일을 연결했습니다.' } }
+function Import-SelectedSlotFile { $dialog = New-Object System.Windows.Forms.OpenFileDialog; $dialog.Title = '슬롯 이미지 선택'; $dialog.InitialDirectory = $script:SampleDir; $dialog.Filter = 'Image files (*.png;*.jpg;*.jpeg;*.bmp)|*.png;*.jpg;*.jpeg;*.bmp'; if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { Assign-ImageFileToSlot $script:SelectedSlot $dialog.FileName; Refresh-Slots; $statusLabel.Text = (Get-SlotStatusName $script:SelectedSlot) + ' 슬롯에 이미지 파일을 연결했습니다.' } }
 function Reload-SavedSamplesToSlots { $count = Load-SavedSamples; Refresh-Slots; $statusLabel.Text = '저장 폴더에서 ' + $count + '개 슬롯을 불러왔습니다.' }
 function Run-ClickDiagnostic {
     if (-not [System.IO.File]::Exists($script:ClickTracePath)) { 'time,x,y,mode,down_sent,up_sent,error_code,note' | Set-Content -LiteralPath $script:ClickTracePath -Encoding UTF8 }
@@ -2501,7 +2574,7 @@ function Run-LocateSelectedSlot {
     if ($monitorBox.SelectedIndex -lt 0) { return }
     $screen = $screens[$monitorBox.SelectedIndex]
     $slot = $script:SelectedSlot
-    if ($null -eq $script:Samples[$slot]) {
+    if ((Get-SlotSamplePaths $slot).Count -eq 0) {
         [System.Windows.Forms.MessageBox]::Show('현재 선택 슬롯에 이미지가 없습니다.', '위치 확인') | Out-Null
         return
     }
@@ -2513,9 +2586,9 @@ function Run-LocateSelectedSlot {
     $x = [int]($rect.Left + $rect.Width / 2)
     $y = [int]($rect.Top + $rect.Height / 2)
     [void][NativeInput]::SetCursorPos($x, $y)
-    $statusLabel.Text = $slot + ' 위치 확인: X=' + $x + ', Y=' + $y
+    $statusLabel.Text = (Get-SlotStatusName $slot) + ' 위치 확인: X=' + $x + ', Y=' + $y
 }
-function Run-ActualClickProbe { $slot=$script:SelectedSlot; $titlePart=$titleBox.Text.Trim(); if([string]::IsNullOrWhiteSpace($titlePart)){[System.Windows.Forms.MessageBox]::Show('대상 창 제목을 먼저 입력하세요.','실제 클릭 확인')|Out-Null;return}; $target=Find-WindowByTitlePart $titlePart; if($null -eq $target){[System.Windows.Forms.MessageBox]::Show('대상 창을 찾지 못했습니다.','실제 클릭 확인')|Out-Null;return}; $script:TargetHandle=$target.Handle; $screen=$screens[$monitorBox.SelectedIndex]; if($null -eq $script:Samples[$slot]){[System.Windows.Forms.MessageBox]::Show('현재 선택 슬롯에 이미지가 없습니다.','실제 클릭 확인')|Out-Null;return}; $rect=Find-Slot $slot $screen; if($rect.IsEmpty){[System.Windows.Forms.MessageBox]::Show('현재 선택 슬롯 이미지를 화면에서 찾지 못했습니다.','실제 클릭 확인')|Out-Null;return}; if([System.Windows.Forms.MessageBox]::Show('선택 슬롯을 한 번 클릭합니다. 반응 여부를 눈으로 확인하세요.','실제 클릭 확인',[System.Windows.Forms.MessageBoxButtons]::OKCancel) -eq [System.Windows.Forms.DialogResult]::OK){[void][NativeInput]::SetForegroundWindow($target.Handle); Start-Sleep -Milliseconds 200; [void](Click-SlotTarget $slot $rect ([int]$stepDelayBox.Value))} }
+function Run-ActualClickProbe { $slot=$script:SelectedSlot; $titlePart=$titleBox.Text.Trim(); if([string]::IsNullOrWhiteSpace($titlePart)){[System.Windows.Forms.MessageBox]::Show('대상 창 제목을 먼저 입력하세요.','실제 클릭 확인')|Out-Null;return}; $target=Find-WindowByTitlePart $titlePart; if($null -eq $target){[System.Windows.Forms.MessageBox]::Show('대상 창을 찾지 못했습니다.','실제 클릭 확인')|Out-Null;return}; $script:TargetHandle=$target.Handle; $screen=$screens[$monitorBox.SelectedIndex]; if((Get-SlotSamplePaths $slot).Count -eq 0){[System.Windows.Forms.MessageBox]::Show('현재 선택 슬롯에 이미지가 없습니다.','실제 클릭 확인')|Out-Null;return}; $rect=Find-Slot $slot $screen; if($rect.IsEmpty){[System.Windows.Forms.MessageBox]::Show('현재 선택 슬롯 이미지를 화면에서 찾지 못했습니다.','실제 클릭 확인')|Out-Null;return}; if([System.Windows.Forms.MessageBox]::Show('선택 슬롯을 한 번 클릭합니다. 반응 여부를 눈으로 확인하세요.','실제 클릭 확인',[System.Windows.Forms.MessageBoxButtons]::OKCancel) -eq [System.Windows.Forms.DialogResult]::OK){[void][NativeInput]::SetForegroundWindow($target.Handle); Start-Sleep -Milliseconds 200; [void](Click-SlotTarget $slot $rect ([int]$stepDelayBox.Value))} }
 $refreshWindowsButton.Add_Click({ Refresh-WindowList })
 $windowBox.Add_SelectedIndexChanged({ if ($windowBox.SelectedItem) { $titleBox.Text = [string]$windowBox.SelectedItem } })
 $slotBox.Add_SelectedIndexChanged({ if ($slotBox.SelectedItem) { $script:SelectedSlot = [string]$slotBox.SelectedItem; Refresh-Slots } })
@@ -2523,7 +2596,7 @@ $addButton.Add_Click({ Add-SlotSample })
 $pointButton.Add_Click({ Save-CurrentPointForSelectedSlot })
 $fileButton.Add_Click({ Import-SelectedSlotFile })
 $reloadButton.Add_Click({ Reload-SavedSamplesToSlots })
-$deleteButton.Add_Click({ $slot=$script:SelectedSlot; if($script:Samples[$slot] -and [System.IO.File]::Exists($script:Samples[$slot].Path)){[System.IO.File]::Delete($script:Samples[$slot].Path)}; $script:Samples[$slot]=$null; $script:SlotRegions[$slot]=$null; Save-SlotRegions; Refresh-Slots })
+$deleteButton.Add_Click({ $slot=$script:SelectedSlot; $slotKey=Get-EffectiveSlotKey $slot; if($script:Samples[$slotKey] -and [System.IO.File]::Exists($script:Samples[$slotKey].Path)){[System.IO.File]::Delete($script:Samples[$slotKey].Path)}; $script:Samples[$slotKey]=$null; $script:SlotRegions[$slotKey]=$null; $script:SlotPoints[$slotKey]=$null; Save-SlotRegions; Save-SlotPoints; Refresh-Slots; $statusLabel.Text=(Get-SlotStatusName $slot)+' 슬롯 정보를 삭제했습니다.' })
 $locateButton.Add_Click({ Run-LocateSelectedSlot })
 $probeButton.Add_Click({ Run-ActualClickProbe })
 $diagnosticButton.Add_Click({ Run-ClickDiagnostic })
@@ -2540,8 +2613,10 @@ $ultimateProfileBox.Add_SelectionChangeCommitted({
     Save-SelectedUltimateProfileFromControls
     if ($ultimateProfileBox.SelectedIndex -ge 0) { $script:SelectedUltimateProfileIndex = [int]$ultimateProfileBox.SelectedIndex }
     Apply-UltimateProfileToControls
+    Refresh-Slots
+    if ($script:SelectedSlot -eq '궁극기') { $statusLabel.Text = '궁극기 설정 ' + ([int]$script:SelectedUltimateProfileIndex + 1) + ' 선택됨. F8로 이 설정의 이미지를 등록하세요.' }
 })
-$ultimateNameBox.Add_Leave({ Save-SelectedUltimateProfileFromControls; Refresh-UltimateProfileCombo })
+$ultimateNameBox.Add_Leave({ Save-SelectedUltimateProfileFromControls; Refresh-UltimateProfileCombo; Refresh-Slots })
 foreach ($slot in $script:CombatSlots) {
     $script:CombatSlotChecks[$slot].Add_CheckedChanged({ param($sender, $eventArgs) $script:CombatSlotEnabled[[string]$sender.Text] = [bool]$sender.Checked; Refresh-Slots })
 }
