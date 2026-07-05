@@ -51,7 +51,7 @@ function New-DefaultUiConfig {
         }
         buttons = [ordered]@{
             searchWindows = '검색'
-            capture = '촬영(F8)'
+            capture = '대표(F8)'
             point = '좌표(F7)'
             start = '시작(F5)'
             stop = '중단(F6)'
@@ -61,6 +61,7 @@ function New-DefaultUiConfig {
             locate = '위치'
             probe = '클릭확인'
             diagnostic = '진단'
+            report = '문제보고'
             log = '로그'
             exit = '종료'
             ignore = '제외(F9)'
@@ -154,6 +155,7 @@ $script:MultiSampleLimits = @{
 foreach ($slot in $script:Slots) { $script:Samples[$slot] = $null; $script:SlotPoints[$slot] = $null }
 $script:SelectedSlot = '상태 기준'
 $script:ActiveSlot = ''
+$script:SlotPreviewCollapsed = $false
 $script:Running = $false
 $script:StopRequested = $false
 $script:TargetHandle = [IntPtr]::Zero
@@ -167,7 +169,8 @@ $script:UserSettingsPath = Join-Path $PSScriptRoot 'user_settings.json'
 $script:ClickTracePath = Join-Path $PSScriptRoot 'click_trace_log.csv'
 $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
 $script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
-$script:AppVersion = '1.0.41'
+$script:ReportDir = Join-Path $PSScriptRoot 'reports'
+$script:AppVersion = '1.0.44'
 $script:IgnoreZones = New-Object System.Collections.Generic.List[object]
 $script:MaxIgnoreZones = 4
 $script:LastUltimateAt = [datetime]::MinValue
@@ -571,7 +574,6 @@ function Assign-ImageFileToSlot([string]$Slot, [string]$SourcePath) {
     $probe = Load-ImageUnlocked $dest
     try { $script:Samples[$Slot] = [pscustomobject]@{ Path = $dest; Name = [System.IO.Path]::GetFileName($dest); Width = $probe.Width; Height = $probe.Height } }
     finally { $probe.Dispose() }
-    Add-MultiSampleCopy $Slot $dest
 }
 function Get-SlotLoadNames([string]$Slot) {
     $names = New-Object System.Collections.Generic.List[string]
@@ -612,21 +614,6 @@ function Get-MultiSampleFolder([string]$Slot) {
     if (-not (Test-MultiSampleSlot $Slot)) { return $null }
     $safe = $Slot.Replace(' ', '_')
     return Join-Path $script:SampleDir ($safe + '_samples')
-}
-function Add-MultiSampleCopy([string]$Slot, [string]$SourcePath) {
-    if (-not (Test-MultiSampleSlot $Slot)) { return }
-    if (-not [System.IO.File]::Exists($SourcePath)) { return }
-    $folder = Get-MultiSampleFolder $Slot
-    if ([string]::IsNullOrWhiteSpace($folder)) { return }
-    [System.IO.Directory]::CreateDirectory($folder) | Out-Null
-    $safe = $Slot.Replace(' ', '_')
-    $dest = Join-Path $folder ($safe + '_' + (Get-Date -Format 'yyyyMMdd_HHmmss_fff') + '.png')
-    [System.IO.File]::Copy($SourcePath, $dest, $true)
-    $limit = [int]$script:MultiSampleLimits[$Slot]
-    Get-ChildItem -LiteralPath $folder -File -Filter '*.png' |
-        Sort-Object LastWriteTime -Descending |
-        Select-Object -Skip $limit |
-        ForEach-Object { try { [System.IO.File]::Delete($_.FullName) } catch {} }
 }
 function Get-SlotSamplePaths([string]$Slot) {
     $paths = New-Object System.Collections.Generic.List[string]
@@ -797,8 +784,33 @@ function Capture-Slot([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
         $bmp.Save($path, [System.Drawing.Imaging.ImageFormat]::Png)
         if ($script:Samples[$Slot] -and [System.IO.File]::Exists($script:Samples[$Slot].Path)) { [System.IO.File]::Delete($script:Samples[$Slot].Path) }
         $script:Samples[$Slot] = [pscustomobject]@{ Path = $path; Name = $name; Width = $rect.Width; Height = $rect.Height }
-        Add-MultiSampleCopy $Slot $path
         $script:LastCaptureMessage = $Slot + ' 이미지가 저장되었습니다.'
+    }
+    finally { $bmp.Dispose() }
+}
+function Capture-ExtraSlotSample([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
+    if (-not (Test-MultiSampleSlot $Slot)) {
+        $script:LastCaptureMessage = $Slot + ' 슬롯은 추가 샘플 대상이 아닙니다.'
+        return
+    }
+    $rect = Select-ScreenRegion $Screen
+    if ($rect.IsEmpty) { return }
+    Start-Sleep -Milliseconds 180
+    $bmp = [VisionFinder]::Capture($rect)
+    try {
+        $safe = $Slot.Replace(' ', '_')
+        $folder = Get-MultiSampleFolder $Slot
+        [System.IO.Directory]::CreateDirectory($folder) | Out-Null
+        $name = $safe + '_' + (Get-Date -Format 'yyyyMMdd_HHmmss_fff') + '.png'
+        $path = Join-Path $folder $name
+        $bmp.Save($path, [System.Drawing.Imaging.ImageFormat]::Png)
+        $limit = [int]$script:MultiSampleLimits[$Slot]
+        Get-ChildItem -LiteralPath $folder -File -Filter '*.png' |
+            Sort-Object LastWriteTime -Descending |
+            Select-Object -Skip $limit |
+            ForEach-Object { try { [System.IO.File]::Delete($_.FullName) } catch {} }
+        $count = (Get-ChildItem -LiteralPath $folder -File -Filter '*.png' | Measure-Object).Count
+        $script:LastCaptureMessage = $Slot + ' 추가 샘플 저장: ' + $count + '/' + $limit
     }
     finally { $bmp.Dispose() }
 }
@@ -1158,10 +1170,10 @@ function Sleep-WithStop([int]$Milliseconds) {
     }
     return $true
 }
-function Find-ValidSlotOnce([string]$Slot, [System.Windows.Forms.Screen]$Screen, [bool]$UsePointCheck = $false) {
+function Find-ValidSlotOnce([string]$Slot, [System.Windows.Forms.Screen]$Screen, [bool]$UsePointCheck = $true) {
     $rect = Find-Slot $Slot $Screen
     if ($rect.IsEmpty) { return [System.Drawing.Rectangle]::Empty }
-    if ($UsePointCheck -and -not (Test-SlotRequiresRegion $Slot)) {
+    if ($UsePointCheck) {
         $pointResult = Check-SlotPointMatch $Slot $rect
         if (-not $pointResult.Ok) {
             Write-RoutineTrace $script:CurrentCycle 'single-find' $Slot 'found-invalid' $rect $pointResult.Message
@@ -1197,6 +1209,29 @@ function Invoke-ExitActionUntilClosed([System.Windows.Forms.Screen]$Screen, [Sys
     }
     Write-RoutineTrace $script:CurrentCycle 'post-clear' '나가기' 'space-no-effect' $afterSpace ''
     return [pscustomobject]@{ Closed = $false; Clicks = 3; Rect = $afterSpace }
+}
+function Invoke-FoodButtonIfVisible([System.Windows.Forms.Screen]$Screen, [System.Windows.Forms.Label]$StatusLabel) {
+    if ($null -eq $script:Samples['식사 버튼']) { return $false }
+    $rect = Find-Slot '식사 버튼' $Screen
+    if ($rect.IsEmpty) { return $false }
+    $pointResult = Check-SlotPointMatch '식사 버튼' $rect
+    if (-not $pointResult.Ok) {
+        Write-RoutineTrace $script:CurrentCycle 'food' '식사 버튼' 'point-blocked' $rect $pointResult.Message
+        return $false
+    }
+    Write-RoutineTrace $script:CurrentCycle 'food' '식사 버튼' 'found-click' $rect 'image and coordinate confirmed'
+    $StatusLabel.Text = '식사 버튼 감지: 클릭 후 B 보강'
+    [System.Windows.Forms.Application]::DoEvents()
+    [void](Click-SlotTarget '식사 버튼' $rect 500 120)
+    $stillFood = Find-Slot '식사 버튼' $Screen
+    if (-not $stillFood.IsEmpty) {
+        $stillPoint = Check-SlotPointMatch '식사 버튼' $stillFood
+        if ($stillPoint.Ok) {
+            Write-RoutineTrace $script:CurrentCycle 'food' '식사 버튼' 'still-visible-send-b' $stillFood 'click did not clear food prompt'
+            Invoke-BKey 'food still visible after click'
+        }
+    }
+    return $true
 }
 function Get-NextRoutineStage([string]$Slot) {
     switch ($Slot) {
@@ -1310,12 +1345,13 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
         }
         '식사 버튼' {
             if (-not $InsidePhase.Value) { return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = '식사 무시: 내부 진행 아님'; NextStage = '' } }
-            $StatusLabel.Text = '식사 버튼 감지: B 입력'
+            $StatusLabel.Text = '식사 버튼 감지: 클릭 후 B 보강'
             [System.Windows.Forms.Application]::DoEvents()
-            Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'send-b-direct' $rect 'candidate already verified'
-            Invoke-BKey 'food candidate detected'
+            Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'food-helper-before' $rect 'candidate already verified'
+            [void](Invoke-FoodButtonIfVisible $Screen $StatusLabel)
+            Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'food-helper-after' $rect ''
             Wait-StateActionSettle $slot
-            return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = '식사 B 입력'; NextStage = $nextStage }
+            return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = '식사 클릭+B 보강'; NextStage = $nextStage }
         }
         '궁극기' {
             if (-not $InsidePhase.Value) { return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = '궁극기 무시: 내부 진행 아님'; NextStage = '' } }
@@ -1812,8 +1848,14 @@ foreach ($slot in $script:Slots) { [void]$slotBox.Items.Add($slot) }; $slotBox.S
 $slotSelectGroup.Controls.Add($slotBox); $gameTable.Controls.Add($slotSelectGroup, 0, 1)
 
 $slotPreviewGroup = New-Object System.Windows.Forms.GroupBox; $slotPreviewGroup.Text = [string](Get-UiValue 'labels.slotPreview' '슬롯 미리보기'); $slotPreviewGroup.Dock = 'Fill'; $slotPreviewGroup.Padding = New-Object System.Windows.Forms.Padding(6)
+$slotPreviewTable = New-Object System.Windows.Forms.TableLayoutPanel; $slotPreviewTable.Dock = 'Fill'; $slotPreviewTable.ColumnCount = 1; $slotPreviewTable.RowCount = 2
+$slotPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 26))) | Out-Null
+$slotPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
+$slotPreviewToggleButton = New-Object System.Windows.Forms.Button; $slotPreviewToggleButton.Text = '접기'; $slotPreviewToggleButton.Dock = 'Right'; $slotPreviewToggleButton.Width = 66
 $slotPanel = New-Object System.Windows.Forms.FlowLayoutPanel; $slotPanel.Dock = 'Fill'; $slotPanel.AutoScroll = $false; $slotPanel.WrapContents = $true
-$slotPreviewGroup.Controls.Add($slotPanel); $gameTable.Controls.Add($slotPreviewGroup, 0, 2)
+$slotPreviewTable.Controls.Add($slotPreviewToggleButton, 0, 0)
+$slotPreviewTable.Controls.Add($slotPanel, 0, 1)
+$slotPreviewGroup.Controls.Add($slotPreviewTable); $gameTable.Controls.Add($slotPreviewGroup, 0, 2)
 
 $buttonPanel = New-Object System.Windows.Forms.TableLayoutPanel; $buttonPanel.Dock = 'Fill'; $buttonPanel.ColumnCount = 4; $buttonPanel.RowCount = 4
 $buttonPanel.Padding = New-Object System.Windows.Forms.Padding(0,2,0,2)
@@ -1841,12 +1883,13 @@ $deleteButton = New-Object System.Windows.Forms.Button; $deleteButton.Text = [st
 $locateButton = New-Object System.Windows.Forms.Button; $locateButton.Text = [string](Get-UiValue 'buttons.locate' '위치'); Set-ActionButtonStyle $locateButton $secondaryColor
 $probeButton = New-Object System.Windows.Forms.Button; $probeButton.Text = [string](Get-UiValue 'buttons.probe' '클릭확인'); Set-ActionButtonStyle $probeButton $thirdColor
 $diagnosticButton = New-Object System.Windows.Forms.Button; $diagnosticButton.Text = [string](Get-UiValue 'buttons.diagnostic' '진단'); Set-ActionButtonStyle $diagnosticButton $thirdColor
+$reportButton = New-Object System.Windows.Forms.Button; $reportButton.Text = [string](Get-UiValue 'buttons.report' '문제보고'); Set-ActionButtonStyle $reportButton $thirdColor
 $logButton = New-Object System.Windows.Forms.Button; $logButton.Text = [string](Get-UiValue 'buttons.log' '로그'); Set-ActionButtonStyle $logButton $thirdColor
 $exitButton = New-Object System.Windows.Forms.Button; $exitButton.Text = [string](Get-UiValue 'buttons.exit' '종료'); Set-ActionButtonStyle $exitButton $thirdColor
 $ignoreButton = New-Object System.Windows.Forms.Button; $ignoreButton.Text = [string](Get-UiValue 'buttons.ignore' '제외(F9)'); Set-ActionButtonStyle $ignoreButton $thirdColor
 $showIgnoreButton = New-Object System.Windows.Forms.Button; $showIgnoreButton.Text = [string](Get-UiValue 'buttons.showIgnore' '제외확인'); Set-ActionButtonStyle $showIgnoreButton $thirdColor
 $clearIgnoreButton = New-Object System.Windows.Forms.Button; $clearIgnoreButton.Text = [string](Get-UiValue 'buttons.clearIgnore' '제외삭제'); Set-ActionButtonStyle $clearIgnoreButton $thirdColor
-$buttonPanel.Controls.Add($addButton,0,0); $buttonPanel.Controls.Add($startButton,1,0); $buttonPanel.Controls.Add($stopButton,2,0)
+$buttonPanel.Controls.Add($addButton,0,0); $buttonPanel.Controls.Add($startButton,1,0); $buttonPanel.Controls.Add($stopButton,2,0); $buttonPanel.Controls.Add($reportButton,3,0)
 $buttonPanel.Controls.Add($fileButton,0,1); $buttonPanel.Controls.Add($reloadButton,1,1); $buttonPanel.Controls.Add($deleteButton,2,1); $buttonPanel.Controls.Add($locateButton,3,1)
 $buttonPanel.Controls.Add($probeButton,0,2); $buttonPanel.Controls.Add($diagnosticButton,1,2); $buttonPanel.Controls.Add($logButton,2,2); $buttonPanel.Controls.Add($exitButton,3,2)
 $buttonPanel.Controls.Add($ignoreButton,0,3); $buttonPanel.Controls.Add($showIgnoreButton,1,3); $buttonPanel.Controls.Add($clearIgnoreButton,2,3)
@@ -2053,8 +2096,18 @@ function Get-SelectedTargetWindow([string]$TitlePart) {
     }
     return Find-WindowByTitlePart $TitlePart
 }
+function Update-SlotPreviewCollapsed {
+    $slotPanel.Visible = -not $script:SlotPreviewCollapsed
+    $slotPreviewTable.RowStyles[1].Height = if ($script:SlotPreviewCollapsed) { 0 } else { 100 }
+    $slotPreviewToggleButton.Text = if ($script:SlotPreviewCollapsed) { '열기' } else { '접기' }
+    $gameTable.RowStyles[2].Height = if ($script:SlotPreviewCollapsed) { 56 } else { 218 }
+}
+function Toggle-SlotPreview {
+    $script:SlotPreviewCollapsed = -not $script:SlotPreviewCollapsed
+    Update-SlotPreviewCollapsed
+}
 function Select-Slot([string]$Slot) { $script:SelectedSlot = $Slot; if ($slotBox.SelectedItem -ne $Slot) { $slotBox.SelectedItem = $Slot }; Refresh-Slots }
-function Mark-ActiveSlot([string]$Slot) { $script:ActiveSlot = $Slot; switch ($Slot) { '메뉴' { Set-ProgressStep 1 } '어비스' { Set-ProgressStep 2 } '던전' { Set-ProgressStep 3 } '입장' { Set-ProgressStep 4 } '상태 기준' { Set-ProgressStep 5 } '퀘스트' { Set-ProgressStep 6 } '완료 확인' { Set-ProgressStep 8 } '나가기' { Set-ProgressStep 9 } default { } }; Refresh-Slots }
+function Mark-ActiveSlot([string]$Slot) { $script:ActiveSlot = $Slot; switch ($Slot) { '메뉴' { Set-ProgressStep 1 } '어비스' { Set-ProgressStep 2 } '던전' { Set-ProgressStep 3 } '입장' { Set-ProgressStep 4 } '상태 기준' { Set-ProgressStep 5 } '퀘스트' { Set-ProgressStep 6 } '완료 확인' { Set-ProgressStep 8 } '나가기' { Set-ProgressStep 9 } default { } } }
 function Handle-FileDrop([string]$Slot, $Data) { $paths = $Data.GetData([System.Windows.Forms.DataFormats]::FileDrop); if ($paths -and $paths.Length -gt 0) { Select-Slot $Slot; Assign-ImageFileToSlot $Slot $paths[0]; Refresh-Slots; $statusLabel.Text = $Slot + ' 슬롯에 이미지 파일을 연결했습니다.' } }
 function Add-DropHandlers($Control, [string]$Slot) { $Control.AllowDrop = $true; $Control.Add_DragEnter({ if ($_.Data.GetDataPresent([System.Windows.Forms.DataFormats]::FileDrop)) { $_.Effect = [System.Windows.Forms.DragDropEffects]::Copy } }.GetNewClosure()); $Control.Add_DragDrop({ Handle-FileDrop $Slot $_.Data }.GetNewClosure()) }
 function Refresh-Slots {
@@ -2062,16 +2115,17 @@ function Refresh-Slots {
     $slotPanel.Controls.Clear()
     foreach ($slot in $script:Slots) {
         $card = New-Object System.Windows.Forms.Panel; $card.Width = 74; $card.Height = 84; $card.Margin = New-Object System.Windows.Forms.Padding(3); $card.BorderStyle = 'FixedSingle'
-        if ($slot -eq $script:ActiveSlot) { $card.BackColor = [System.Drawing.Color]::Honeydew } elseif ($slot -eq $script:SelectedSlot) { $card.BackColor = [System.Drawing.Color]::AliceBlue } else { $card.BackColor = [System.Drawing.Color]::White }
+        if ($slot -eq $script:ActiveSlot) { $card.BackColor = [System.Drawing.Color]::Honeydew } elseif ($slot -eq $script:SelectedSlot) { $card.BackColor = [System.Drawing.Color]::FromArgb(255,236,148) } else { $card.BackColor = [System.Drawing.Color]::White }
         Add-DropHandlers $card $slot
         $label = New-Object System.Windows.Forms.Label; $label.Text = $slot; $label.TextAlign = 'MiddleCenter'; $label.Width = 66; $label.Height = 16; $label.Left = 3; $label.Top = 56
-        if ($slot -eq $script:ActiveSlot) { $label.ForeColor = [System.Drawing.Color]::DarkGreen; $label.Font = New-Object System.Drawing.Font('Malgun Gothic', 7, [System.Drawing.FontStyle]::Bold) } elseif ($slot -eq $script:SelectedSlot) { $label.ForeColor = [System.Drawing.Color]::DarkBlue; $label.Font = New-Object System.Drawing.Font('Malgun Gothic', 7, [System.Drawing.FontStyle]::Bold) } else { $label.Font = New-Object System.Drawing.Font('Malgun Gothic', 7) }
+        if ($slot -eq $script:ActiveSlot) { $label.ForeColor = [System.Drawing.Color]::DarkGreen; $label.Font = New-Object System.Drawing.Font('Malgun Gothic', 7, [System.Drawing.FontStyle]::Bold) } elseif ($slot -eq $script:SelectedSlot) { $label.ForeColor = [System.Drawing.Color]::FromArgb(120,72,0); $label.Font = New-Object System.Drawing.Font('Malgun Gothic', 7, [System.Drawing.FontStyle]::Bold) } else { $label.Font = New-Object System.Drawing.Font('Malgun Gothic', 7) }
         Add-DropHandlers $label $slot
         if ($script:Samples[$slot]) { $image = Load-ImageUnlocked $script:Samples[$slot].Path; $card.Tag = $image; $pic = New-Object System.Windows.Forms.PictureBox; $pic.Image = $image; $pic.SizeMode = 'Zoom'; $pic.Width = 66; $pic.Height = 52; $pic.Left = 3; $pic.Top = 3; Add-DropHandlers $pic $slot; $pic.Add_Click({ Select-Slot $slot }.GetNewClosure()); $card.Controls.Add($pic) }
         $pointLabel = New-Object System.Windows.Forms.Label; $point = $script:SlotPoints[$slot]; $region = $script:SlotRegions[$slot]; $regionMark = if ($null -ne $region) { ' / 구역' } else { '' }; if ($slot -eq '상태 기준') { $pointLabel.Text = '좌표 제외' + $regionMark } elseif ($null -eq $point) { $pointLabel.Text = '좌표 없음' + $regionMark } else { $pointLabel.Text = (Get-CoordinateModeLabel $point.Mode) + ' X=' + $point.X + ', Y=' + $point.Y + $regionMark }; $pointLabel.TextAlign = 'MiddleCenter'; $pointLabel.Width = 66; $pointLabel.Height = 13; $pointLabel.Left = 3; $pointLabel.Top = 70; $pointLabel.ForeColor = [System.Drawing.Color]::DimGray; $pointLabel.Font = New-Object System.Drawing.Font('Malgun Gothic', 6); Add-DropHandlers $pointLabel $slot; $pointLabel.Add_Click({ Select-Slot $slot }.GetNewClosure()); $card.Add_Click({ Select-Slot $slot }.GetNewClosure()); $label.Add_Click({ Select-Slot $slot }.GetNewClosure()); $card.Controls.Add($label); $card.Controls.Add($pointLabel); $slotPanel.Controls.Add($card)
     }
 }
 function Add-SlotSample { $screen = $screens[$monitorBox.SelectedIndex]; $script:LastCaptureMessage = ''; Capture-Slot $script:SelectedSlot $screen; Refresh-Slots; if (-not [string]::IsNullOrWhiteSpace($script:LastCaptureMessage)) { $statusLabel.Text = $script:LastCaptureMessage } else { $statusLabel.Text = $script:SelectedSlot + ' 이미지가 저장되었습니다.' } }
+function Add-ExtraSlotSample { $screen = $screens[$monitorBox.SelectedIndex]; $script:LastCaptureMessage = ''; Capture-ExtraSlotSample $script:SelectedSlot $screen; if (-not [string]::IsNullOrWhiteSpace($script:LastCaptureMessage)) { $statusLabel.Text = $script:LastCaptureMessage } else { $statusLabel.Text = $script:SelectedSlot + ' 추가 샘플 저장이 취소되었습니다.' } }
 function Import-SelectedSlotFile { $dialog = New-Object System.Windows.Forms.OpenFileDialog; $dialog.Title = '슬롯 이미지 선택'; $dialog.InitialDirectory = $script:SampleDir; $dialog.Filter = 'Image files (*.png;*.jpg;*.jpeg;*.bmp)|*.png;*.jpg;*.jpeg;*.bmp'; if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { Assign-ImageFileToSlot $script:SelectedSlot $dialog.FileName; Refresh-Slots; $statusLabel.Text = $script:SelectedSlot + ' 슬롯에 이미지 파일을 연결했습니다.' } }
 function Reload-SavedSamplesToSlots { $count = Load-SavedSamples; Refresh-Slots; $statusLabel.Text = '저장 폴더에서 ' + $count + '개 슬롯을 불러왔습니다.' }
 function Run-ClickDiagnostic {
@@ -2081,6 +2135,64 @@ function Run-ClickDiagnostic {
     Start-Process -FilePath $script:RoutineTracePath
     Start-Process -FilePath $script:ClickTracePath
     Start-Process -FilePath $script:DiagnosticDir
+}
+function Copy-ReportFile([string]$Source, [string]$DestinationDir) {
+    if ([string]::IsNullOrWhiteSpace($Source) -or -not [System.IO.File]::Exists($Source)) { return $false }
+    Copy-Item -LiteralPath $Source -Destination (Join-Path $DestinationDir ([System.IO.Path]::GetFileName($Source))) -Force
+    return $true
+}
+function New-ProblemReportPackage {
+    Save-UserSettings
+    Ensure-LogHeader
+    Ensure-RoutineTraceHeader
+    if (-not [System.IO.File]::Exists($script:ClickTracePath)) { 'time,x,y,mode,down_sent,up_sent,error_code,note' | Set-Content -LiteralPath $script:ClickTracePath -Encoding UTF8 }
+    New-Item -ItemType Directory -Force -Path $script:ReportDir | Out-Null
+    $stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+    $stageDir = Join-Path $script:ReportDir ('problem_report_' + $stamp)
+    $diagnosticOut = Join-Path $stageDir 'diagnostic_frames_recent'
+    New-Item -ItemType Directory -Force -Path $stageDir | Out-Null
+    New-Item -ItemType Directory -Force -Path $diagnosticOut | Out-Null
+    $copied = 0
+    foreach ($path in @(
+        $script:RoutineTracePath,
+        $script:ClickTracePath,
+        $script:LogPath,
+        $script:UserSettingsPath,
+        $script:SlotRegionPath,
+        $script:SlotPointPath,
+        $script:IgnoreZonePath,
+        $script:UpdateManifestPath,
+        (Join-Path $PSScriptRoot 'install_info.txt'),
+        (Join-Path $PSScriptRoot 'version.json')
+    )) {
+        if (Copy-ReportFile $path $stageDir) { $copied++ }
+    }
+    $metaPath = Join-Path $stageDir 'report_info.txt'
+    @(
+        'created_at=' + (Get-Date).ToString('s'),
+        'app_version=' + $script:AppVersion,
+        'install_root=' + $PSScriptRoot,
+        'selected_slot=' + $script:SelectedSlot,
+        'active_slot=' + $script:ActiveSlot,
+        'running=' + $script:Running,
+        'target_title_text=' + $titleBox.Text,
+        'monitor=' + [string]$monitorBox.SelectedItem,
+        'package_note=logs and recent diagnostic frames for troubleshooting'
+    ) | Set-Content -LiteralPath $metaPath -Encoding UTF8
+    if ([System.IO.Directory]::Exists($script:DiagnosticDir)) {
+        Get-ChildItem -LiteralPath $script:DiagnosticDir -File -Filter '*.png' |
+            Sort-Object LastWriteTime -Descending |
+            Select-Object -First 30 |
+            ForEach-Object { Copy-Item -LiteralPath $_.FullName -Destination (Join-Path $diagnosticOut $_.Name) -Force }
+    }
+    $zipPath = Join-Path $script:ReportDir ('problem_report_' + $stamp + '.zip')
+    if ([System.IO.File]::Exists($zipPath)) { [System.IO.File]::Delete($zipPath) }
+    Compress-Archive -Path (Join-Path $stageDir '*') -DestinationPath $zipPath -CompressionLevel Optimal -Force
+    Write-RoutineTrace $script:CurrentCycle 'report' '' 'created' ([System.Drawing.Rectangle]::Empty) $zipPath
+    Start-Process -FilePath $script:ReportDir
+    [System.Windows.Forms.MessageBox]::Show('문제 보고용 압축 파일을 만들었습니다.' + $script:NewLine + $zipPath, '문제 보고') | Out-Null
+    $statusLabel.Text = '문제 보고 파일 생성: ' + [System.IO.Path]::GetFileName($zipPath)
+    return $zipPath
 }
 function Run-LocateSelectedSlot {
     if ($monitorBox.SelectedIndex -lt 0) { return }
@@ -2112,6 +2224,7 @@ $deleteButton.Add_Click({ $slot=$script:SelectedSlot; if($script:Samples[$slot] 
 $locateButton.Add_Click({ Run-LocateSelectedSlot })
 $probeButton.Add_Click({ Run-ActualClickProbe })
 $diagnosticButton.Add_Click({ Run-ClickDiagnostic })
+$reportButton.Add_Click({ [void](New-ProblemReportPackage) })
 $ignoreButton.Add_Click({ Add-IgnoreZone })
 $showIgnoreButton.Add_Click({ Show-IgnoreZones })
 $clearIgnoreButton.Add_Click({ Clear-IgnoreZones })
@@ -2121,6 +2234,7 @@ $updateButton.Add_Click({ Invoke-AppUpdateCheck $false })
 $exitButton.Add_Click({ $script:StopRequested = $true; $form.Close() })
 $topMostCheck.Add_CheckedChanged({ $form.TopMost = $topMostCheck.Checked })
 $windowBox.Add_SelectedIndexChanged({ if ($windowBox.SelectedIndex -ge 0) { $titleBox.Text = [string]$windowBox.SelectedItem } })
+$slotPreviewToggleButton.Add_Click({ Toggle-SlotPreview })
 Refresh-WindowList
 $settingsLoadedOnStart = Load-UserSettings
 $loadedOnStart = Load-SavedSamples
@@ -2128,6 +2242,7 @@ $loadedPointsOnStart = Load-SlotPoints
 $loadedRegionsOnStart = Load-SlotRegions
 $loadedIgnoreZonesOnStart = Load-IgnoreZones
 Refresh-Slots
+Update-SlotPreviewCollapsed
 $statusLabel.Text = '저장 폴더에서 ' + $loadedOnStart + '개 슬롯, 좌표 ' + $loadedPointsOnStart + '개, 슬롯구역 ' + $loadedRegionsOnStart + '개, 제외구역 ' + $loadedIgnoreZonesOnStart + '개를 불러왔습니다.'
 function Start-StateRoutine {
     if ($script:Running) { [System.Windows.Forms.MessageBox]::Show('이미 실행 중입니다.', '실행') | Out-Null; return }
@@ -2190,9 +2305,9 @@ function Start-StateRoutine {
     finally { Write-RoutineTrace $script:CurrentCycle 'run' '' ('end-' + $status) ([System.Drawing.Rectangle]::Empty) $message; $ended=Get-Date; $elapsed=$timer.Elapsed.TotalSeconds; $average=if($completedCycles -gt 0){$elapsed/$completedCycles}else{0}; Write-RunLog $started $ended $titlePart (Get-WindowTitle $target.Handle) $monitorBox.SelectedItem 0 $completedCycles $completedClicks ([int]$intervalBox.Value) $elapsed $average $status $message; if ($minimizeOnRunCheck.Checked) { $form.WindowState = $previousWindowState; [void]$form.Activate() }; $script:ActiveSlot=''; Refresh-Slots; $statusLabel.Text='종료: '+$status+', 완료 '+$completedCycles+'회'; Set-ProgressStep 0; $startButton.Enabled=$true; $script:Running=$false }
 }
 $startButton.Add_Click({ Start-StateRoutine })
-$form.Add_Shown({ [void][NativeInput]::RegisterHotKey($form.Handle,801,0,0x77); [void][NativeInput]::RegisterHotKey($form.Handle,803,0,0x74); [void][NativeInput]::RegisterHotKey($form.Handle,804,0,0x75); [void][NativeInput]::RegisterHotKey($form.Handle,805,0,0x76); [void][NativeInput]::RegisterHotKey($form.Handle,806,0,0x78) })
-$form.Add_FormClosed({ Save-UserSettings; [void][NativeInput]::UnregisterHotKey($form.Handle,801); [void][NativeInput]::UnregisterHotKey($form.Handle,803); [void][NativeInput]::UnregisterHotKey($form.Handle,804); [void][NativeInput]::UnregisterHotKey($form.Handle,805); [void][NativeInput]::UnregisterHotKey($form.Handle,806) })
+$form.Add_Shown({ [void][NativeInput]::RegisterHotKey($form.Handle,801,0,0x77); [void][NativeInput]::RegisterHotKey($form.Handle,807,4,0x77); [void][NativeInput]::RegisterHotKey($form.Handle,803,0,0x74); [void][NativeInput]::RegisterHotKey($form.Handle,804,0,0x75); [void][NativeInput]::RegisterHotKey($form.Handle,805,0,0x76); [void][NativeInput]::RegisterHotKey($form.Handle,806,0,0x78) })
+$form.Add_FormClosed({ Save-UserSettings; [void][NativeInput]::UnregisterHotKey($form.Handle,801); [void][NativeInput]::UnregisterHotKey($form.Handle,807); [void][NativeInput]::UnregisterHotKey($form.Handle,803); [void][NativeInput]::UnregisterHotKey($form.Handle,804); [void][NativeInput]::UnregisterHotKey($form.Handle,805); [void][NativeInput]::UnregisterHotKey($form.Handle,806) })
 $script:HotKeyFilter = New-Object HotKeyWindowFilter
-$script:HotKeyFilter.OnHotKey = [Action[int]]{ param($id) if($id -eq 801 -and -not $script:Running){ Add-SlotSample }; if($id -eq 803 -and -not $script:Running){ Start-StateRoutine }; if($id -eq 804){ $script:StopRequested=$true; $statusLabel.Text='중단 요청됨.' }; if($id -eq 805 -and -not $script:Running){ Save-CurrentPointForSelectedSlot }; if($id -eq 806 -and -not $script:Running){ Add-IgnoreZone } }
+$script:HotKeyFilter.OnHotKey = [Action[int]]{ param($id) if($id -eq 801 -and -not $script:Running){ Add-SlotSample }; if($id -eq 807 -and -not $script:Running){ Add-ExtraSlotSample }; if($id -eq 803 -and -not $script:Running){ Start-StateRoutine }; if($id -eq 804){ $script:StopRequested=$true; $statusLabel.Text='중단 요청됨.' }; if($id -eq 805 -and -not $script:Running){ Save-CurrentPointForSelectedSlot }; if($id -eq 806 -and -not $script:Running){ Add-IgnoreZone } }
 [System.Windows.Forms.Application]::AddMessageFilter($script:HotKeyFilter)
 [void]$form.ShowDialog()
