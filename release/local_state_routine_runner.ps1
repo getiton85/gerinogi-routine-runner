@@ -197,7 +197,7 @@ $script:ClickTracePath = Join-Path $PSScriptRoot 'click_trace_log.csv'
 $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
 $script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $PSScriptRoot 'reports'
-$script:AppVersion = '1.0.49'
+$script:AppVersion = '1.0.50'
 $script:IgnoreZones = New-Object System.Collections.Generic.List[object]
 $script:MaxIgnoreZones = 4
 $script:LastUltimateAt = [datetime]::MinValue
@@ -779,9 +779,9 @@ function Show-IgnoreZones {
     $overlay.Add_Paint({
         param($sender, $e)
         $g = $e.Graphics
-        $redBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(115, 220, 0, 0))
-        $greenPen = New-Object System.Drawing.Pen([System.Drawing.Color]::Lime, 3)
-        $labelBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(230, 0, 0, 0))
+        $redBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(210, 104, 54, 66))
+        $greenPen = New-Object System.Drawing.Pen([System.Drawing.Color]::FromArgb(235, 236, 255, 210), 3)
+        $labelBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::FromArgb(245, 36, 34, 38))
         $textBrush = New-Object System.Drawing.SolidBrush([System.Drawing.Color]::White)
         $font = New-Object System.Drawing.Font('Malgun Gothic', 10, [System.Drawing.FontStyle]::Bold)
         $outsideRegion = New-Object System.Drawing.Region([System.Drawing.Rectangle]::new(0, 0, $sender.ClientSize.Width, $sender.ClientSize.Height))
@@ -1951,7 +1951,7 @@ $gameTable = New-Object System.Windows.Forms.TableLayoutPanel; $gameTable.Dock =
 foreach ($style in @(
     (New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 118)),
     (New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 48)),
-    (New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 284)),
+    (New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 360)),
     (New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 164)),
     (New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 34)),
     (New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 52)),
@@ -2285,10 +2285,10 @@ function Get-SelectedTargetWindow([string]$TitlePart) {
 function Update-SlotPreviewCollapsed {
     $routePreviewGroup.Visible = -not $script:SlotPreviewCollapsed
     $combatPreviewGroup.Visible = -not $script:SlotPreviewCollapsed
-    $slotPreviewTable.RowStyles[1].Height = if ($script:SlotPreviewCollapsed) { 0 } else { 58 }
-    $slotPreviewTable.RowStyles[2].Height = if ($script:SlotPreviewCollapsed) { 0 } else { 42 }
+    $slotPreviewTable.RowStyles[1].Height = if ($script:SlotPreviewCollapsed) { 0 } else { 134 }
+    $slotPreviewTable.RowStyles[2].Height = if ($script:SlotPreviewCollapsed) { 0 } else { 112 }
     $slotPreviewToggleButton.Text = if ($script:SlotPreviewCollapsed) { '열기' } else { '접기' }
-    $gameTable.RowStyles[2].Height = if ($script:SlotPreviewCollapsed) { 56 } else { 284 }
+    $gameTable.RowStyles[2].Height = if ($script:SlotPreviewCollapsed) { 56 } else { 360 }
 }
 function Toggle-SlotPreview {
     $script:SlotPreviewCollapsed = -not $script:SlotPreviewCollapsed
