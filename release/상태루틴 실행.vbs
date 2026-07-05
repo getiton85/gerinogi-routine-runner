@@ -1,4 +1,4 @@
-Set shell = CreateObject("WScript.Shell")
+Set shell = CreateObject("Shell.Application")
 base = CreateObject("Scripting.FileSystemObject").GetParentFolderName(WScript.ScriptFullName)
-cmd = "powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Minimized -File """ & base & "\local_state_routine_runner.ps1"""
-shell.Run cmd, 2, False
+args = "-NoProfile -ExecutionPolicy Bypass -WindowStyle Minimized -File """ & base & "\local_state_routine_runner.ps1"""
+shell.ShellExecute "powershell.exe", args, base, "runas", 2

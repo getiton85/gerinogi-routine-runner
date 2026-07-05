@@ -13,7 +13,7 @@ function Restart-SelfAsAdministratorIfNeeded {
     if (Test-IsAdministrator) { return }
     $scriptPath = if ($PSCommandPath) { $PSCommandPath } else { $MyInvocation.MyCommand.Path }
     if ([string]::IsNullOrWhiteSpace($scriptPath)) { return }
-    $args = '-NoProfile -ExecutionPolicy Bypass -WindowStyle Minimized -File "' + $scriptPath + '"'
+    $args = '-NoProfile -ExecutionPolicy Bypass -File "' + $scriptPath + '"'
     Start-Process -FilePath 'powershell.exe' -ArgumentList $args -WorkingDirectory $PSScriptRoot -Verb RunAs
     exit
 }
@@ -197,10 +197,14 @@ $script:ClickTracePath = Join-Path $PSScriptRoot 'click_trace_log.csv'
 $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
 $script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $PSScriptRoot 'reports'
-$script:AppVersion = '1.0.50'
+$script:AppVersion = '1.0.53'
 $script:IgnoreZones = New-Object System.Collections.Generic.List[object]
 $script:MaxIgnoreZones = 4
-$script:LastUltimateAt = [datetime]::MinValue
+$script:SelectedUltimateProfileIndex = 0
+$script:UltimateProfiles = @()
+for ($ui = 1; $ui -le 5; $ui++) {
+    $script:UltimateProfiles += [pscustomobject]@{ Name = ('궁극기 설정 ' + $ui) }
+}
 $script:SlotRegions = @{}
 foreach ($slot in $script:Slots) { $script:SlotRegions[$slot] = $null }
 $script:UpdateManifestPath = Join-Path $PSScriptRoot 'update_manifest_url.txt'
@@ -553,13 +557,13 @@ function Invoke-LeftClick([int]$X, [int]$Y, [int]$HoldOverrideMs = -1) {
     Write-ClickTrace $X $Y $mode $downSent $upSent $errorCode $note
     Start-Sleep -Milliseconds 120
 }
-function Invoke-NumberSixKey {
+function Invoke-UltimateKey([string]$ProfileName) {
     if ($script:TargetHandle -ne [IntPtr]::Zero) {
         [void][NativeInput]::SetForegroundWindow($script:TargetHandle)
         Start-Sleep -Milliseconds 80
     }
     [System.Windows.Forms.SendKeys]::SendWait('6')
-    Write-RoutineTrace $script:CurrentCycle 'key' '궁극기' 'send-6' ([System.Drawing.Rectangle]::Empty) ''
+    Write-RoutineTrace $script:CurrentCycle 'key' '궁극기' 'send-6' ([System.Drawing.Rectangle]::Empty) $ProfileName
     Start-Sleep -Milliseconds 120
 }
 function Invoke-SpaceKey([string]$Reason) {
@@ -1418,15 +1422,12 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
         }
         '궁극기' {
             if (-not $InsidePhase.Value) { return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = '궁극기 무시: 내부 진행 아님'; NextStage = '' } }
-            if (((Get-Date) - $script:LastUltimateAt).TotalSeconds -lt 6) {
-                Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'cooldown-skip' $rect 'less than 6 seconds since last input'
-                return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = '궁극기 재입력 대기'; NextStage = '내부' }
-            }
-            $script:LastUltimateAt = Get-Date
-            $StatusLabel.Text = '궁극기 감지: 6번 입력'
+            Save-SelectedUltimateProfileFromControls
+            $ultimateProfile = Get-SelectedUltimateProfile
+            $StatusLabel.Text = '궁극기 감지: ' + [string]$ultimateProfile.Name + ' / 6 입력'
             [System.Windows.Forms.Application]::DoEvents()
-            Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'send-6-direct' $rect 'candidate already verified'
-            Invoke-NumberSixKey
+            Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'send-6-direct' $rect ('profile=' + [string]$ultimateProfile.Name)
+            Invoke-UltimateKey ([string]$ultimateProfile.Name)
             Wait-StateActionSettle $slot
             return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = '궁극기 6 입력'; NextStage = $nextStage }
         }
@@ -1548,16 +1549,61 @@ function Test-SlotEnabled([string]$Slot) {
     return $true
 }
 
+function Get-SelectedUltimateProfile {
+    $index = [Math]::Max(0, [Math]::Min($script:UltimateProfiles.Count - 1, [int]$script:SelectedUltimateProfileIndex))
+    return $script:UltimateProfiles[$index]
+}
+
+function Get-UltimateProfileLabel([int]$Index) {
+    if ($Index -lt 0 -or $Index -ge $script:UltimateProfiles.Count) { return '' }
+    $profile = $script:UltimateProfiles[$Index]
+    return (($Index + 1).ToString() + '. ' + [string]$profile.Name)
+}
+
+function Save-SelectedUltimateProfileFromControls {
+    try {
+        if ($script:UltimateProfiles.Count -le 0) { return }
+        $index = [Math]::Max(0, [Math]::Min($script:UltimateProfiles.Count - 1, [int]$script:SelectedUltimateProfileIndex))
+        $name = $ultimateNameBox.Text.Trim()
+        if ([string]::IsNullOrWhiteSpace($name)) { $name = '궁극기 설정 ' + ($index + 1) }
+        $script:UltimateProfiles[$index] = [pscustomobject]@{ Name = $name }
+    } catch { }
+}
+
+function Refresh-UltimateProfileCombo {
+    try {
+        $selected = [int]$script:SelectedUltimateProfileIndex
+        $ultimateProfileBox.Items.Clear()
+        for ($i = 0; $i -lt $script:UltimateProfiles.Count; $i++) { [void]$ultimateProfileBox.Items.Add((Get-UltimateProfileLabel $i)) }
+        if ($ultimateProfileBox.Items.Count -gt 0) { $ultimateProfileBox.SelectedIndex = [Math]::Max(0, [Math]::Min($ultimateProfileBox.Items.Count - 1, $selected)) }
+    } catch { }
+}
+
+function Apply-UltimateProfileToControls {
+    try {
+        $profile = Get-SelectedUltimateProfile
+        $ultimateNameBox.Text = [string]$profile.Name
+        Refresh-UltimateProfileCombo
+    } catch { }
+}
+
 function Save-UserSettings {
     try {
+        Save-SelectedUltimateProfileFromControls
         $combatEnabled = [ordered]@{}
         foreach ($slot in $script:CombatSlots) { $combatEnabled[$slot] = [bool](Test-CombatSlotEnabled $slot) }
+        $ultimateProfiles = @()
+        foreach ($profile in $script:UltimateProfiles) {
+            $ultimateProfiles += [ordered]@{ name = [string]$profile.Name }
+        }
         $settings = [ordered]@{
             target_title = $titleBox.Text
             monitor_index = [int]$monitorBox.SelectedIndex
             selected_slot = [string]$script:SelectedSlot
             harbor_enabled = [bool](Test-HarborEnabled)
             combat_enabled = $combatEnabled
+            ultimate_profile_index = [int]$script:SelectedUltimateProfileIndex
+            ultimate_profiles = $ultimateProfiles
             top_most = [bool]$topMostCheck.Checked
             beep = [bool]$beepCheck.Checked
             full_monitor_search = [bool]$fullMonitorCheck.Checked
@@ -1608,6 +1654,23 @@ function Load-UserSettings {
                 $prop = $settings.combat_enabled.PSObject.Properties[$slot]
                 if ($null -ne $prop) { $script:CombatSlotEnabled[$slot] = [bool]$prop.Value }
             }
+        }
+        if ($settings.ultimate_profiles) {
+            $loadedProfiles = @()
+            foreach ($profile in @($settings.ultimate_profiles)) {
+                $name = [string]$profile.name
+                if ([string]::IsNullOrWhiteSpace($name)) { $name = '궁극기 설정 ' + ($loadedProfiles.Count + 1) }
+                $loadedProfiles += [pscustomobject]@{ Name = $name }
+            }
+            if ($loadedProfiles.Count -gt 0) {
+                while ($loadedProfiles.Count -lt 5) {
+                    $loadedProfiles += [pscustomobject]@{ Name = ('궁극기 설정 ' + ($loadedProfiles.Count + 1)) }
+                }
+                $script:UltimateProfiles = @($loadedProfiles | Select-Object -First 5)
+            }
+        }
+        if ($null -ne $settings.ultimate_profile_index) {
+            $script:SelectedUltimateProfileIndex = [Math]::Max(0, [Math]::Min($script:UltimateProfiles.Count - 1, [int]$settings.ultimate_profile_index))
         }
         if ($null -ne $settings.top_most) { $topMostCheck.Checked = [bool]$settings.top_most }
         if ($null -ne $settings.beep) { $beepCheck.Checked = [bool]$settings.beep }
@@ -1746,7 +1809,7 @@ function Start-RoutineAgain([string]$RestartPath, [string]$Root) {
     }
     $scriptPath = Join-Path $Root 'local_state_routine_runner.ps1'
     if ([System.IO.File]::Exists($scriptPath)) {
-        $args = '-NoProfile -ExecutionPolicy Bypass -WindowStyle Minimized -File "' + $scriptPath + '"'
+        $args = '-NoProfile -ExecutionPolicy Bypass -File "' + $scriptPath + '"'
         Start-Process -FilePath 'powershell.exe' -ArgumentList $args -WorkingDirectory $Root -Verb RunAs
     }
 }
@@ -1867,7 +1930,7 @@ function Start-RoutineAgain([string]$RestartPath, [string]$Root) {
     }
     $scriptPath = Join-Path $Root 'local_state_routine_runner.ps1'
     if ([System.IO.File]::Exists($scriptPath)) {
-        $args = '-NoProfile -ExecutionPolicy Bypass -WindowStyle Minimized -File "' + $scriptPath + '"'
+        $args = '-NoProfile -ExecutionPolicy Bypass -File "' + $scriptPath + '"'
         Start-Process -FilePath 'powershell.exe' -ArgumentList $args -WorkingDirectory $Root -Verb RunAs
     }
 }
@@ -1951,7 +2014,7 @@ $gameTable = New-Object System.Windows.Forms.TableLayoutPanel; $gameTable.Dock =
 foreach ($style in @(
     (New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 118)),
     (New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 48)),
-    (New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 360)),
+    (New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 390)),
     (New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 164)),
     (New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 34)),
     (New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 52)),
@@ -2007,7 +2070,8 @@ $routePreviewTable.Controls.Add($routeSlotPanel, 0, 1)
 $routePreviewGroup.Controls.Add($routePreviewTable)
 
 $combatPreviewGroup = New-Object System.Windows.Forms.GroupBox; $combatPreviewGroup.Text = [string](Get-UiValue 'labels.combatSlotPreview' '전투관련 슬롯 미리보기'); $combatPreviewGroup.Dock = 'Fill'; $combatPreviewGroup.Padding = New-Object System.Windows.Forms.Padding(5)
-$combatPreviewTable = New-Object System.Windows.Forms.TableLayoutPanel; $combatPreviewTable.Dock = 'Fill'; $combatPreviewTable.ColumnCount = 1; $combatPreviewTable.RowCount = 2
+$combatPreviewTable = New-Object System.Windows.Forms.TableLayoutPanel; $combatPreviewTable.Dock = 'Fill'; $combatPreviewTable.ColumnCount = 1; $combatPreviewTable.RowCount = 3
+$combatPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 24))) | Out-Null
 $combatPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 24))) | Out-Null
 $combatPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
 $combatTogglePanel = New-Object System.Windows.Forms.TableLayoutPanel; $combatTogglePanel.Dock = 'Fill'; $combatTogglePanel.ColumnCount = 5; $combatTogglePanel.RowCount = 1
@@ -2027,8 +2091,16 @@ foreach ($slot in $script:CombatSlots) {
 $combatSlotPanel = New-Object System.Windows.Forms.TableLayoutPanel; $combatSlotPanel.Dock = 'Fill'; $combatSlotPanel.ColumnCount = 5; $combatSlotPanel.RowCount = 1; $combatSlotPanel.AutoScroll = $false; $combatSlotPanel.Padding = New-Object System.Windows.Forms.Padding(0)
 for ($si = 0; $si -lt 5; $si++) { $combatSlotPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 20))) | Out-Null }
 $combatSlotPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
+$ultimateProfilePanel = New-Object System.Windows.Forms.TableLayoutPanel; $ultimateProfilePanel.Dock = 'Fill'; $ultimateProfilePanel.ColumnCount = 2; $ultimateProfilePanel.RowCount = 1
+$ultimateProfilePanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Absolute, 78))) | Out-Null
+$ultimateProfilePanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
+$ultimateProfileLabel = New-Object System.Windows.Forms.Label; $ultimateProfileLabel.Text = '궁극기 설정'; $ultimateProfileLabel.Dock = 'Fill'; $ultimateProfileLabel.TextAlign = 'MiddleLeft'; $ultimateProfileLabel.Font = New-Object System.Drawing.Font($uiFontName, 7, [System.Drawing.FontStyle]::Bold)
+$ultimateProfileBox = New-Object System.Windows.Forms.ComboBox; $ultimateProfileBox.DropDownStyle = 'DropDownList'; $ultimateProfileBox.Dock = 'Fill'; $ultimateProfileBox.Font = New-Object System.Drawing.Font($uiFontName, 7)
+$ultimateProfilePanel.Controls.Add($ultimateProfileLabel, 0, 0)
+$ultimateProfilePanel.Controls.Add($ultimateProfileBox, 1, 0)
 $combatPreviewTable.Controls.Add($combatTogglePanel, 0, 0)
-$combatPreviewTable.Controls.Add($combatSlotPanel, 0, 1)
+$combatPreviewTable.Controls.Add($ultimateProfilePanel, 0, 1)
+$combatPreviewTable.Controls.Add($combatSlotPanel, 0, 2)
 $combatPreviewGroup.Controls.Add($combatPreviewTable)
 
 $slotPreviewTable.Controls.Add($slotPreviewToggleButton, 0, 0)
@@ -2216,9 +2288,9 @@ $portraitPanel.Add_Resize({
 $gameTable.Controls.Add($portraitPanel, 0, 7)
 
 
-$settingsGroup = New-Object System.Windows.Forms.GroupBox; $settingsGroup.Text = [string](Get-UiValue 'labels.settings' '셋팅'); $settingsGroup.Dock = 'Top'; $settingsGroup.Height = 470; $settingsGroup.Padding = New-Object System.Windows.Forms.Padding(10)
+$settingsGroup = New-Object System.Windows.Forms.GroupBox; $settingsGroup.Text = [string](Get-UiValue 'labels.settings' '셋팅'); $settingsGroup.Dock = 'Top'; $settingsGroup.Height = 560; $settingsGroup.Padding = New-Object System.Windows.Forms.Padding(10)
 $optionPage.Controls.Add($settingsGroup)
-$settingsTable = New-Object System.Windows.Forms.TableLayoutPanel; $settingsTable.Dock = 'Fill'; $settingsTable.ColumnCount = 2; $settingsTable.RowCount = 14
+$settingsTable = New-Object System.Windows.Forms.TableLayoutPanel; $settingsTable.Dock = 'Fill'; $settingsTable.ColumnCount = 2; $settingsTable.RowCount = 17
 $settingsTable.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 56))) | Out-Null
 $settingsTable.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 44))) | Out-Null
 $settingsGroup.Controls.Add($settingsTable)
@@ -2249,6 +2321,7 @@ $stepDelayBox = New-Object System.Windows.Forms.NumericUpDown; $stepDelayBox.Min
 $moveSettleBox = New-Object System.Windows.Forms.NumericUpDown; $moveSettleBox.Minimum = 100; $moveSettleBox.Maximum = 5000; $moveSettleBox.Increment = 100; $moveSettleBox.Value = 250; $script:MoveSettleBox = $moveSettleBox
 $clickHoldBox = New-Object System.Windows.Forms.NumericUpDown; $clickHoldBox.Minimum = 50; $clickHoldBox.Maximum = 3000; $clickHoldBox.Increment = 50; $clickHoldBox.Value = 350; $script:ClickHoldBox = $clickHoldBox
 $goneDelayBox = New-Object System.Windows.Forms.NumericUpDown; $goneDelayBox.Minimum = 1000; $goneDelayBox.Maximum = 120000; $goneDelayBox.Increment = 1000; $goneDelayBox.Value = 20000
+$ultimateNameBox = New-Object System.Windows.Forms.TextBox; $ultimateNameBox.Text = '궁극기 설정 1'
 Add-OptionRow 1 '반복 간격ms' $intervalBox
 Add-OptionRow 2 '좌표 허용px' $pointToleranceBox
 Add-OptionRow 3 '좌표 기준' $coordinateModeBox
@@ -2261,6 +2334,7 @@ Add-OptionRow 9 '클릭 후 대기ms' $stepDelayBox
 Add-OptionRow 10 '이동 후 대기ms' $moveSettleBox
 Add-OptionRow 11 '누름 유지ms' $clickHoldBox
 Add-OptionRow 12 '사라짐 후 대기ms' $goneDelayBox
+Add-OptionRow 13 '궁극기 이름' $ultimateNameBox
 function Refresh-WindowList {
     $windowBox.Items.Clear()
     $script:WindowItems = @()
@@ -2286,9 +2360,9 @@ function Update-SlotPreviewCollapsed {
     $routePreviewGroup.Visible = -not $script:SlotPreviewCollapsed
     $combatPreviewGroup.Visible = -not $script:SlotPreviewCollapsed
     $slotPreviewTable.RowStyles[1].Height = if ($script:SlotPreviewCollapsed) { 0 } else { 134 }
-    $slotPreviewTable.RowStyles[2].Height = if ($script:SlotPreviewCollapsed) { 0 } else { 112 }
+    $slotPreviewTable.RowStyles[2].Height = if ($script:SlotPreviewCollapsed) { 0 } else { 138 }
     $slotPreviewToggleButton.Text = if ($script:SlotPreviewCollapsed) { '열기' } else { '접기' }
-    $gameTable.RowStyles[2].Height = if ($script:SlotPreviewCollapsed) { 56 } else { 360 }
+    $gameTable.RowStyles[2].Height = if ($script:SlotPreviewCollapsed) { 56 } else { 390 }
 }
 function Toggle-SlotPreview {
     $script:SlotPreviewCollapsed = -not $script:SlotPreviewCollapsed
@@ -2303,6 +2377,20 @@ function Update-AdvancedToolsCollapsed {
 function Toggle-AdvancedTools {
     $script:AdvancedToolsCollapsed = -not $script:AdvancedToolsCollapsed
     Update-AdvancedToolsCollapsed
+}
+function Bring-MainWindowToFront {
+    try {
+        if ($form.WindowState -eq [System.Windows.Forms.FormWindowState]::Minimized) {
+            $form.WindowState = [System.Windows.Forms.FormWindowState]::Normal
+        }
+        $wasTopMost = [bool]$form.TopMost
+        $form.TopMost = $true
+        $form.Show()
+        $form.BringToFront()
+        [void]$form.Activate()
+        [void][NativeInput]::SetForegroundWindow($form.Handle)
+        $form.TopMost = $wasTopMost
+    } catch { }
 }
 function Apply-RoutineToggleStates {
     try { if ($harborEnabledCheck) { $harborEnabledCheck.Checked = [bool]$script:HarborEnabled } } catch { }
@@ -2448,6 +2536,12 @@ $exitButton.Add_Click({ $script:StopRequested = $true; $form.Close() })
 $advancedToggleButton.Add_Click({ Toggle-AdvancedTools })
 $topMostCheck.Add_CheckedChanged({ $form.TopMost = $topMostCheck.Checked })
 $harborEnabledCheck.Add_CheckedChanged({ $script:HarborEnabled = [bool]$harborEnabledCheck.Checked; Refresh-Slots })
+$ultimateProfileBox.Add_SelectionChangeCommitted({
+    Save-SelectedUltimateProfileFromControls
+    if ($ultimateProfileBox.SelectedIndex -ge 0) { $script:SelectedUltimateProfileIndex = [int]$ultimateProfileBox.SelectedIndex }
+    Apply-UltimateProfileToControls
+})
+$ultimateNameBox.Add_Leave({ Save-SelectedUltimateProfileFromControls; Refresh-UltimateProfileCombo })
 foreach ($slot in $script:CombatSlots) {
     $script:CombatSlotChecks[$slot].Add_CheckedChanged({ param($sender, $eventArgs) $script:CombatSlotEnabled[[string]$sender.Text] = [bool]$sender.Checked; Refresh-Slots })
 }
@@ -2456,6 +2550,7 @@ $slotPreviewToggleButton.Add_Click({ Toggle-SlotPreview })
 Refresh-WindowList
 $settingsLoadedOnStart = Load-UserSettings
 Apply-RoutineToggleStates
+Apply-UltimateProfileToControls
 $loadedOnStart = Load-SavedSamples
 $loadedPointsOnStart = Load-SlotPoints
 $loadedRegionsOnStart = Load-SlotRegions
@@ -2527,7 +2622,22 @@ function Start-StateRoutine {
     finally { Write-RoutineTrace $script:CurrentCycle 'run' '' ('end-' + $status) ([System.Drawing.Rectangle]::Empty) $message; $ended=Get-Date; $elapsed=$timer.Elapsed.TotalSeconds; $average=if($completedCycles -gt 0){$elapsed/$completedCycles}else{0}; Write-RunLog $started $ended $titlePart (Get-WindowTitle $target.Handle) $monitorBox.SelectedItem 0 $completedCycles $completedClicks ([int]$intervalBox.Value) $elapsed $average $status $message; if ($minimizeOnRunCheck.Checked) { $form.WindowState = $previousWindowState; [void]$form.Activate() }; $script:ActiveSlot=''; Refresh-Slots; $statusLabel.Text='종료: '+$status+', 완료 '+$completedCycles+'회'; Set-ProgressStep 0; $startButton.Enabled=$true; $script:Running=$false }
 }
 $startButton.Add_Click({ Start-StateRoutine })
-$form.Add_Shown({ [void][NativeInput]::RegisterHotKey($form.Handle,801,0,0x77); [void][NativeInput]::RegisterHotKey($form.Handle,807,4,0x77); [void][NativeInput]::RegisterHotKey($form.Handle,803,0,0x74); [void][NativeInput]::RegisterHotKey($form.Handle,804,0,0x75); [void][NativeInput]::RegisterHotKey($form.Handle,805,0,0x76) })
+$form.Add_Shown({
+    [void][NativeInput]::RegisterHotKey($form.Handle,801,0,0x77)
+    [void][NativeInput]::RegisterHotKey($form.Handle,807,4,0x77)
+    [void][NativeInput]::RegisterHotKey($form.Handle,803,0,0x74)
+    [void][NativeInput]::RegisterHotKey($form.Handle,804,0,0x75)
+    [void][NativeInput]::RegisterHotKey($form.Handle,805,0,0x76)
+    Bring-MainWindowToFront
+    $frontTimer = New-Object System.Windows.Forms.Timer
+    $frontTimer.Interval = 450
+    $frontTimer.Add_Tick({
+        $frontTimer.Stop()
+        $frontTimer.Dispose()
+        Bring-MainWindowToFront
+    }.GetNewClosure())
+    $frontTimer.Start()
+})
 $form.Add_FormClosed({ Save-UserSettings; [void][NativeInput]::UnregisterHotKey($form.Handle,801); [void][NativeInput]::UnregisterHotKey($form.Handle,807); [void][NativeInput]::UnregisterHotKey($form.Handle,803); [void][NativeInput]::UnregisterHotKey($form.Handle,804); [void][NativeInput]::UnregisterHotKey($form.Handle,805) })
 $script:HotKeyFilter = New-Object HotKeyWindowFilter
 $script:HotKeyFilter.OnHotKey = [Action[int]]{ param($id) if($id -eq 801 -and -not $script:Running){ Add-SlotSample }; if($id -eq 807 -and -not $script:Running){ Add-ExtraSlotSample }; if($id -eq 803 -and -not $script:Running){ Start-StateRoutine }; if($id -eq 804){ $script:StopRequested=$true; $statusLabel.Text='중단 요청됨.' }; if($id -eq 805 -and -not $script:Running){ Save-CurrentPointForSelectedSlot } }
