@@ -13,7 +13,7 @@ function Restart-SelfAsAdministratorIfNeeded {
     if (Test-IsAdministrator) { return }
     $scriptPath = if ($PSCommandPath) { $PSCommandPath } else { $MyInvocation.MyCommand.Path }
     if ([string]::IsNullOrWhiteSpace($scriptPath)) { return }
-    $args = '-NoProfile -ExecutionPolicy Bypass -File "' + $scriptPath + '"'
+    $args = '-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "' + $scriptPath + '"'
     Start-Process -FilePath 'powershell.exe' -ArgumentList $args -WorkingDirectory $PSScriptRoot -Verb RunAs
     exit
 }
@@ -197,7 +197,7 @@ $script:ClickTracePath = Join-Path $PSScriptRoot 'click_trace_log.csv'
 $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
 $script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $PSScriptRoot 'reports'
-$script:AppVersion = '1.0.55'
+$script:AppVersion = '1.0.58'
 $script:IgnoreZones = New-Object System.Collections.Generic.List[object]
 $script:MaxIgnoreZones = 4
 $script:SelectedUltimateProfileIndex = 0
@@ -289,6 +289,72 @@ public static class VisionFinder {
         if (channel == 1) return g;
         if (channel == 2) return r;
         return Gray(b, g, r);
+    }
+
+    private static bool IsBrightTextPixel(byte b, byte g, byte r, byte a, int threshold) {
+        if (a < 24) return false;
+        int gray = Gray(b, g, r);
+        int max = Math.Max(r, Math.Max(g, b));
+        int min = Math.Min(r, Math.Min(g, b));
+        return gray >= threshold && (max - min) <= 95;
+    }
+
+    public static Rectangle FindBrightTextSample(Rectangle screenBounds, string samplePath, int searchStep, int sampleStep, double requiredScore) {
+        LastMode = "";
+        LastScore = 0.0;
+        using (Bitmap screen = Capture(screenBounds))
+        using (Bitmap rawSample = new Bitmap(samplePath))
+        using (Bitmap sample = new Bitmap(rawSample.Width, rawSample.Height, PixelFormat.Format32bppArgb)) {
+            using (Graphics sg = Graphics.FromImage(sample)) { sg.DrawImage(rawSample, 0, 0, rawSample.Width, rawSample.Height); }
+            if (sample.Width > screen.Width || sample.Height > screen.Height) return Rectangle.Empty;
+            BitmapData sd = screen.LockBits(new Rectangle(0, 0, screen.Width, screen.Height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+            BitmapData td = sample.LockBits(new Rectangle(0, 0, sample.Width, sample.Height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+            try {
+                int sw = screen.Width, sh = screen.Height, tw = sample.Width, th = sample.Height;
+                int ss = Math.Abs(sd.Stride), ts = Math.Abs(td.Stride);
+                byte[] s = new byte[ss * sh];
+                byte[] t = new byte[ts * th];
+                Marshal.Copy(sd.Scan0, s, 0, s.Length);
+                Marshal.Copy(td.Scan0, t, 0, t.Length);
+
+                System.Collections.Generic.List<int> textXs = new System.Collections.Generic.List<int>();
+                System.Collections.Generic.List<int> textYs = new System.Collections.Generic.List<int>();
+                for (int ty = 0; ty < th; ty += sampleStep) {
+                    int tRow = ty * ts;
+                    for (int tx = 0; tx < tw; tx += sampleStep) {
+                        int ti = tRow + tx * 4;
+                        if (IsBrightTextPixel(t[ti], t[ti + 1], t[ti + 2], t[ti + 3], 155)) {
+                            textXs.Add(tx);
+                            textYs.Add(ty);
+                        }
+                    }
+                }
+                int textCount = textXs.Count;
+                if (textCount < Math.Max(6, (tw * th) / Math.Max(1, sampleStep * sampleStep * 120))) return Rectangle.Empty;
+
+                double bestScore = -1.0; int bestX = -1, bestY = -1;
+                for (int y = 0; y <= sh - th; y += searchStep) {
+                    if ((NativeInput.GetAsyncKeyState(0x75) & unchecked((short)0x8000)) != 0) { LastMode = "stopped-f6"; return Rectangle.Empty; }
+                    for (int x = 0; x <= sw - tw; x += searchStep) {
+                        int ok = 0;
+                        for (int i = 0; i < textCount; i++) {
+                            int sx = x + textXs[i];
+                            int sy = y + textYs[i];
+                            int si = sy * ss + sx * 4;
+                            if (IsBrightTextPixel(s[si], s[si + 1], s[si + 2], 255, 142)) ok++;
+                        }
+                        double score = (double)ok / textCount;
+                        if (score > bestScore) { bestScore = score; bestX = x; bestY = y; }
+                    }
+                }
+                if (bestScore >= requiredScore) {
+                    LastMode = "bright-text";
+                    LastScore = bestScore;
+                    return new Rectangle(screenBounds.Left + bestX, screenBounds.Top + bestY, tw, th);
+                }
+                return Rectangle.Empty;
+            } finally { screen.UnlockBits(sd); sample.UnlockBits(td); }
+        }
     }
 
     public static Rectangle FindSample(Rectangle screenBounds, string samplePath, int searchStep, int sampleStep, int tolerance, double requiredScore) {
@@ -1101,7 +1167,6 @@ function Check-SlotPointMatch([string]$Slot, [System.Drawing.Rectangle]$Rect) {
     $dy = [Math]::Abs($compareY - $expectedY)
     $distance = [Math]::Sqrt(($dx * $dx) + ($dy * $dy))
     $limit = Get-PointTolerance
-    if ($Slot -eq '스킵') { $limit = [Math]::Max($limit, 320) }
     if ($distance -le $limit) { return [pscustomobject]@{ Ok = $true; Message = '' } }
     return [pscustomobject]@{ Ok = $false; Message = ($Slot + ' 좌표 검증 실패(' + $basis + ' 기준): 이미지 중심 X=' + ([int]$compareX) + ', Y=' + ([int]$compareY) + ' / 저장 X=' + ([int]$expectedX) + ', Y=' + ([int]$expectedY) + ' / 거리 ' + ('{0:F1}' -f $distance) + 'px') }
 }
@@ -1169,16 +1234,6 @@ function Get-SlotRegionScreenRect([string]$Slot, [System.Windows.Forms.Screen]$S
     }
     return [System.Drawing.Rectangle]::new([int]$region.X, [int]$region.Y, [int]$region.Width, [int]$region.Height)
 }
-function Get-SkipFallbackSearchBounds([System.Windows.Forms.Screen]$Screen) {
-    $bounds = Get-ActiveTargetBounds
-    if ($bounds.IsEmpty) { $bounds = Get-CurrentSearchBounds $Screen }
-    if ($bounds.IsEmpty) { return [System.Drawing.Rectangle]::Empty }
-    $x = [int]($bounds.Left + ($bounds.Width * 0.48))
-    $y = [int]($bounds.Top + ($bounds.Height * 0.00))
-    $w = [int]($bounds.Width * 0.50)
-    $h = [int]($bounds.Height * 0.22)
-    return [System.Drawing.Rectangle]::new($x, $y, $w, $h)
-}
 function Intersect-RectWithin([System.Drawing.Rectangle]$Rect, [System.Drawing.Rectangle]$Limit) {
     if ($Rect.IsEmpty) { return [System.Drawing.Rectangle]::Empty }
     $left = [Math]::Max($Limit.Left, $Rect.Left)
@@ -1240,15 +1295,7 @@ function Find-Slot([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
     }
     $paths = Get-SlotSamplePaths $Slot
     if ($paths.Count -eq 0) { return [System.Drawing.Rectangle]::Empty }
-    $searchBoundsList = New-Object System.Collections.Generic.List[System.Drawing.Rectangle]
-    [void]$searchBoundsList.Add($bounds)
-    if ($Slot -eq '스킵') {
-        $fallbackBounds = Get-SkipFallbackSearchBounds $Screen
-        if (-not $fallbackBounds.IsEmpty -and ($fallbackBounds.X -ne $bounds.X -or $fallbackBounds.Y -ne $bounds.Y -or $fallbackBounds.Width -ne $bounds.Width -or $fallbackBounds.Height -ne $bounds.Height)) {
-            [void]$searchBoundsList.Add($fallbackBounds)
-        }
-    }
-    foreach ($searchBounds in $searchBoundsList) {
+    foreach ($searchBounds in @($bounds)) {
     foreach ($samplePath in $paths) {
         $slotTolerance = Get-ColorTolerance
         $slotRequired = Get-MatchRequired
@@ -1257,8 +1304,18 @@ function Find-Slot([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
             $slotRequired = [Math]::Min($slotRequired, 0.82)
         }
         if ($Slot -eq '스킵') {
-            $slotTolerance = [Math]::Max($slotTolerance, 58)
-            $slotRequired = [Math]::Min($slotRequired, 0.68)
+            $slotTolerance = [Math]::Min($slotTolerance, 45)
+            $slotRequired = [Math]::Max($slotRequired, 0.82)
+            $brightRect = [VisionFinder]::FindBrightTextSample($searchBounds, $samplePath, 3, 5, 0.72)
+            if (-not $brightRect.IsEmpty) {
+                if (Test-RectInIgnoreZone $brightRect) {
+                    Write-RoutineTrace $script:CurrentCycle 'vision' $Slot 'ignored-zone' $brightRect ([System.IO.Path]::GetFileName($samplePath) + ' / bright-text')
+                    continue
+                }
+                $script:LastMatchedSample = [System.IO.Path]::GetFileName($samplePath) + ' / ' + [VisionFinder]::LastMode + ' ' + ('{0:P1}' -f [VisionFinder]::LastScore)
+                Save-DiagnosticFrame $Slot 'found' $searchBounds $brightRect ($script:LastMatchedSample)
+                return $brightRect
+            }
         }
         $rect = [VisionFinder]::FindSample($searchBounds, $samplePath, 4, 8, $slotTolerance, $slotRequired)
         if (-not $rect.IsEmpty) {
@@ -1881,7 +1938,7 @@ function Start-RoutineAgain([string]$RestartPath, [string]$Root) {
     }
     $scriptPath = Join-Path $Root 'local_state_routine_runner.ps1'
     if ([System.IO.File]::Exists($scriptPath)) {
-        $args = '-NoProfile -ExecutionPolicy Bypass -File "' + $scriptPath + '"'
+        $args = '-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "' + $scriptPath + '"'
         Start-Process -FilePath 'powershell.exe' -ArgumentList $args -WorkingDirectory $Root -Verb RunAs
     }
 }
@@ -1894,7 +1951,7 @@ function Copy-PackageDirectory([string]$Source, [string]$Destination, [string]$B
         $relative = $file.FullName.Substring($Source.Length).TrimStart('\','/')
         if ($relative -match '(^|\\)(slot_points|slot_regions|ignore_zones|local_state_routine_log|routine_trace_log|click_trace_log)\\.csv$') { continue }
         if ($relative -match '(^|\\)user_settings\\.json$') { continue }
-        if ($relative -match '^state_samples\\' -and (Test-Path (Join-Path $Destination $relative))) { continue }
+        if ($relative -match '^state_samples\\' -and (Test-Path (Join-Path $Destination 'state_samples'))) { continue }
         $target = Join-Path $Destination $relative
         New-Item -ItemType Directory -Force -Path ([System.IO.Path]::GetDirectoryName($target)) | Out-Null
         if ([System.IO.File]::Exists($target)) {
@@ -2002,7 +2059,7 @@ function Start-RoutineAgain([string]$RestartPath, [string]$Root) {
     }
     $scriptPath = Join-Path $Root 'local_state_routine_runner.ps1'
     if ([System.IO.File]::Exists($scriptPath)) {
-        $args = '-NoProfile -ExecutionPolicy Bypass -File "' + $scriptPath + '"'
+        $args = '-NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "' + $scriptPath + '"'
         Start-Process -FilePath 'powershell.exe' -ArgumentList $args -WorkingDirectory $Root -Verb RunAs
     }
 }
