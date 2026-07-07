@@ -200,7 +200,7 @@ $script:ClickTracePath = Join-Path $PSScriptRoot 'click_trace_log.csv'
 $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
 $script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $PSScriptRoot 'reports'
-$script:AppVersion = '1.0.61'
+$script:AppVersion = '1.0.62'
 $script:DiagnosticFailureCount = 0
 $script:DiagnosticDisabledUntil = [DateTime]::MinValue
 $script:IgnoreZones = New-Object System.Collections.Generic.List[object]
@@ -1441,7 +1441,7 @@ function Invoke-FoodButtonIfVisible([System.Windows.Forms.Screen]$Screen, [Syste
 }
 function Get-NextRoutineStage([string]$Slot) {
     switch ($Slot) {
-        '협동' { return '메뉴' }
+        '협동' { return '메뉴확인' }
         '메뉴' { return '어비스' }
         '어비스' { return '던전' }
         '던전' { return '입장' }
@@ -1507,6 +1507,7 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
         return $null
     }
     $expectedSlot = $Stage
+    if ($Stage -eq '메뉴확인') { $expectedSlot = '메뉴' }
     if ($Stage -eq '완료') { $expectedSlot = '완료 확인' }
     if ($Stage -eq '종료') { $expectedSlot = '나가기' }
     if ((Get-SlotSamplePaths $expectedSlot).Count -eq 0) {
@@ -1523,7 +1524,7 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
 }
 function Get-StateActionSettleMs([string]$Slot) {
     switch ($Slot) {
-        '협동' { return 900 }
+        '협동' { return 120 }
         '메뉴' { return 900 }
         '어비스' { return 900 }
         '던전' { return 900 }
@@ -1550,6 +1551,15 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
     $nextStage = Get-NextRoutineStage $slot
     Mark-ActiveSlot $slot
     switch ($slot) {
+        '협동' {
+            $StatusLabel.Text = '협동 감지: 클릭 후 메뉴 확인'
+            [System.Windows.Forms.Application]::DoEvents()
+            Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'click-before' $rect 'special pre-menu'
+            [void](Click-SlotTarget $slot $rect 80 100)
+            Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'click-after' $rect 'next=메뉴확인'
+            Wait-StateActionSettle $slot
+            return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = '협동 클릭'; NextStage = $nextStage }
+        }
         '나가기' {
             $exitResult = Invoke-ExitActionUntilClosed $Screen $StatusLabel $rect
             if ($exitResult.Closed) {
