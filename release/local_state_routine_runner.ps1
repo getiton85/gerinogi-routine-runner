@@ -200,7 +200,7 @@ $script:ClickTracePath = Join-Path $PSScriptRoot 'click_trace_log.csv'
 $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
 $script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $PSScriptRoot 'reports'
-$script:AppVersion = '1.0.62'
+$script:AppVersion = '1.0.63'
 $script:DiagnosticFailureCount = 0
 $script:DiagnosticDisabledUntil = [DateTime]::MinValue
 $script:IgnoreZones = New-Object System.Collections.Generic.List[object]
@@ -1264,6 +1264,42 @@ function Intersect-RectWithin([System.Drawing.Rectangle]$Rect, [System.Drawing.R
     if ($right -le $left -or $bottom -le $top) { return [System.Drawing.Rectangle]::Empty }
     return [System.Drawing.Rectangle]::new([int]$left, [int]$top, [int]($right - $left), [int]($bottom - $top))
 }
+function Expand-SearchBoundsForSample([System.Drawing.Rectangle]$Bounds, [string]$SamplePath, [System.Windows.Forms.Screen]$Screen) {
+    if ($Bounds.IsEmpty -or -not [System.IO.File]::Exists($SamplePath)) { return $Bounds }
+    $sampleWidth = 0
+    $sampleHeight = 0
+    try {
+        $img = Load-ImageUnlocked $SamplePath
+        try {
+            $sampleWidth = [int]$img.Width
+            $sampleHeight = [int]$img.Height
+        } finally {
+            $img.Dispose()
+        }
+    } catch {
+        return $Bounds
+    }
+    $pad = 18
+    $neededWidth = [Math]::Max($Bounds.Width, $sampleWidth + ($pad * 2))
+    $neededHeight = [Math]::Max($Bounds.Height, $sampleHeight + ($pad * 2))
+    if ($neededWidth -eq $Bounds.Width -and $neededHeight -eq $Bounds.Height) { return $Bounds }
+    $centerX = $Bounds.Left + ($Bounds.Width / 2.0)
+    $centerY = $Bounds.Top + ($Bounds.Height / 2.0)
+    $expanded = [System.Drawing.Rectangle]::new(
+        [int]($centerX - ($neededWidth / 2.0)),
+        [int]($centerY - ($neededHeight / 2.0)),
+        [int]$neededWidth,
+        [int]$neededHeight
+    )
+    $limit = Get-CurrentSearchBounds $Screen
+    $limited = Intersect-RectWithin $expanded $limit
+    if ($limited.IsEmpty) { return $Bounds }
+    Write-RoutineTrace $script:CurrentCycle 'vision' '' 'bounds-expanded' $limited (
+        ('sample={0}; old={1}x{2}; sampleSize={3}x{4}' -f
+            [System.IO.Path]::GetFileName($SamplePath), $Bounds.Width, $Bounds.Height, $sampleWidth, $sampleHeight)
+    )
+    return $limited
+}
 function Get-SlotSearchBounds([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
     $bounds = Get-CurrentSearchBounds $Screen
     $regionRect = Get-SlotRegionScreenRect $Slot $Screen
@@ -1316,8 +1352,8 @@ function Find-Slot([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
     }
     $paths = Get-SlotSamplePaths $Slot
     if ($paths.Count -eq 0) { return [System.Drawing.Rectangle]::Empty }
-    foreach ($searchBounds in @($bounds)) {
     foreach ($samplePath in $paths) {
+        $searchBounds = Expand-SearchBoundsForSample $bounds $samplePath $Screen
         $slotTolerance = Get-ColorTolerance
         $slotRequired = Get-MatchRequired
         if ($Slot -eq '궁극기') {
@@ -1348,7 +1384,6 @@ function Find-Slot([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
             Save-DiagnosticFrame $Slot 'found' $searchBounds $rect ($script:LastMatchedSample)
             return $rect
         }
-    }
     }
     if (($script:CurrentCycle % 10) -eq 0) {
         Save-DiagnosticFrame $Slot 'miss' $bounds ([System.Drawing.Rectangle]::Empty) 'no match in slot search bounds'
