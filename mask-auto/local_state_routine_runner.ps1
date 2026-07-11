@@ -198,11 +198,13 @@ $script:IgnoreZonePath = Join-Path $PSScriptRoot 'ignore_zones.csv'
 $script:UserSettingsPath = Join-Path $PSScriptRoot 'user_settings.json'
 $script:ClickTracePath = Join-Path $PSScriptRoot 'click_trace_log.csv'
 $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
+$script:CrashLogPath = Join-Path $PSScriptRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $PSScriptRoot 'reports'
-$script:AppVersion = '1.0.15'
+$script:AppVersion = '1.0.17'
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
+$script:LongCompleteFallbackMs = 90000
 $script:CombatMarkerSeen = $false
 $script:BossSkipSeen = $false
 $script:CombatMarkerSeenAfterSkip = $false
@@ -223,9 +225,36 @@ for ($ui = 1; $ui -le 5; $ui++) { $script:SlotRegions[('궁극기_' + $ui)] = $n
 $script:UpdateManifestPath = Join-Path $PSScriptRoot 'update_manifest_url.txt'
 $script:BackupDir = Join-Path $PSScriptRoot 'update_backup'
 $script:NewLine = [Environment]::NewLine
+
+function Write-CrashLog([string]$Context, [object]$ErrorObject) {
+    try {
+        $lines = New-Object System.Collections.Generic.List[string]
+        $lines.Add(('==== {0} ====' -f (Get-Date -Format 'yyyy-MM-dd HH:mm:ss.fff')))
+        $lines.Add(('version={0}' -f $script:AppVersion))
+        $lines.Add(('context={0}' -f $Context))
+        if ($null -ne $ErrorObject) {
+            if ($ErrorObject -is [System.Management.Automation.ErrorRecord]) {
+                $lines.Add(('message={0}' -f $ErrorObject.Exception.Message))
+                $lines.Add(('type={0}' -f $ErrorObject.Exception.GetType().FullName))
+                $lines.Add(('position={0}' -f $ErrorObject.InvocationInfo.PositionMessage))
+                $lines.Add(('stack={0}' -f $ErrorObject.ScriptStackTrace))
+            } elseif ($ErrorObject -is [System.Exception]) {
+                $lines.Add(('message={0}' -f $ErrorObject.Message))
+                $lines.Add(('type={0}' -f $ErrorObject.GetType().FullName))
+                $lines.Add(('stack={0}' -f $ErrorObject.StackTrace))
+            } else {
+                $lines.Add(('object={0}' -f [string]$ErrorObject))
+            }
+        }
+        Add-Content -LiteralPath $script:CrashLogPath -Value $lines -Encoding UTF8
+    } catch {
+    }
+}
+
 New-Item -ItemType Directory -Force -Path $script:SampleDir | Out-Null
 New-Item -ItemType Directory -Force -Path $script:BackupDir | Out-Null
 New-Item -ItemType Directory -Force -Path $script:DiagnosticDir | Out-Null
+Write-CrashLog 'app-launch' $null
 
 $nativeSource = @'
 using System;
@@ -1379,6 +1408,16 @@ function Get-SlotSearchBounds([string]$Slot, [System.Windows.Forms.Screen]$Scree
     $bounds = Get-CurrentSearchBounds $Screen
     $regionRect = Get-SlotRegionScreenRect $Slot $Screen
     if (-not $regionRect.IsEmpty) {
+        if ($Slot -eq '스킵') {
+            $wideSkipRect = [System.Drawing.Rectangle]::new(
+                [int]($regionRect.Left - 700),
+                [int]($regionRect.Top - 80),
+                [int]($regionRect.Width + 780),
+                [int]($regionRect.Height + 210)
+            )
+            $wideSkipRect = Intersect-RectWithin $wideSkipRect $bounds
+            if (-not $wideSkipRect.IsEmpty) { return $wideSkipRect }
+        }
         $limited = Intersect-RectWithin $regionRect $bounds
         if (-not $limited.IsEmpty) { return $limited }
     }
@@ -1474,14 +1513,17 @@ function Test-CompleteWaitElapsed {
 }
 function Test-CompleteAllowed {
     if (-not (Test-CompleteWaitElapsed)) { return $false }
-    if (-not $script:CombatMarkerSeen) { return $false }
-    if ($script:BossSkipSeen -and -not $script:CombatMarkerSeenAfterSkip) { return $false }
+    if ($null -eq $script:InsideStartedAt) { return $false }
+    $elapsedMs = ((Get-Date) - $script:InsideStartedAt).TotalMilliseconds
+    $longFallbackReady = ($elapsedMs -ge [double]$script:LongCompleteFallbackMs)
+    if (-not $script:CombatMarkerSeen -and -not $longFallbackReady) { return $false }
+    if ($script:BossSkipSeen -and -not $script:CombatMarkerSeenAfterSkip -and -not $longFallbackReady) { return $false }
     return $true
 }
 function Get-CompleteGateDetail {
     if ($null -eq $script:InsideStartedAt) { return 'inside start time missing' }
     $elapsedMs = [int](((Get-Date) - $script:InsideStartedAt).TotalMilliseconds)
-    return ('elapsedMs={0}; requiredMs={1}; combatSeen={2}; skipSeen={3}; combatAfterSkip={4}' -f $elapsedMs, $script:MinimumCompleteWaitMs, $script:CombatMarkerSeen, $script:BossSkipSeen, $script:CombatMarkerSeenAfterSkip)
+    return ('elapsedMs={0}; requiredMs={1}; fallbackMs={2}; fallbackReady={3}; combatSeen={4}; skipSeen={5}; combatAfterSkip={6}' -f $elapsedMs, $script:MinimumCompleteWaitMs, $script:LongCompleteFallbackMs, ($elapsedMs -ge [int]$script:LongCompleteFallbackMs), $script:CombatMarkerSeen, $script:BossSkipSeen, $script:CombatMarkerSeenAfterSkip)
 }
 function Test-StopRequested {
     if ($script:StopRequested) { return $true }
@@ -3017,7 +3059,11 @@ function Start-StateRoutine {
         }
         if($script:StopRequested -and $status -eq 'completed'){ $status='stopped'; $message='사용자 중단' }
     }
-    catch { $status='error'; $message=$_.Exception.Message }
+    catch {
+        $status='error'
+        $message=$_.Exception.Message
+        Write-CrashLog 'Start-StateRoutine catch' $_
+    }
     finally { Write-RoutineTrace $script:CurrentCycle 'run' '' ('end-' + $status) ([System.Drawing.Rectangle]::Empty) $message; $ended=Get-Date; $elapsed=$timer.Elapsed.TotalSeconds; $average=if($completedCycles -gt 0){$elapsed/$completedCycles}else{0}; Write-RunLog $started $ended $titlePart (Get-WindowTitle $target.Handle) $monitorBox.SelectedItem 0 $completedCycles $completedClicks ([int]$intervalBox.Value) $elapsed $average $status $message; if ($minimizeOnRunCheck.Checked) { $form.WindowState = $previousWindowState; [void]$form.Activate() }; $script:ActiveSlot=''; Refresh-Slots; $statusLabel.Text='종료: '+$status+', 완료 '+$completedCycles+'회'; Set-ProgressStep 0; $startButton.Enabled=$true; $script:Running=$false }
 }
 $startButton.Add_Click({ Start-StateRoutine })
@@ -3036,8 +3082,23 @@ $form.Add_Shown({
     }.GetNewClosure())
     $frontTimer.Start()
 })
-$form.Add_FormClosed({ Save-UserSettings; [void][NativeInput]::UnregisterHotKey($form.Handle,801); [void][NativeInput]::UnregisterHotKey($form.Handle,803); [void][NativeInput]::UnregisterHotKey($form.Handle,804); [void][NativeInput]::UnregisterHotKey($form.Handle,805) })
+$form.Add_FormClosed({ Write-CrashLog 'form-closed' $null; Save-UserSettings; [void][NativeInput]::UnregisterHotKey($form.Handle,801); [void][NativeInput]::UnregisterHotKey($form.Handle,803); [void][NativeInput]::UnregisterHotKey($form.Handle,804); [void][NativeInput]::UnregisterHotKey($form.Handle,805) })
 $script:HotKeyFilter = New-Object HotKeyWindowFilter
 $script:HotKeyFilter.OnHotKey = [Action[int]]{ param($id) if($id -eq 801 -and -not $script:Running){ Add-SlotRegionOnly }; if($id -eq 803 -and -not $script:Running){ Start-StateRoutine }; if($id -eq 804){ $script:StopRequested=$true; $statusLabel.Text='중단 요청됨.' }; if($id -eq 805 -and -not $script:Running){ Add-SlotSample } }
 [System.Windows.Forms.Application]::AddMessageFilter($script:HotKeyFilter)
-[void]$form.ShowDialog()
+try {
+    [System.Windows.Forms.Application]::add_ThreadException({
+        param($sender, $eventArgs)
+        Write-CrashLog 'winforms-thread-exception' $eventArgs.Exception
+    })
+    [AppDomain]::CurrentDomain.add_UnhandledException({
+        param($sender, $eventArgs)
+        Write-CrashLog 'appdomain-unhandled-exception' $eventArgs.ExceptionObject
+    })
+    [void]$form.ShowDialog()
+} catch {
+    Write-CrashLog 'show-dialog catch' $_
+    throw
+} finally {
+    Write-CrashLog 'app-exit' $null
+}

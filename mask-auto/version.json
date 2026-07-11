@@ -1,10 +1,10 @@
 ﻿{
-    "version":  "1.0.15",
+    "version":  "1.0.17",
     "update_mode":  "package",
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.15_state_bright_match.zip",
-                    "sha256":  "61BE7F5A53F860C3A81C0AA1A9192A7F73DABC2F4F9DE6DA2DD0BE2669D2BC5B"
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.17_crash_trace.zip",
+                    "sha256":  "2B005CD48551AD71738AD9EB8187BB75F18271F4A521F939D67B0CC01EA5C424"
                 },
     "requiresInstaller":  false,
-    "notes":  "상태 기준 슬롯을 밝은 글자/아이콘 우선 매칭으로 변경해 보라색 배경이 섞인 ASSIST 아이콘도 전투 진행 상태로 인식하도록 수정합니다."
+    "notes":  "프로그램이 완료 확인 전후로 갑자기 종료되는 원인을 추적할 수 있도록 crash_log.txt 시작/종료/예외 기록을 추가합니다."
 }
