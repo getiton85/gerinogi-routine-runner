@@ -201,7 +201,7 @@ $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
 $script:CrashLogPath = Join-Path $PSScriptRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $PSScriptRoot 'reports'
-$script:AppVersion = '1.0.19'
+$script:AppVersion = '1.0.20'
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
 $script:LongCompleteFallbackMs = 90000
@@ -226,6 +226,36 @@ $script:UpdateManifestPath = Join-Path $PSScriptRoot 'update_manifest_url.txt'
 $script:BackupDir = Join-Path $PSScriptRoot 'update_backup'
 $script:NewLine = [Environment]::NewLine
 
+function Write-TextFileSafe([string]$Path, [string]$Text) {
+    for ($i = 0; $i -lt 3; $i++) {
+        try {
+            [System.IO.File]::WriteAllText($Path, $Text, [System.Text.Encoding]::UTF8)
+            return $true
+        } catch [System.IO.IOException] {
+            Start-Sleep -Milliseconds (80 * ($i + 1))
+        } catch {
+            return $false
+        }
+    }
+    return $false
+}
+function Add-TextLineSafe([string]$Path, [string]$Line) {
+    for ($i = 0; $i -lt 3; $i++) {
+        try {
+            [System.IO.File]::AppendAllText($Path, $Line + [Environment]::NewLine, [System.Text.Encoding]::UTF8)
+            return $true
+        } catch [System.IO.IOException] {
+            Start-Sleep -Milliseconds (80 * ($i + 1))
+        } catch {
+            return $false
+        }
+    }
+    return $false
+}
+function Add-TextLinesSafe([string]$Path, [System.Collections.Generic.IEnumerable[string]]$Lines) {
+    return (Add-TextLineSafe $Path ([string]::Join([Environment]::NewLine, $Lines)))
+}
+
 function Write-CrashLog([string]$Context, [object]$ErrorObject) {
     try {
         $lines = New-Object System.Collections.Generic.List[string]
@@ -246,7 +276,7 @@ function Write-CrashLog([string]$Context, [object]$ErrorObject) {
                 $lines.Add(('object={0}' -f [string]$ErrorObject))
             }
         }
-        Add-Content -LiteralPath $script:CrashLogPath -Value $lines -Encoding UTF8
+        [void](Add-TextLinesSafe $script:CrashLogPath $lines)
     } catch {
     }
 }
@@ -593,9 +623,9 @@ function Get-ClickMode {
     return '둘다'
 }
 function Write-ClickTrace([int]$X, [int]$Y, [string]$Mode, [int]$DownSent, [int]$UpSent, [int]$ErrorCode, [string]$Note) {
-    if (-not [System.IO.File]::Exists($script:ClickTracePath)) { 'time,x,y,mode,down_sent,up_sent,error_code,note' | Set-Content -LiteralPath $script:ClickTracePath -Encoding UTF8 }
+    if (-not [System.IO.File]::Exists($script:ClickTracePath)) { [void](Write-TextFileSafe $script:ClickTracePath 'time,x,y,mode,down_sent,up_sent,error_code,note') }
     $line = @((Get-Date).ToString('s'), $X, $Y, (Csv $Mode), $DownSent, $UpSent, $ErrorCode, (Csv $Note)) -join ','
-    Add-Content -LiteralPath $script:ClickTracePath -Value $line -Encoding UTF8
+    [void](Add-TextLineSafe $script:ClickTracePath $line)
 }
 function New-MouseLParam([int]$X, [int]$Y) {
     return [IntPtr]((($Y -band 0xFFFF) -shl 16) -bor ($X -band 0xFFFF))
@@ -1888,16 +1918,16 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
         }
     }
 }
-function Ensure-LogHeader { if (-not [System.IO.File]::Exists($script:LogPath)) { 'started_at,ended_at,target_title,matched_window,monitor,requested_cycles,completed_cycles,completed_clicks,interval_ms,elapsed_seconds,average_cycle_seconds,status,message' | Set-Content -LiteralPath $script:LogPath -Encoding UTF8 } }
+function Ensure-LogHeader { if (-not [System.IO.File]::Exists($script:LogPath)) { [void](Write-TextFileSafe $script:LogPath 'started_at,ended_at,target_title,matched_window,monitor,requested_cycles,completed_cycles,completed_clicks,interval_ms,elapsed_seconds,average_cycle_seconds,status,message') } }
 function Csv([string]$Value) { if ($null -eq $Value) { $Value = '' }; return '"' + $Value.Replace('"', '""') + '"' }
-function Ensure-RoutineTraceHeader { if (-not [System.IO.File]::Exists($script:RoutineTracePath)) { 'time,cycle,phase,slot,event,x,y,detail' | Set-Content -LiteralPath $script:RoutineTracePath -Encoding UTF8 } }
+function Ensure-RoutineTraceHeader { if (-not [System.IO.File]::Exists($script:RoutineTracePath)) { [void](Write-TextFileSafe $script:RoutineTracePath 'time,cycle,phase,slot,event,x,y,detail') } }
 function Write-RoutineTrace([int]$Cycle, [string]$Phase, [string]$Slot, [string]$Event, [System.Drawing.Rectangle]$Rect, [string]$Detail) {
     Ensure-RoutineTraceHeader
     $x = ''
     $y = ''
     if ($null -ne $Rect -and -not $Rect.IsEmpty) { $x = [int]($Rect.Left + $Rect.Width / 2); $y = [int]($Rect.Top + $Rect.Height / 2) }
     $line = @((Get-Date).ToString('s'), $Cycle, (Csv $Phase), (Csv $Slot), (Csv $Event), $x, $y, (Csv $Detail)) -join ','
-    Add-Content -LiteralPath $script:RoutineTracePath -Value $line -Encoding UTF8
+    [void](Add-TextLineSafe $script:RoutineTracePath $line)
 }
 function Save-DiagnosticFrame([string]$Slot, [string]$Event, [System.Drawing.Rectangle]$Bounds, [System.Drawing.Rectangle]$MatchRect, [string]$Detail) {
     if ($null -eq $Bounds -or $Bounds.IsEmpty -or $Bounds.Width -lt 4 -or $Bounds.Height -lt 4) { return }
@@ -1953,7 +1983,7 @@ function Save-DiagnosticFrame([string]$Slot, [string]$Event, [System.Drawing.Rec
         Write-RoutineTrace $script:CurrentCycle 'diagnostic-frame' $Slot 'save-failed' ([System.Drawing.Rectangle]::Empty) $_.Exception.Message
     }
 }
-function Write-RunLog($Started, $Ended, $TitlePart, $MatchedTitle, $MonitorName, $Requested, $CompletedCycles, $CompletedClicks, $Interval, $Elapsed, $Average, $Status, $Message) { Ensure-LogHeader; $line = @($Started.ToString('s'), $Ended.ToString('s'), (Csv $TitlePart), (Csv $MatchedTitle), (Csv $MonitorName), $Requested, $CompletedCycles, $CompletedClicks, $Interval, ('{0:F3}' -f $Elapsed), ('{0:F3}' -f $Average), (Csv $Status), (Csv $Message)) -join ','; Add-Content -LiteralPath $script:LogPath -Value $line -Encoding UTF8 }
+function Write-RunLog($Started, $Ended, $TitlePart, $MatchedTitle, $MonitorName, $Requested, $CompletedCycles, $CompletedClicks, $Interval, $Elapsed, $Average, $Status, $Message) { Ensure-LogHeader; $line = @($Started.ToString('s'), $Ended.ToString('s'), (Csv $TitlePart), (Csv $MatchedTitle), (Csv $MonitorName), $Requested, $CompletedCycles, $CompletedClicks, $Interval, ('{0:F3}' -f $Elapsed), ('{0:F3}' -f $Average), (Csv $Status), (Csv $Message)) -join ','; [void](Add-TextLineSafe $script:LogPath $line) }
 
 function Test-HarborEnabled {
     try { if ($harborEnabledCheck) { return [bool]$harborEnabledCheck.Checked } } catch { }

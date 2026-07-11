@@ -1,15 +1,14 @@
 ﻿{
-    "version":  "1.0.19",
-    "packageUrl":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.19_menu_confirm_recovery.zip",
-    "sha256":  "105551A9BBC758518DFA39373A10572D1CAEAB9453B7212A877704A2A54AB338",
+    "version":  "1.0.20",
+    "packageUrl":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.20_log_lock_safe.zip",
+    "sha256":  "464125940C74A817CB969E4EA92C86E99ABA46BA5DBE140232863A9D21EABE8F",
     "files":  [
                   "local_state_routine_runner.ps1"
               ],
     "notes":  [
-                  "메뉴확인 단계에서 우측 상단 메뉴 탐색 영역을 넓힘",
-                  "메뉴 샘플 미스 시 메뉴 슬롯에 한해 저장 좌표 보조 클릭 허용",
-                  "나가기 후 혼잡한 로비에서 순환이 멈추는 문제 완화"
+                  "로그 CSV 파일이 다른 프로그램에 잠겨도 루틴이 종료되지 않도록 안전 기록 처리",
+                  "routine_trace_log, click_trace_log, 실행 요약 로그 쓰기 실패를 비치명 처리"
               ],
     "requiresReinstall":  false,
-    "createdAt":  "2026-07-12T00:38:35"
+    "createdAt":  "2026-07-12T00:54:54"
 }
