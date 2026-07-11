@@ -30,8 +30,8 @@
     "brandLink": "0,82,155"
   },
   "tabs": {
-    "main": "자동인식",
-    "options": "수동설정"
+    "main": "실험셋팅",
+    "options": "세부옵션"
   },
   "labels": {
     "targetGroup": "대상",
@@ -46,10 +46,10 @@
   },
   "buttons": {
     "searchWindows": "검색",
-    "capture": "대표(Shift+F8)",
-    "point": "좌표(Shift+F7)",
-    "start": "시작(Shift+F5)",
-    "stop": "중단(Shift+F6)",
+    "capture": "대표(F8)",
+    "point": "좌표(F7)",
+    "start": "시작(F5)",
+    "stop": "중단(F6)",
     "file": "파일",
     "folder": "폴더",
     "delete": "삭제",
