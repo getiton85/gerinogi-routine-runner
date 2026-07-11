@@ -201,7 +201,7 @@ $script:ClickTracePath = Join-Path $PSScriptRoot 'click_trace_log.csv'
 $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
 $script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $PSScriptRoot 'reports'
-$script:AppVersion = '1.0.64'
+$script:AppVersion = '1.0.65'
 $script:DiagnosticFailureCount = 0
 $script:DiagnosticDisabledUntil = [DateTime]::MinValue
 $script:IgnoreZones = New-Object System.Collections.Generic.List[object]
@@ -625,8 +625,9 @@ function Get-ClickMode {
 }
 function Get-RoutineMode {
     try {
-        if ($script:RoutineModeBox -and -not $script:RoutineModeBox.IsDisposed -and $script:RoutineModeBox.SelectedItem) {
-            return [string]$script:RoutineModeBox.SelectedItem
+        if ($script:ModeTabs -and -not $script:ModeTabs.IsDisposed) {
+            if ($script:ModeTabs.SelectedTab -eq $script:ManualModePage) { return '수동설정' }
+            if ($script:ModeTabs.SelectedTab -eq $script:AutoModePage) { return '자동인식' }
         }
     } catch { }
     if ([string]::IsNullOrWhiteSpace($script:RoutineMode)) { return '자동인식' }
@@ -2577,6 +2578,19 @@ $tabs = New-Object System.Windows.Forms.TabControl; $tabs.Dock = 'Fill'; $tabs.A
 $gamePage = New-Object System.Windows.Forms.TabPage; $gamePage.Text = [string](Get-UiValue 'tabs.main' '실험셋팅'); $gamePage.Padding = New-Object System.Windows.Forms.Padding(8); $gamePage.BackColor = $uiBackground
 $optionPage = New-Object System.Windows.Forms.TabPage; $optionPage.Text = [string](Get-UiValue 'tabs.options' '세부옵션'); $optionPage.Padding = New-Object System.Windows.Forms.Padding(8)
 [void]$tabs.TabPages.Add($gamePage); [void]$tabs.TabPages.Add($optionPage); $form.Controls.Add($tabs)
+$script:ModeTabs = $tabs
+$script:AutoModePage = $gamePage
+$script:ManualModePage = $optionPage
+
+$manualModeTable = New-Object System.Windows.Forms.TableLayoutPanel
+$manualModeTable.Dock = 'Fill'
+$manualModeTable.ColumnCount = 1
+$manualModeTable.RowCount = 2
+$manualModeTable.Padding = New-Object System.Windows.Forms.Padding(0)
+$manualModeTable.BackColor = $uiBackground
+$manualModeTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
+$manualModeTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 360))) | Out-Null
+$optionPage.Controls.Add($manualModeTable)
 
 $gameTable = New-Object System.Windows.Forms.TableLayoutPanel; $gameTable.Dock = 'Fill'; $gameTable.ColumnCount = 1; $gameTable.RowCount = 8; $gameTable.Padding = New-Object System.Windows.Forms.Padding(0); $gameTable.BackColor = $uiBackground
 foreach ($style in @(
@@ -2864,8 +2878,8 @@ $portraitPanel.Add_Resize({
 $gameTable.Controls.Add($portraitPanel, 0, 7)
 
 
-$settingsGroup = New-Object System.Windows.Forms.GroupBox; $settingsGroup.Text = [string](Get-UiValue 'labels.settings' '셋팅'); $settingsGroup.Dock = 'Top'; $settingsGroup.Height = 560; $settingsGroup.Padding = New-Object System.Windows.Forms.Padding(10)
-$optionPage.Controls.Add($settingsGroup)
+$settingsGroup = New-Object System.Windows.Forms.GroupBox; $settingsGroup.Text = [string](Get-UiValue 'labels.settings' '셋팅'); $settingsGroup.Dock = 'Fill'; $settingsGroup.Height = 560; $settingsGroup.Padding = New-Object System.Windows.Forms.Padding(10)
+$manualModeTable.Controls.Add($settingsGroup, 0, 1)
 $settingsTable = New-Object System.Windows.Forms.TableLayoutPanel; $settingsTable.Dock = 'Fill'; $settingsTable.ColumnCount = 2; $settingsTable.RowCount = 17
 $settingsTable.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 56))) | Out-Null
 $settingsTable.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 44))) | Out-Null
@@ -3099,10 +3113,36 @@ function Run-LocateSelectedSlot {
     $statusLabel.Text = (Get-SlotStatusName $slot) + ' 위치 확인: X=' + $x + ', Y=' + $y
 }
 function Run-ActualClickProbe { $slot=$script:SelectedSlot; $titlePart=$titleBox.Text.Trim(); if([string]::IsNullOrWhiteSpace($titlePart)){[System.Windows.Forms.MessageBox]::Show('대상 창 제목을 먼저 입력하세요.','실제 클릭 확인')|Out-Null;return}; $target=Find-WindowByTitlePart $titlePart; if($null -eq $target){[System.Windows.Forms.MessageBox]::Show('대상 창을 찾지 못했습니다.','실제 클릭 확인')|Out-Null;return}; $script:TargetHandle=$target.Handle; $screen=$screens[$monitorBox.SelectedIndex]; if((Get-SlotSamplePaths $slot).Count -eq 0){[System.Windows.Forms.MessageBox]::Show('현재 선택 슬롯에 이미지가 없습니다.','실제 클릭 확인')|Out-Null;return}; $rect=Find-Slot $slot $screen; if($rect.IsEmpty){[System.Windows.Forms.MessageBox]::Show('현재 선택 슬롯 이미지를 화면에서 찾지 못했습니다.','실제 클릭 확인')|Out-Null;return}; if([System.Windows.Forms.MessageBox]::Show('선택 슬롯을 한 번 클릭합니다. 반응 여부를 눈으로 확인하세요.','실제 클릭 확인',[System.Windows.Forms.MessageBoxButtons]::OKCancel) -eq [System.Windows.Forms.DialogResult]::OK){[void][NativeInput]::SetForegroundWindow($target.Handle); Start-Sleep -Milliseconds 200; [void](Click-SlotTarget $slot $rect ([int]$stepDelayBox.Value))} }
+function Set-RoutineModeFromSelectedTab {
+    if ($tabs.SelectedTab -eq $optionPage) {
+        $script:RoutineMode = '수동설정'
+        if ($routineModeBox.SelectedIndex -ne 1) { $routineModeBox.SelectedIndex = 1 }
+    } else {
+        $script:RoutineMode = '자동인식'
+        if ($routineModeBox.SelectedIndex -ne 0) { $routineModeBox.SelectedIndex = 0 }
+    }
+}
+function Move-RunnerUiToSelectedModeTab {
+    Set-RoutineModeFromSelectedTab
+    if ($tabs.SelectedTab -eq $optionPage) {
+        if ($gameTable.Parent -ne $manualModeTable) {
+            if ($null -ne $gameTable.Parent) { $gameTable.Parent.Controls.Remove($gameTable) }
+            $manualModeTable.Controls.Add($gameTable, 0, 0)
+        }
+    } else {
+        if ($gameTable.Parent -ne $gamePage) {
+            if ($null -ne $gameTable.Parent) { $gameTable.Parent.Controls.Remove($gameTable) }
+            $gamePage.Controls.Add($gameTable)
+        }
+    }
+    $gameTable.Dock = 'Fill'
+    $statusLabel.Text = '선택 모드: ' + (Get-RoutineMode)
+}
 $refreshWindowsButton.Add_Click({ Refresh-WindowList })
 $windowBox.Add_SelectedIndexChanged({ if ($windowBox.SelectedItem) { $titleBox.Text = [string]$windowBox.SelectedItem } })
 $slotBox.Add_SelectedIndexChanged({ if ($slotBox.SelectedItem) { $script:SelectedSlot = [string]$slotBox.SelectedItem; Refresh-Slots } })
-$routineModeBox.Add_SelectedIndexChanged({ if ($routineModeBox.SelectedItem) { $script:RoutineMode = [string]$routineModeBox.SelectedItem; $statusLabel.Text = '실행 방식: ' + $script:RoutineMode } })
+$routineModeBox.Add_SelectedIndexChanged({ if ($routineModeBox.SelectedItem) { $statusLabel.Text = '실행 방식은 상단 탭이 결정합니다. 현재: ' + (Get-RoutineMode) } })
+$tabs.Add_SelectedIndexChanged({ Move-RunnerUiToSelectedModeTab })
 $addButton.Add_Click({ Add-SlotSample })
 $pointButton.Add_Click({ Save-CurrentPointForSelectedSlot })
 $fileButton.Add_Click({ Import-SelectedSlotFile })
@@ -3146,9 +3186,11 @@ $loadedIgnoreZonesOnStart = Load-IgnoreZones
 Refresh-Slots
 Update-SlotPreviewCollapsed
 Update-AdvancedToolsCollapsed
+Move-RunnerUiToSelectedModeTab
 $statusLabel.Text = '저장 폴더에서 ' + $loadedOnStart + '개 슬롯, 좌표 ' + $loadedPointsOnStart + '개, 슬롯구역 ' + $loadedRegionsOnStart + '개, 제외구역 ' + $loadedIgnoreZonesOnStart + '개를 불러왔습니다.'
 function Start-StateRoutine {
     if ($script:Running) { [System.Windows.Forms.MessageBox]::Show('이미 실행 중입니다.', '실행') | Out-Null; return }
+    Set-RoutineModeFromSelectedTab
     if (-not (Test-HarborEnabled)) { [System.Windows.Forms.MessageBox]::Show('허상의 정박지가 OFF 상태입니다. 실행하려면 허상의 정박지 ON을 체크하세요.', '실행') | Out-Null; return }
     $optionalSlots = @('식사 버튼','궁극기','스킵','팔라딘')
     foreach ($slot in $script:RouteSlots + @('상태 기준')) { if ($optionalSlots -contains $slot) { continue }; if (-not (Test-SlotEnabled $slot)) { continue }; if ($null -eq $script:Samples[$slot]) { [System.Windows.Forms.MessageBox]::Show($slot + ' 슬롯 이미지가 필요합니다.', '실행') | Out-Null; return } }
