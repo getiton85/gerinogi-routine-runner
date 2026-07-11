@@ -1,10 +1,10 @@
 ﻿{
-    "version":  "1.0.17",
+    "version":  "1.0.18",
     "update_mode":  "package",
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.17_crash_trace.zip",
-                    "sha256":  "2B005CD48551AD71738AD9EB8187BB75F18271F4A521F939D67B0CC01EA5C424"
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.18_complete_priority.zip",
+                    "sha256":  "289D35C040C2E531EB8E267BDFC091FE278441FDD868746D44AE749849823F19"
                 },
     "requiresInstaller":  false,
-    "notes":  "프로그램이 완료 확인 전후로 갑자기 종료되는 원인을 추적할 수 있도록 crash_log.txt 시작/종료/예외 기록을 추가합니다."
+    "notes":  "상태 기준이 보이는 중에도 완료 조건이 열리면 완료 확인 이미지를 먼저 검사해 완료 화면에서 내부 루프에 잠기는 문제를 줄입니다."
 }
