@@ -200,7 +200,9 @@ $script:ClickTracePath = Join-Path $PSScriptRoot 'click_trace_log.csv'
 $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
 $script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $PSScriptRoot 'reports'
-$script:AppVersion = '1.0.11'
+$script:AppVersion = '1.0.12'
+$script:InsideStartedAt = $null
+$script:MinimumCompleteWaitMs = 30000
 $script:DiagnosticFailureCount = 0
 $script:DiagnosticDisabledUntil = [DateTime]::MinValue
 $script:IgnoreZones = New-Object System.Collections.Generic.List[object]
@@ -301,7 +303,7 @@ public static class VisionFinder {
         int gray = Gray(b, g, r);
         int max = Math.Max(r, Math.Max(g, b));
         int min = Math.Min(r, Math.Min(g, b));
-        return gray >= threshold && (max - min) <= 95;
+        return gray >= threshold && (max - min) <= 60;
     }
 
     public static Rectangle FindBrightTextSample(Rectangle screenBounds, string samplePath, int searchStep, int sampleStep, double requiredScore) {
@@ -328,7 +330,7 @@ public static class VisionFinder {
                     int tRow = ty * ts;
                     for (int tx = 0; tx < tw; tx += sampleStep) {
                         int ti = tRow + tx * 4;
-                        if (IsBrightTextPixel(t[ti], t[ti + 1], t[ti + 2], t[ti + 3], 155)) {
+                        if (IsBrightTextPixel(t[ti], t[ti + 1], t[ti + 2], t[ti + 3], 170)) {
                             textXs.Add(tx);
                             textYs.Add(ty);
                         }
@@ -346,7 +348,7 @@ public static class VisionFinder {
                             int sx = x + textXs[i];
                             int sy = y + textYs[i];
                             int si = sy * ss + sx * 4;
-                            if (IsBrightTextPixel(s[si], s[si + 1], s[si + 2], 255, 142)) ok++;
+                            if (IsBrightTextPixel(s[si], s[si + 1], s[si + 2], 255, 170)) ok++;
                         }
                         double score = (double)ok / textCount;
                         if (score > bestScore) { bestScore = score; bestX = x; bestY = y; }
@@ -1433,7 +1435,7 @@ function Find-Slot([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
         if (Test-SlotUsesBrightTextFirst $Slot) {
             $slotTolerance = [Math]::Min($slotTolerance, 45)
             $slotRequired = [Math]::Max($slotRequired, 0.82)
-            $brightRequired = if ($Slot -eq '던전') { 0.68 } elseif ($Slot -eq '퀘스트') { 0.70 } else { 0.72 }
+            $brightRequired = if ($Slot -eq '스킵') { 0.55 } elseif ($Slot -eq '완료 확인') { 0.86 } elseif ($Slot -eq '던전') { 0.68 } elseif ($Slot -eq '퀘스트') { 0.70 } else { 0.72 }
             $brightRect = [VisionFinder]::FindBrightTextSample($searchBounds, $samplePath, 3, 5, $brightRequired)
             if (-not $brightRect.IsEmpty) {
                 if (Test-RectInIgnoreZone $brightRect) {
@@ -1461,6 +1463,16 @@ function Find-Slot([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
     }
     $script:LastMatchedSample = ''
     return [System.Drawing.Rectangle]::Empty
+}
+function Test-CompleteWaitElapsed {
+    if ($null -eq $script:InsideStartedAt) { return $false }
+    $elapsedMs = ((Get-Date) - $script:InsideStartedAt).TotalMilliseconds
+    return ($elapsedMs -ge [double]$script:MinimumCompleteWaitMs)
+}
+function Get-CompleteWaitDetail {
+    if ($null -eq $script:InsideStartedAt) { return 'inside start time missing' }
+    $elapsedMs = [int](((Get-Date) - $script:InsideStartedAt).TotalMilliseconds)
+    return ('elapsedMs={0}; requiredMs={1}' -f $elapsedMs, $script:MinimumCompleteWaitMs)
 }
 function Test-StopRequested {
     if ($script:StopRequested) { return $true }
@@ -1611,10 +1623,14 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
             return [pscustomobject]@{ Slot = '상태 기준'; Rect = $stateRect; Stage = $Stage }
         }
         if ($null -ne $script:Samples['완료 확인']) {
-            $completeRect = Find-ValidSlotOnce '완료 확인' $Screen $true
-            if (-not $completeRect.IsEmpty) {
-                Write-RoutineTrace $script:CurrentCycle 'stage-scan' '완료 확인' 'candidate-after-inside' $completeRect 'state marker not visible'
-                return [pscustomobject]@{ Slot = '완료 확인'; Rect = $completeRect; Stage = $Stage }
+            if (Test-CompleteWaitElapsed) {
+                $completeRect = Find-ValidSlotOnce '완료 확인' $Screen $true
+                if (-not $completeRect.IsEmpty) {
+                    Write-RoutineTrace $script:CurrentCycle 'stage-scan' '완료 확인' 'candidate-after-inside' $completeRect ('state marker not visible; ' + (Get-CompleteWaitDetail))
+                    return [pscustomobject]@{ Slot = '완료 확인'; Rect = $completeRect; Stage = $Stage }
+                }
+            } else {
+                Write-RoutineTrace $script:CurrentCycle 'stage-scan' '완료 확인' 'blocked-too-early' ([System.Drawing.Rectangle]::Empty) (Get-CompleteWaitDetail)
             }
         }
         Write-RoutineTrace $script:CurrentCycle 'stage-scan' '' 'none' ([System.Drawing.Rectangle]::Empty) 'stage=내부; checked=상태 기준|스킵|식사 버튼|궁극기|팔라딘|완료 확인'
@@ -1685,6 +1701,7 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
             $exitResult = Invoke-ExitActionUntilClosed $Screen $StatusLabel $rect
             if ($exitResult.Closed) {
                 $InsidePhase.Value = $false
+                $script:InsideStartedAt = $null
                 Set-ProgressStep 10
                 return [pscustomobject]@{ Clicks = [int]$exitResult.Clicks; Completed = $true; Message = '순환 완료'; NextStage = '메뉴' }
             }
@@ -1697,6 +1714,7 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
             [void](Click-SlotTarget $slot $rect ([int]$stepDelayBox.Value))
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'click-after' $rect ''
             $InsidePhase.Value = $false
+            $script:InsideStartedAt = $null
             Set-ProgressStep 8
             Wait-StateActionSettle $slot
             return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = '완료 확인 클릭'; NextStage = $nextStage }
@@ -1746,6 +1764,7 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
             [System.Windows.Forms.Application]::DoEvents()
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'inside-observe-only' $rect 'blocked route slots while visible'
             $InsidePhase.Value = $true
+            if ($null -eq $script:InsideStartedAt) { $script:InsideStartedAt = Get-Date }
             Set-ProgressStep 5
             Wait-StateActionSettle $slot
             return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = '상태 기준 확인'; NextStage = $nextStage }
@@ -1757,6 +1776,7 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
             [void](Click-SlotTarget $slot $rect ([int]$stepDelayBox.Value) 120)
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'click-after' $rect ''
             $InsidePhase.Value = $true
+            $script:InsideStartedAt = Get-Date
             Set-ProgressStep 7
             Wait-StateActionSettle $slot
             return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = '퀘스트 클릭'; NextStage = $nextStage }
@@ -2918,6 +2938,7 @@ function Start-StateRoutine {
     try {
         $cycle=0
         $insidePhase = $false
+        $script:InsideStartedAt = $null
         $routineStage = '메뉴'
         while(-not $script:StopRequested) {
             $cycle++
