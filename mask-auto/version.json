@@ -1,10 +1,10 @@
 ﻿{
-    "version":  "1.0.13",
+    "version":  "1.0.14",
     "update_mode":  "package",
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.13_stage_recovery.zip",
-                    "sha256":  "63789AFFA57912632341945DEEAA00AF91D4A98863287E298754EF3B7383256D"
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.14_combat_gate.zip",
+                    "sha256":  "ABDA9AB9F0C591DF8B25A41D5B9B96ECD3B636E4AF09E6F913019802EA704907"
                 },
     "requiresInstaller":  false,
-    "notes":  "진행 단계가 입장/퀘스트 등에 갇혔을 때 상태 기준 또는 완료 확인을 복구 후보로 탐색해 실제 화면과 루틴 상태를 다시 맞춥니다."
+    "notes":  "상태 기준/스킵/상태 기준 복귀를 완료 확인의 전제조건으로 묶어 보스 등장 연출 중 완료 확인으로 조기 전환되는 문제를 막습니다."
 }
