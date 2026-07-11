@@ -1,10 +1,10 @@
 ﻿{
-    "version":  "1.0.14",
+    "version":  "1.0.15",
     "update_mode":  "package",
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.14_combat_gate.zip",
-                    "sha256":  "ABDA9AB9F0C591DF8B25A41D5B9B96ECD3B636E4AF09E6F913019802EA704907"
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.15_state_bright_match.zip",
+                    "sha256":  "61BE7F5A53F860C3A81C0AA1A9192A7F73DABC2F4F9DE6DA2DD0BE2669D2BC5B"
                 },
     "requiresInstaller":  false,
-    "notes":  "상태 기준/스킵/상태 기준 복귀를 완료 확인의 전제조건으로 묶어 보스 등장 연출 중 완료 확인으로 조기 전환되는 문제를 막습니다."
+    "notes":  "상태 기준 슬롯을 밝은 글자/아이콘 우선 매칭으로 변경해 보라색 배경이 섞인 ASSIST 아이콘도 전투 진행 상태로 인식하도록 수정합니다."
 }

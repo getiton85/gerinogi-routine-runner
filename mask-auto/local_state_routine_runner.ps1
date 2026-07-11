@@ -200,7 +200,7 @@ $script:ClickTracePath = Join-Path $PSScriptRoot 'click_trace_log.csv'
 $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
 $script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $PSScriptRoot 'reports'
-$script:AppVersion = '1.0.14'
+$script:AppVersion = '1.0.15'
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
 $script:CombatMarkerSeen = $false
@@ -1291,7 +1291,7 @@ function Test-SlotAllowsCoordinateFallback([string]$Slot) {
     return $false
 }
 function Test-SlotUsesBrightTextFirst([string]$Slot) {
-    return @('협동','던전','입장','퀘스트','완료 확인','나가기','스킵') -contains $Slot
+    return @('협동','던전','입장','퀘스트','상태 기준','완료 확인','나가기','스킵') -contains $Slot
 }
 function Find-EntryBusyGuard([System.Windows.Forms.Screen]$Screen) {
     $guardPath = Join-Path (Join-Path $PSScriptRoot 'state_samples') '입장_전투중_가드.png'
@@ -1438,7 +1438,7 @@ function Find-Slot([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
         if (Test-SlotUsesBrightTextFirst $Slot) {
             $slotTolerance = [Math]::Min($slotTolerance, 45)
             $slotRequired = [Math]::Max($slotRequired, 0.82)
-            $brightRequired = if ($Slot -eq '스킵') { 0.55 } elseif ($Slot -eq '완료 확인') { 0.86 } elseif ($Slot -eq '던전') { 0.68 } elseif ($Slot -eq '퀘스트') { 0.70 } else { 0.72 }
+        $brightRequired = if ($Slot -eq '스킵') { 0.55 } elseif ($Slot -eq '상태 기준') { 0.62 } elseif ($Slot -eq '완료 확인') { 0.86 } elseif ($Slot -eq '던전') { 0.68 } elseif ($Slot -eq '퀘스트') { 0.70 } else { 0.72 }
             $brightRect = [VisionFinder]::FindBrightTextSample($searchBounds, $samplePath, 3, 5, $brightRequired)
             if (-not $brightRect.IsEmpty) {
                 if (Test-RectInIgnoreZone $brightRect) {
