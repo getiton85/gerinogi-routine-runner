@@ -1,10 +1,10 @@
 ﻿{
-    "version":  "1.0.12",
+    "version":  "1.0.13",
     "update_mode":  "package",
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.12_skip_complete_guard.zip",
-                    "sha256":  "675DA43BB6FB9A401F4CB1AE04BAD8DD17CB5B6B1BF5CD50B95E857C1F10845A"
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.13_stage_recovery.zip",
+                    "sha256":  "63789AFFA57912632341945DEEAA00AF91D4A98863287E298754EF3B7383256D"
                 },
     "requiresInstaller":  false,
-    "notes":  "스킵 인식 기준을 완화하고 완료 확인 오탐을 막기 위해 흰 글자 판정과 내부 진행 최소 대기 조건을 강화합니다."
+    "notes":  "진행 단계가 입장/퀘스트 등에 갇혔을 때 상태 기준 또는 완료 확인을 복구 후보로 탐색해 실제 화면과 루틴 상태를 다시 맞춥니다."
 }

@@ -200,7 +200,7 @@ $script:ClickTracePath = Join-Path $PSScriptRoot 'click_trace_log.csv'
 $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
 $script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $PSScriptRoot 'reports'
-$script:AppVersion = '1.0.12'
+$script:AppVersion = '1.0.13'
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
 $script:DiagnosticFailureCount = 0
@@ -1654,6 +1654,22 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
         if (-not $busyRect.IsEmpty) {
             Write-RoutineTrace $script:CurrentCycle 'stage-scan' '입장' 'busy-wait' $busyRect 'entry screen is in battle state; wait without clicking'
             return $null
+        }
+    }
+    if (@('던전','입장','퀘스트','메뉴확인','어비스') -contains $Stage) {
+        if ((Get-SlotSamplePaths '상태 기준').Count -gt 0) {
+            $recoveryStateRect = Find-ValidSlotOnce '상태 기준' $Screen $true
+            if (-not $recoveryStateRect.IsEmpty) {
+                Write-RoutineTrace $script:CurrentCycle 'stage-scan' '상태 기준' 'recovery-candidate' $recoveryStateRect ('expected=' + $expectedSlot + '; stage=' + $Stage)
+                return [pscustomobject]@{ Slot = '상태 기준'; Rect = $recoveryStateRect; Stage = $Stage }
+            }
+        }
+        if ((Get-SlotSamplePaths '완료 확인').Count -gt 0) {
+            $recoveryCompleteRect = Find-ValidSlotOnce '완료 확인' $Screen $true
+            if (-not $recoveryCompleteRect.IsEmpty) {
+                Write-RoutineTrace $script:CurrentCycle 'stage-scan' '완료 확인' 'recovery-candidate' $recoveryCompleteRect ('expected=' + $expectedSlot + '; stage=' + $Stage)
+                return [pscustomobject]@{ Slot = '완료 확인'; Rect = $recoveryCompleteRect; Stage = $Stage }
+            }
         }
     }
     Write-RoutineTrace $script:CurrentCycle 'stage-scan' $expectedSlot 'miss' ([System.Drawing.Rectangle]::Empty) ('stage=' + $Stage)
