@@ -1,0 +1,15 @@
+﻿{
+    "version":  "1.0.9",
+    "channel":  "mask-auto",
+    "required_install_root":  "C:\\gerinogi-mask",
+    "update_mode":  "package",
+    "package":  {
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.9_173321.zip",
+                    "sha256":  "616A184581AE789DA6DA7CC20461812AB90764C72FE3A548725735D7593A5D59"
+                },
+    "installer":  {
+                      "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/마스크테스트 설치.exe",
+                      "sha256":  "4F10EE20D49E14C0D53C60161413D706DE9991795ABC0424F7BD005802EFE3F9"
+                  },
+    "notes":  "Host moved to gerinogi-routine-runner/mask-auto to match the GitHub Desktop repository. Coop bright text matching retained."
+}
