@@ -1,10 +1,15 @@
 ﻿{
-    "version":  "1.0.18",
-    "update_mode":  "package",
-    "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.18_complete_priority.zip",
-                    "sha256":  "289D35C040C2E531EB8E267BDFC091FE278441FDD868746D44AE749849823F19"
-                },
-    "requiresInstaller":  false,
-    "notes":  "상태 기준이 보이는 중에도 완료 조건이 열리면 완료 확인 이미지를 먼저 검사해 완료 화면에서 내부 루프에 잠기는 문제를 줄입니다."
+    "version":  "1.0.19",
+    "packageUrl":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.19_menu_confirm_recovery.zip",
+    "sha256":  "105551A9BBC758518DFA39373A10572D1CAEAB9453B7212A877704A2A54AB338",
+    "files":  [
+                  "local_state_routine_runner.ps1"
+              ],
+    "notes":  [
+                  "메뉴확인 단계에서 우측 상단 메뉴 탐색 영역을 넓힘",
+                  "메뉴 샘플 미스 시 메뉴 슬롯에 한해 저장 좌표 보조 클릭 허용",
+                  "나가기 후 혼잡한 로비에서 순환이 멈추는 문제 완화"
+              ],
+    "requiresReinstall":  false,
+    "createdAt":  "2026-07-12T00:38:35"
 }

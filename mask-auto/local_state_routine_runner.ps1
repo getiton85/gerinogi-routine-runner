@@ -201,7 +201,7 @@ $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
 $script:CrashLogPath = Join-Path $PSScriptRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $PSScriptRoot 'reports'
-$script:AppVersion = '1.0.18'
+$script:AppVersion = '1.0.19'
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
 $script:LongCompleteFallbackMs = 90000
@@ -1317,7 +1317,7 @@ function Test-SlotRequiresRegion([string]$Slot) {
     return @('협동','메뉴','어비스','던전','입장','퀘스트','완료 확인','나가기','식사 버튼','궁극기','스킵','팔라딘') -contains $Slot
 }
 function Test-SlotAllowsCoordinateFallback([string]$Slot) {
-    return $false
+    return @('메뉴') -contains $Slot
 }
 function Test-SlotUsesBrightTextFirst([string]$Slot) {
     return @('협동','던전','입장','퀘스트','상태 기준','완료 확인','나가기','스킵') -contains $Slot
@@ -1408,6 +1408,16 @@ function Get-SlotSearchBounds([string]$Slot, [System.Windows.Forms.Screen]$Scree
     $bounds = Get-CurrentSearchBounds $Screen
     $regionRect = Get-SlotRegionScreenRect $Slot $Screen
     if (-not $regionRect.IsEmpty) {
+        if ($Slot -eq '메뉴') {
+            $wideMenuRect = [System.Drawing.Rectangle]::new(
+                [int]($bounds.Left + ($bounds.Width * 0.78)),
+                [int]$bounds.Top,
+                [int]($bounds.Width * 0.20),
+                [int]($bounds.Height * 0.18)
+            )
+            $wideMenuRect = Intersect-RectWithin $wideMenuRect $bounds
+            if (-not $wideMenuRect.IsEmpty) { return $wideMenuRect }
+        }
         if ($Slot -eq '스킵') {
             $wideSkipRect = [System.Drawing.Rectangle]::new(
                 [int]($regionRect.Left - 700),
