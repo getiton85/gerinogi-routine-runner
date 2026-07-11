@@ -200,7 +200,7 @@ $script:ClickTracePath = Join-Path $PSScriptRoot 'click_trace_log.csv'
 $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
 $script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $PSScriptRoot 'reports'
-$script:AppVersion = '1.0.67'
+$script:AppVersion = '1.0.68'
 $script:DiagnosticFailureCount = 0
 $script:DiagnosticDisabledUntil = [DateTime]::MinValue
 $script:IgnoreZones = New-Object System.Collections.Generic.List[object]
@@ -1211,6 +1211,10 @@ function Get-SlotPointScreenPoint([string]$Slot) {
     return [System.Drawing.Point]::new([int]$point.X, [int]$point.Y)
 }
 function Click-SlotTarget([string]$Slot, [System.Drawing.Rectangle]$Rect, [int]$DelayMs, [int]$HoldOverrideMs = -1) {
+    if (-not (Test-SlotEnabled $Slot)) {
+        Write-RoutineTrace $script:CurrentCycle 'click-target' $Slot 'blocked-disabled' ([System.Drawing.Rectangle]::Empty) 'slot disabled'
+        return $false
+    }
     if (-not $Rect.IsEmpty) {
         $x = [int]($Rect.Left + $Rect.Width / 2)
         $y = [int]($Rect.Top + $Rect.Height / 2)
@@ -1412,6 +1416,10 @@ function Sleep-WithStop([int]$Milliseconds) {
     return $true
 }
 function Find-ValidSlotOnce([string]$Slot, [System.Windows.Forms.Screen]$Screen, [bool]$UsePointCheck = $true) {
+    if (-not (Test-SlotEnabled $Slot)) {
+        Write-RoutineTrace $script:CurrentCycle 'single-find' $Slot 'disabled' ([System.Drawing.Rectangle]::Empty) 'slot disabled'
+        return [System.Drawing.Rectangle]::Empty
+    }
     $rect = Find-Slot $Slot $Screen
     if ($rect.IsEmpty) {
         $point = Get-SlotPointScreenPoint $Slot
