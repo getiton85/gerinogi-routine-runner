@@ -200,7 +200,7 @@ $script:ClickTracePath = Join-Path $PSScriptRoot 'click_trace_log.csv'
 $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
 $script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $PSScriptRoot 'reports'
-$script:AppVersion = '1.0.10'
+$script:AppVersion = '1.0.11'
 $script:DiagnosticFailureCount = 0
 $script:DiagnosticDisabledUntil = [DateTime]::MinValue
 $script:IgnoreZones = New-Object System.Collections.Generic.List[object]
@@ -1286,7 +1286,7 @@ function Test-SlotAllowsCoordinateFallback([string]$Slot) {
     return $false
 }
 function Test-SlotUsesBrightTextFirst([string]$Slot) {
-    return @('협동','던전','퀘스트','완료 확인','나가기','스킵') -contains $Slot
+    return @('협동','던전','입장','퀘스트','완료 확인','나가기','스킵') -contains $Slot
 }
 function Find-EntryBusyGuard([System.Windows.Forms.Screen]$Screen) {
     $guardPath = Join-Path (Join-Path $PSScriptRoot 'state_samples') '입장_전투중_가드.png'

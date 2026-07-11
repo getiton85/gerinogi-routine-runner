@@ -1,10 +1,10 @@
 ﻿{
-    "version":  "1.0.10",
+    "version":  "1.0.11",
     "update_mode":  "package",
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.10_1742_busy_guard.zip",
-                    "sha256":  "2AD7048DD5363269D83C1AB07485F5148941ED82874535EE8C41EE1E78E092D3"
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.11_entry_button.zip",
+                    "sha256":  "6D25A9B5ECFA418B357951E3E5EBB989D66435D36E373DA575D3077BC903135B"
                 },
     "requiresInstaller":  false,
-    "notes":  "입장 단계에서 전투중 버튼을 입장 불가/전환 대기 상태로 감지해 오클릭 없이 대기합니다."
+    "notes":  "입장 버튼 문구가 이동하기에서 입장하기로 바뀐 화면을 인식하도록 입장 샘플과 밝은 글자 매칭을 갱신합니다."
 }
