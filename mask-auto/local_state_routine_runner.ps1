@@ -201,7 +201,7 @@ $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
 $script:CrashLogPath = Join-Path $PSScriptRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $PSScriptRoot 'reports'
-$script:AppVersion = '1.0.20'
+$script:AppVersion = '1.0.21'
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
 $script:LongCompleteFallbackMs = 90000
@@ -1560,6 +1560,11 @@ function Test-CompleteAllowed {
     if ($script:BossSkipSeen -and -not $script:CombatMarkerSeenAfterSkip -and -not $longFallbackReady) { return $false }
     return $true
 }
+function Test-CompleteRecoveryScanAllowed([string]$Stage) {
+    if (Test-CompleteAllowed) { return $true }
+    if ($null -ne $script:InsideStartedAt) { return $false }
+    return @('던전','입장','퀘스트','메뉴확인','어비스') -contains $Stage
+}
 function Get-CompleteGateDetail {
     if ($null -eq $script:InsideStartedAt) { return 'inside start time missing' }
     $elapsedMs = [int](((Get-Date) - $script:InsideStartedAt).TotalMilliseconds)
@@ -1713,7 +1718,7 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
             Write-RoutineTrace $script:CurrentCycle 'stage-scan' $slot 'miss-inside' ([System.Drawing.Rectangle]::Empty) $stateNote
         }
         if ($null -ne $script:Samples['완료 확인']) {
-            if (Test-CompleteAllowed) {
+            if (Test-CompleteRecoveryScanAllowed $Stage) {
                 $completeRect = Find-ValidSlotOnce '완료 확인' $Screen $true
                 if (-not $completeRect.IsEmpty) {
                     Write-RoutineTrace $script:CurrentCycle 'stage-scan' '완료 확인' 'candidate-after-inside' $completeRect ($stateNote + '; ' + (Get-CompleteGateDetail))
@@ -1758,7 +1763,7 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
             }
         }
         if ((Get-SlotSamplePaths '완료 확인').Count -gt 0) {
-            if (Test-CompleteAllowed) {
+            if (Test-CompleteRecoveryScanAllowed $Stage) {
                 $recoveryCompleteRect = Find-ValidSlotOnce '완료 확인' $Screen $true
                 if (-not $recoveryCompleteRect.IsEmpty) {
                     Write-RoutineTrace $script:CurrentCycle 'stage-scan' '완료 확인' 'recovery-candidate' $recoveryCompleteRect ('expected=' + $expectedSlot + '; stage=' + $Stage + '; ' + (Get-CompleteGateDetail))
@@ -1830,10 +1835,7 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
             [void](Click-SlotTarget $slot $rect ([int]$stepDelayBox.Value))
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'click-after' $rect ''
             $InsidePhase.Value = $false
-            $script:InsideStartedAt = $null
-            $script:CombatMarkerSeen = $false
-            $script:BossSkipSeen = $false
-            $script:CombatMarkerSeenAfterSkip = $false
+            Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'keep-combat-history-until-exit' $rect 'exit screen has not closed yet'
             Set-ProgressStep 8
             Wait-StateActionSettle $slot
             return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = '완료 확인 클릭'; NextStage = $nextStage }

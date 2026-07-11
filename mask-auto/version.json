@@ -1,14 +1,14 @@
 ﻿{
-    "version":  "1.0.20",
-    "packageUrl":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.20_log_lock_safe.zip",
-    "sha256":  "464125940C74A817CB969E4EA92C86E99ABA46BA5DBE140232863A9D21EABE8F",
+    "version":  "1.0.21",
+    "packageUrl":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.21_complete_recovery_gate.zip",
+    "sha256":  "EE0F866C745020C12F2B27FE95F158AEDE80A277830470EA12F8589C22E07FE5",
     "files":  [
                   "local_state_routine_runner.ps1"
               ],
     "notes":  [
-                  "로그 CSV 파일이 다른 프로그램에 잠겨도 루틴이 종료되지 않도록 안전 기록 처리",
-                  "routine_trace_log, click_trace_log, 실행 요약 로그 쓰기 실패를 비치명 처리"
+                  "완료 확인 화면에서 내부 상태가 입장/퀘스트로 꼬여도 완료 확인 이미지를 복구 탐지하도록 보강",
+                  "완료 확인 클릭 직후 내부 진행 이력을 즉시 지우지 않고 나가기 완료 시점까지 유지"
               ],
     "requiresReinstall":  false,
-    "createdAt":  "2026-07-12T00:54:54"
+    "createdAt":  "2026-07-12T02:39:11"
 }
