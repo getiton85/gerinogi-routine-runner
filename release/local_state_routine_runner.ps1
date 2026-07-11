@@ -200,7 +200,7 @@ $script:ClickTracePath = Join-Path $PSScriptRoot 'click_trace_log.csv'
 $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
 $script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $PSScriptRoot 'reports'
-$script:AppVersion = '1.0.66'
+$script:AppVersion = '1.0.67'
 $script:DiagnosticFailureCount = 0
 $script:DiagnosticDisabledUntil = [DateTime]::MinValue
 $script:IgnoreZones = New-Object System.Collections.Generic.List[object]
@@ -1413,7 +1413,15 @@ function Sleep-WithStop([int]$Milliseconds) {
 }
 function Find-ValidSlotOnce([string]$Slot, [System.Windows.Forms.Screen]$Screen, [bool]$UsePointCheck = $true) {
     $rect = Find-Slot $Slot $Screen
-    if ($rect.IsEmpty) { return [System.Drawing.Rectangle]::Empty }
+    if ($rect.IsEmpty) {
+        $point = Get-SlotPointScreenPoint $Slot
+        if ($null -ne $point) {
+            $fallbackRect = [System.Drawing.Rectangle]::new([int]($point.X - 6), [int]($point.Y - 6), 12, 12)
+            Write-RoutineTrace $script:CurrentCycle 'single-find' $Slot 'coordinate-fallback' $fallbackRect 'image miss; using saved point'
+            return $fallbackRect
+        }
+        return [System.Drawing.Rectangle]::Empty
+    }
     if ($UsePointCheck) {
         $pointResult = Check-SlotPointMatch $Slot $rect
         if (-not $pointResult.Ok) {
