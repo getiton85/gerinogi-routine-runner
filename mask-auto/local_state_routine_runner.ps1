@@ -201,7 +201,7 @@ $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
 $script:CrashLogPath = Join-Path $PSScriptRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $PSScriptRoot 'reports'
-$script:AppVersion = '1.0.22'
+$script:AppVersion = '1.0.23'
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
 $script:LongCompleteFallbackMs = 90000
@@ -1677,6 +1677,7 @@ function Get-NextRoutineStage([string]$Slot) {
         '궁극기' { return '내부' }
         '스킵' { return '내부' }
         '팔라딘' { return '내부' }
+        '입장_전투중' { return '내부' }
         '완료 확인' { return '나가기' }
         '나가기' { return '메뉴' }
         default { return '' }
@@ -1691,6 +1692,11 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
             return [pscustomobject]@{ Slot = '협동'; Rect = $coopRect; Stage = $Stage }
         }
         Write-RoutineTrace $script:CurrentCycle 'stage-scan' '협동' 'miss-before-menu' ([System.Drawing.Rectangle]::Empty) 'stage=메뉴; continue to menu'
+    }
+    $entryBusyRect = Find-EntryBusyGuard $Screen
+    if (-not $entryBusyRect.IsEmpty) {
+        Write-RoutineTrace $script:CurrentCycle 'stage-scan' '입장_전투중' 'route-guard-candidate' $entryBusyRect ('stage=' + $Stage + '; block route/exit false positives')
+        return [pscustomobject]@{ Slot = '입장_전투중'; Rect = $entryBusyRect; Stage = $Stage }
     }
     if ($Stage -eq '내부') {
         $stateRect = [System.Drawing.Rectangle]::Empty
@@ -1757,8 +1763,8 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
     if ($Stage -eq '입장') {
         $busyRect = Find-EntryBusyGuard $Screen
         if (-not $busyRect.IsEmpty) {
-            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '입장' 'busy-wait' $busyRect 'entry screen is in battle state; wait without clicking'
-            return $null
+            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '입장_전투중' 'busy-route-candidate' $busyRect 'entry screen is in battle state; enter inside monitor without clicking'
+            return [pscustomobject]@{ Slot = '입장_전투중'; Rect = $busyRect; Stage = $Stage }
         }
     }
     if (@('던전','입장','퀘스트','메뉴확인','어비스') -contains $Stage) {
@@ -1834,6 +1840,17 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
                 return [pscustomobject]@{ Clicks = [int]$exitResult.Clicks; Completed = $true; Message = '순환 완료'; NextStage = '메뉴' }
             }
             return [pscustomobject]@{ Clicks = [int]$exitResult.Clicks; Completed = $false; Message = '나가기 재탐색'; NextStage = '나가기' }
+        }
+        '입장_전투중' {
+            $StatusLabel.Text = '전투중 화면 감지: 내부 감시로 복귀'
+            [System.Windows.Forms.Application]::DoEvents()
+            Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'inside-monitor-restore' $rect 'no click; prevents 전투중 from matching 나가기'
+            $InsidePhase.Value = $true
+            if ($null -eq $script:InsideStartedAt) { $script:InsideStartedAt = Get-Date }
+            if (-not $script:CombatMarkerSeen) { $script:CombatMarkerSeen = $true }
+            Set-ProgressStep 5
+            Wait-StateActionSettle '상태 기준'
+            return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = '전투중 화면 보호'; NextStage = $nextStage }
         }
         '완료 확인' {
             $StatusLabel.Text = '완료 확인 감지: 클릭'

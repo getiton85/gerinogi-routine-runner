@@ -1,14 +1,14 @@
 ﻿{
-    "version":  "1.0.22",
-    "packageUrl":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.22_exit_recovery_from_inside.zip",
-    "sha256":  "475D686FA29E3F540000204238427E1204C58EF330D607CC7586B30843546D69",
+    "version":  "1.0.23",
+    "packageUrl":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.23_entry_busy_guard.zip",
+    "sha256":  "8164F1BF55A9EAEE5799C5B5A738CEADC860F624396B5760438CCA659CF8997D",
     "files":  [
                   "local_state_routine_runner.ps1"
               ],
     "notes":  [
-                  "내부 단계에서 보상/나가기 화면으로 이미 넘어간 경우 나가기 슬롯을 복구 탐지하도록 보강",
-                  "완료 확인을 놓친 상태에서도 나가기 화면이면 순환을 정상 종료하도록 처리"
+                  "입장 화면의 전투중 버튼이 나가기 버튼으로 오인되어 순환 완료 처리되는 문제 차단",
+                  "입장_전투중 가드 감지 시 클릭하지 않고 내부 감시 단계로 복귀"
               ],
     "requiresReinstall":  false,
-    "createdAt":  "2026-07-13T00:24:44"
+    "createdAt":  "2026-07-13T00:54:46"
 }
