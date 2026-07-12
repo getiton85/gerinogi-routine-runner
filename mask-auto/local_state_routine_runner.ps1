@@ -201,7 +201,7 @@ $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
 $script:CrashLogPath = Join-Path $PSScriptRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $PSScriptRoot 'reports'
-$script:AppVersion = '1.0.25'
+$script:AppVersion = '1.0.26'
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
 $script:LongCompleteFallbackMs = 90000
@@ -1770,7 +1770,7 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
             return [pscustomobject]@{ Slot = '입장_전투중'; Rect = $busyRect; Stage = $Stage }
         }
     }
-    if (@('던전','입장','퀘스트','메뉴확인','어비스') -contains $Stage) {
+    if (@('던전','입장','메뉴확인','어비스') -contains $Stage) {
         if ((Get-SlotSamplePaths '상태 기준').Count -gt 0) {
             $recoveryStateRect = Find-ValidSlotOnce '상태 기준' $Screen $true
             if (-not $recoveryStateRect.IsEmpty) {
