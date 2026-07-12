@@ -201,7 +201,7 @@ $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
 $script:CrashLogPath = Join-Path $PSScriptRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $PSScriptRoot 'reports'
-$script:AppVersion = '1.0.26'
+$script:AppVersion = '1.0.27'
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
 $script:LongCompleteFallbackMs = 90000
@@ -366,6 +366,47 @@ public static class VisionFinder {
         int max = Math.Max(r, Math.Max(g, b));
         int min = Math.Min(r, Math.Min(g, b));
         return gray >= threshold && (max - min) <= 60;
+    }
+
+    public static bool HasQuestTextSignal(Rectangle screenBounds) {
+        LastMode = "";
+        LastScore = 0.0;
+        if (screenBounds.Width < 40 || screenBounds.Height < 20) return false;
+        using (Bitmap screen = Capture(screenBounds)) {
+            BitmapData sd = screen.LockBits(new Rectangle(0, 0, screen.Width, screen.Height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+            try {
+                int sw = screen.Width, sh = screen.Height, ss = Math.Abs(sd.Stride);
+                byte[] s = new byte[ss * sh];
+                Marshal.Copy(sd.Scan0, s, 0, s.Length);
+                int textPixels = 0;
+                int[] colHits = new int[sw];
+                int[] rowHits = new int[sh];
+                for (int y = 0; y < sh; y += 1) {
+                    int row = y * ss;
+                    for (int x = 0; x < sw; x += 1) {
+                        int i = row + x * 4;
+                        byte b = s[i], g = s[i + 1], r = s[i + 2];
+                        int max = Math.Max(r, Math.Max(g, b));
+                        int min = Math.Min(r, Math.Min(g, b));
+                        bool white = (r >= 205 && g >= 205 && b >= 205 && (max - min) <= 70);
+                        bool orange = (r >= 205 && g >= 115 && g <= 205 && b <= 95 && (r - g) >= 25 && (g - b) >= 35);
+                        if (white || orange) {
+                            textPixels++;
+                            colHits[x]++;
+                            rowHits[y]++;
+                        }
+                    }
+                }
+                int hitCols = 0, hitRows = 0;
+                for (int x = 0; x < sw; x++) if (colHits[x] >= 2) hitCols++;
+                for (int y = 0; y < sh; y++) if (rowHits[y] >= 8) hitRows++;
+                double density = (double)textPixels / (double)(sw * sh);
+                double spread = ((double)hitCols / Math.Max(1, sw)) * 0.65 + ((double)hitRows / Math.Max(1, sh)) * 0.35;
+                LastMode = "quest-text-signal";
+                LastScore = Math.Min(1.0, density * 6.0 + spread * 0.75);
+                return textPixels >= 650 && hitCols >= Math.Min(110, sw / 3) && hitRows >= 18 && LastScore >= 0.62;
+            } finally { screen.UnlockBits(sd); }
+        }
     }
 
     public static Rectangle FindBrightTextSample(Rectangle screenBounds, string samplePath, int searchStep, int sampleStep, double requiredScore) {
@@ -1538,6 +1579,16 @@ function Find-Slot([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
             $script:LastMatchedSample = [System.IO.Path]::GetFileName($samplePath) + ' / ' + [VisionFinder]::LastMode + ' ' + ('{0:P1}' -f [VisionFinder]::LastScore)
             Save-DiagnosticFrame $Slot 'found' $searchBounds $rect ($script:LastMatchedSample)
             return $rect
+        }
+    }
+    if ($Slot -eq '퀘스트' -and [VisionFinder]::HasQuestTextSignal($bounds)) {
+        $point = Get-SlotPointScreenPoint '퀘스트'
+        if ($null -ne $point) {
+            $fallbackRect = [System.Drawing.Rectangle]::new([int]($point.X - 12), [int]($point.Y - 12), 24, 24)
+            $script:LastMatchedSample = 'quest-text-signal / ' + ('{0:P1}' -f [VisionFinder]::LastScore)
+            Save-DiagnosticFrame $Slot 'found' $bounds $fallbackRect $script:LastMatchedSample
+            Write-RoutineTrace $script:CurrentCycle 'vision' $Slot 'quest-text-fallback' $fallbackRect 'sample miss; orange/white quest text signal inside saved region'
+            return $fallbackRect
         }
     }
     if (($script:CurrentCycle % 10) -eq 0) {

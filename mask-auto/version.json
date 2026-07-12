@@ -1,7 +1,7 @@
 ﻿{
-    "version":  "1.0.26",
-    "packageUrl":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.26_quest_stage_lock.zip",
-    "sha256":  "0E42D81E9ED2185EF7AA3C9B1DFACCFEC490B5130FE29E6E94B52435D7B81683",
+    "version":  "1.0.27",
+    "packageUrl":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.27_quest_text_signal.zip",
+    "sha256":  "B649F523AD15433F89390E528AFDA6972ED34A44FA17AB3E854AEA54A55C3A12",
     "files":  [
                   "local_state_routine_runner.ps1",
                   "slot_points.csv",
@@ -9,10 +9,10 @@
                   "state_samples"
               ],
     "notes":  [
-                  "퀘스트 단계에서 상태 기준 회복으로 내부 단계가 조기 전환되는 문제 수정",
-                  "입장 후 퀘스트 이미지를 찾을 때까지 퀘스트 단계를 유지",
-                  "기존 좌표/영역/샘플 기준은 유지"
+                  "퀘스트 이미지 매칭 실패 시 저장된 퀘스트 영역 안의 주황/흰색 문구 신호로 보조 판정",
+                  "퀘스트 보조 판정 성공 시 기존 퀘스트 좌표 중심으로 클릭",
+                  "퀘스트 단계 유지 로직은 1.0.26 기준 유지"
               ],
     "requiresReinstall":  false,
-    "createdAt":  "2026-07-13T01:46:00"
+    "createdAt":  "2026-07-13T02:14:42"
 }
