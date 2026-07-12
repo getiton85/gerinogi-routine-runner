@@ -1,14 +1,14 @@
 ﻿{
-    "version":  "1.0.21",
-    "packageUrl":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.21_complete_recovery_gate.zip",
-    "sha256":  "EE0F866C745020C12F2B27FE95F158AEDE80A277830470EA12F8589C22E07FE5",
+    "version":  "1.0.22",
+    "packageUrl":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.22_exit_recovery_from_inside.zip",
+    "sha256":  "475D686FA29E3F540000204238427E1204C58EF330D607CC7586B30843546D69",
     "files":  [
                   "local_state_routine_runner.ps1"
               ],
     "notes":  [
-                  "완료 확인 화면에서 내부 상태가 입장/퀘스트로 꼬여도 완료 확인 이미지를 복구 탐지하도록 보강",
-                  "완료 확인 클릭 직후 내부 진행 이력을 즉시 지우지 않고 나가기 완료 시점까지 유지"
+                  "내부 단계에서 보상/나가기 화면으로 이미 넘어간 경우 나가기 슬롯을 복구 탐지하도록 보강",
+                  "완료 확인을 놓친 상태에서도 나가기 화면이면 순환을 정상 종료하도록 처리"
               ],
     "requiresReinstall":  false,
-    "createdAt":  "2026-07-12T02:39:11"
+    "createdAt":  "2026-07-13T00:24:44"
 }

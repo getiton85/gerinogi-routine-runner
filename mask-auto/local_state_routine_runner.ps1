@@ -201,7 +201,7 @@ $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
 $script:CrashLogPath = Join-Path $PSScriptRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $PSScriptRoot 'reports'
-$script:AppVersion = '1.0.21'
+$script:AppVersion = '1.0.22'
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
 $script:LongCompleteFallbackMs = 90000
@@ -1728,10 +1728,17 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
                 Write-RoutineTrace $script:CurrentCycle 'stage-scan' '완료 확인' 'blocked-by-gate' ([System.Drawing.Rectangle]::Empty) (Get-CompleteGateDetail)
             }
         }
+        if ((Get-SlotSamplePaths '나가기').Count -gt 0) {
+            $exitRect = Find-ValidSlotOnce '나가기' $Screen $true
+            if (-not $exitRect.IsEmpty) {
+                Write-RoutineTrace $script:CurrentCycle 'stage-scan' '나가기' 'candidate-after-inside' $exitRect 'reward exit is already visible while stage=내부'
+                return [pscustomobject]@{ Slot = '나가기'; Rect = $exitRect; Stage = $Stage }
+            }
+        }
         if (-not $stateRect.IsEmpty) {
             return [pscustomobject]@{ Slot = '상태 기준'; Rect = $stateRect; Stage = $Stage }
         }
-        Write-RoutineTrace $script:CurrentCycle 'stage-scan' '' 'none' ([System.Drawing.Rectangle]::Empty) 'stage=내부; checked=상태 기준|스킵|식사 버튼|궁극기|팔라딘|완료 확인'
+        Write-RoutineTrace $script:CurrentCycle 'stage-scan' '' 'none' ([System.Drawing.Rectangle]::Empty) 'stage=내부; checked=상태 기준|스킵|식사 버튼|궁극기|팔라딘|완료 확인|나가기'
         return $null
     }
     $expectedSlot = $Stage
