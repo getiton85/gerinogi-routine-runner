@@ -1,14 +1,18 @@
 ﻿{
-    "version":  "1.0.23",
-    "packageUrl":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.23_entry_busy_guard.zip",
-    "sha256":  "8164F1BF55A9EAEE5799C5B5A738CEADC860F624396B5760438CCA659CF8997D",
+    "version":  "1.0.25",
+    "packageUrl":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.25_state_lock_restore.zip",
+    "sha256":  "738C498DD44909251173132E78E40187750448CCE49E927A0657C468C0A8130C",
     "files":  [
-                  "local_state_routine_runner.ps1"
+                  "local_state_routine_runner.ps1",
+                  "slot_points.csv",
+                  "slot_regions.csv",
+                  "state_samples"
               ],
     "notes":  [
-                  "입장 화면의 전투중 버튼이 나가기 버튼으로 오인되어 순환 완료 처리되는 문제 차단",
-                  "입장_전투중 가드 감지 시 클릭하지 않고 내부 감시 단계로 복귀"
+                  "상태 기준이 보이는 동안 완료 확인/나가기/순환 후보를 차단",
+                  "잘못 촬영된 상태 기준/퀘스트 영역과 샘플을 정상 기준으로 복구",
+                  "상태 기준 액션에서 좌표를 비우던 동작 제거"
               ],
     "requiresReinstall":  false,
-    "createdAt":  "2026-07-13T00:54:46"
+    "createdAt":  "2026-07-13T01:18:43"
 }
