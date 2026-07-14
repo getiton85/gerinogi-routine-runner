@@ -1,20 +1,18 @@
 ﻿{
-    "version":  "1.0.35",
+    "version":  "1.0.39",
     "update_mode":  "package",
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.35_special_after_loop_color_skill.zip",
-                    "sha256":  "a9b6b96f2e098b758b883ce240f4bee499570e4dd8cc9aa146792caf86d894bf",
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.39_combat_state_guard.zip",
+                    "sha256":  "adafe2494ee47bb6eca3a0e1062dff91630eb10a7b5d7befa8345067d1b3d946",
                     "files":  [
                                   "local_state_routine_runner.ps1",
-                                  "slot_points.csv",
-                                  "slot_regions.csv",
-                                  "state_samples/궁극기_2_20260714_124457_140.png"
+                                  "ui_config.json"
                               ]
                 },
     "notes":  [
-                  "협동 특수카테고리를 메뉴 전 선검사에서 제거",
-                  "나가기 이후에만 협동을 검사하고 없으면 메뉴로 진행",
-                  "궁극기/팔라딘 활성 컬러 아이콘용 채도 기반 검출 추가",
-                  "메뉴 등 마스크 샘플은 밝은 픽셀 기반 검출 우선"
+                  "완료 확인/나가기 좌표 단독 보조 클릭 차단",
+                  "진단 이미지/보고서/백업 자동 정리 추가",
+                  "사용자별 좌표/영역/샘플 설정 파일은 업데이트 패키지에서 제외",
+                  "상태 기준 미감지 중 전투 슬롯 오작동 차단"
               ]
 }

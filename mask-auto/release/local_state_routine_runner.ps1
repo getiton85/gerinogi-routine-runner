@@ -203,7 +203,7 @@ $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
 $script:CrashLogPath = Join-Path $PSScriptRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $PSScriptRoot 'reports'
-$script:AppVersion = '1.0.35'
+$script:AppVersion = '1.0.38'
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
 $script:LongCompleteFallbackMs = 90000
@@ -221,9 +221,17 @@ for ($ui = 1; $ui -le 5; $ui++) {
     $script:Samples[('궁극기_' + $ui)] = $null
     $script:SlotPoints[('궁극기_' + $ui)] = $null
 }
+$script:SelectedQuestProfileIndex = 0
+$script:QuestProfiles = @()
+for ($qi = 1; $qi -le 4; $qi++) {
+    $script:QuestProfiles += [pscustomobject]@{ Name = ('퀘스트 설정 ' + $qi) }
+    $script:Samples[('퀘스트_' + $qi)] = $null
+    $script:SlotPoints[('퀘스트_' + $qi)] = $null
+}
 $script:SlotRegions = @{}
 foreach ($slot in $script:Slots) { $script:SlotRegions[$slot] = $null }
 for ($ui = 1; $ui -le 5; $ui++) { $script:SlotRegions[('궁극기_' + $ui)] = $null }
+for ($qi = 1; $qi -le 4; $qi++) { $script:SlotRegions[('퀘스트_' + $qi)] = $null }
 $script:UpdateManifestPath = Join-Path $PSScriptRoot 'update_manifest_url.txt'
 $script:BackupDir = Join-Path $PSScriptRoot 'update_backup'
 $script:NewLine = [Environment]::NewLine
@@ -283,10 +291,58 @@ function Write-CrashLog([string]$Context, [object]$ErrorObject) {
     }
 }
 
+function Remove-OldItemsSafe([string]$Path, [string]$Filter, [int]$KeepNewest, [int]$OlderThanDays) {
+    try {
+        if (-not [System.IO.Directory]::Exists($Path)) { return 0 }
+        $cutoff = (Get-Date).AddDays(-1 * [Math]::Max(1, $OlderThanDays))
+        $items = @(Get-ChildItem -LiteralPath $Path -File -Filter $Filter -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending)
+        $remove = @()
+        if ($items.Count -gt $KeepNewest) { $remove += @($items | Select-Object -Skip $KeepNewest) }
+        $remove += @($items | Where-Object { $_.LastWriteTime -lt $cutoff })
+        $removed = 0
+        foreach ($item in @($remove | Sort-Object FullName -Unique)) {
+            try { Remove-Item -LiteralPath $item.FullName -Force -ErrorAction Stop; $removed++ } catch { }
+        }
+        return $removed
+    } catch { return 0 }
+}
+
+function Remove-OldDirectoriesSafe([string]$Path, [int]$KeepNewest, [int]$OlderThanDays) {
+    try {
+        if (-not [System.IO.Directory]::Exists($Path)) { return 0 }
+        $cutoff = (Get-Date).AddDays(-1 * [Math]::Max(1, $OlderThanDays))
+        $items = @(Get-ChildItem -LiteralPath $Path -Directory -ErrorAction SilentlyContinue | Sort-Object LastWriteTime -Descending)
+        $remove = @()
+        if ($items.Count -gt $KeepNewest) { $remove += @($items | Select-Object -Skip $KeepNewest) }
+        $remove += @($items | Where-Object { $_.LastWriteTime -lt $cutoff })
+        $removed = 0
+        foreach ($item in @($remove | Sort-Object FullName -Unique)) {
+            try { Remove-Item -LiteralPath $item.FullName -Recurse -Force -ErrorAction Stop; $removed++ } catch { }
+        }
+        return $removed
+    } catch { return 0 }
+}
+
+function Invoke-MaintenanceCleanup {
+    try {
+        $removedDiag = Remove-OldItemsSafe $script:DiagnosticDir '*.png' 300 3
+        $removedReports = Remove-OldItemsSafe $script:ReportDir 'problem_report_*.zip' 20 30
+        $removedReportDirs = Remove-OldDirectoriesSafe $script:ReportDir 20 30
+        $removedUpdateBackups = Remove-OldDirectoriesSafe $script:BackupDir 5 30
+        $installBackup = Join-Path $PSScriptRoot 'install_backup'
+        $removedInstallBackups = Remove-OldDirectoriesSafe $installBackup 5 30
+        $detail = 'diagnostic_png=' + $removedDiag + '; report_zip=' + $removedReports + '; report_dirs=' + $removedReportDirs + '; update_backup_dirs=' + $removedUpdateBackups + '; install_backup_dirs=' + $removedInstallBackups
+        Write-CrashLog ('maintenance-cleanup ' + $detail) $null
+    } catch {
+        Write-CrashLog 'maintenance-cleanup failed' $_
+    }
+}
+
 New-Item -ItemType Directory -Force -Path $script:SampleDir | Out-Null
 New-Item -ItemType Directory -Force -Path $script:BackupDir | Out-Null
 New-Item -ItemType Directory -Force -Path $script:DiagnosticDir | Out-Null
 Write-CrashLog 'app-launch' $null
+Invoke-MaintenanceCleanup
 
 $nativeSource = @'
 using System;
@@ -852,15 +908,6 @@ function Invoke-UltimateKey([string]$ProfileName) {
     Write-RoutineTrace $script:CurrentCycle 'key' '궁극기' 'send-6' ([System.Drawing.Rectangle]::Empty) $ProfileName
     Start-Sleep -Milliseconds 120
 }
-function Invoke-SpaceKey([string]$Reason) {
-    if ($script:TargetHandle -ne [IntPtr]::Zero) {
-        [void][NativeInput]::SetForegroundWindow($script:TargetHandle)
-        Start-Sleep -Milliseconds 100
-    }
-    [System.Windows.Forms.SendKeys]::SendWait(' ')
-    Write-RoutineTrace $script:CurrentCycle 'key' '나가기' 'send-space' ([System.Drawing.Rectangle]::Empty) $Reason
-    Start-Sleep -Milliseconds 180
-}
 function Invoke-BKey([string]$Reason) {
     if ($script:TargetHandle -ne [IntPtr]::Zero) {
         [void][NativeInput]::SetForegroundWindow($script:TargetHandle)
@@ -891,8 +938,14 @@ function Get-UltimateSlotKey([int]$Index = -1) {
     $Index = [Math]::Max(0, [Math]::Min(4, $Index))
     return '궁극기_' + ($Index + 1)
 }
+function Get-QuestSlotKey([int]$Index = -1) {
+    if ($Index -lt 0) { $Index = [int]$script:SelectedQuestProfileIndex }
+    $Index = [Math]::Max(0, [Math]::Min(3, $Index))
+    return '퀘스트_' + ($Index + 1)
+}
 function Get-EffectiveSlotKey([string]$Slot) {
     if ($Slot -eq '궁극기') { return Get-UltimateSlotKey }
+    if ($Slot -eq '퀘스트') { return Get-QuestSlotKey }
     return $Slot
 }
 function Get-SlotStorageKeys {
@@ -900,6 +953,8 @@ function Get-SlotStorageKeys {
     foreach ($slot in $script:Slots) {
         if ($slot -eq '궁극기') {
             for ($i = 0; $i -lt 5; $i++) { [void]$keys.Add((Get-UltimateSlotKey $i)) }
+        } elseif ($slot -eq '퀘스트') {
+            for ($i = 0; $i -lt 4; $i++) { [void]$keys.Add((Get-QuestSlotKey $i)) }
         } else {
             [void]$keys.Add($slot)
         }
@@ -911,6 +966,7 @@ function Get-SlotFileStem([string]$Slot) {
 }
 function Get-SlotStatusName([string]$Slot) {
     if ($Slot -eq '궁극기') { return $Slot + ' 설정 ' + ([int]$script:SelectedUltimateProfileIndex + 1) }
+    if ($Slot -eq '퀘스트') { return $Slot + ' 설정 ' + ([int]$script:SelectedQuestProfileIndex + 1) }
     return $Slot
 }
 function Assign-ImageFileToSlot([string]$Slot, [string]$SourcePath) {
@@ -947,7 +1003,9 @@ function Resolve-SlotName([string]$Name) {
 function Resolve-SlotStorageName([string]$Name) {
     if ([string]::IsNullOrWhiteSpace($Name)) { return $null }
     if ($Name -match '^궁극기_([1-5])$') { return $Name }
+    if ($Name -match '^퀘스트_([1-4])$') { return $Name }
     if ($Name -eq '궁극기') { return '궁극기_1' }
+    if ($Name -eq '퀘스트') { return '퀘스트_1' }
     return Resolve-SlotName $Name
 }
 function Load-SavedSamples {
@@ -957,6 +1015,7 @@ function Load-SavedSamples {
         $latest = $null
         $loadNames = @(Get-SlotLoadNames $slot)
         if ($slot -eq '궁극기_1') { $loadNames += '궁극기' }
+        if ($slot -eq '퀘스트_1') { $loadNames += '퀘스트'; $loadNames += '5단계' }
         foreach ($loadName in $loadNames) {
             $prefix = $loadName.Replace(' ', '_') + '_'
             $candidate = Get-ChildItem -LiteralPath $script:SampleDir -File -Filter '*.png' | Where-Object { $_.Name.StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase) } | Sort-Object LastWriteTime -Descending | Select-Object -First 1
@@ -985,6 +1044,7 @@ function Get-SlotSamplePaths([string]$Slot) {
     }
     $loadNames = @(Get-SlotLoadNames $slotKey)
     if ($slotKey -eq '궁극기_1') { $loadNames += '궁극기' }
+    if ($slotKey -eq '퀘스트_1') { $loadNames += '퀘스트'; $loadNames += '5단계' }
     foreach ($loadName in ($loadNames | Select-Object -Unique)) {
         $prefix = $loadName.Replace(' ', '_') + '_'
         foreach ($file in (Get-ChildItem -LiteralPath $script:SampleDir -File -Filter '*.png' | Where-Object { $_.Name.StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase) } | Sort-Object LastWriteTime -Descending)) {
@@ -1503,7 +1563,12 @@ function Test-SlotRequiresRegion([string]$Slot) {
     return @('협동','메뉴','어비스','던전','입장','퀘스트','완료 확인','나가기','식사 버튼','궁극기','스킵','팔라딘') -contains $Slot
 }
 function Test-SlotAllowsCoordinateFallback([string]$Slot) {
-    return $false
+    return @('협동','메뉴','어비스','던전','입장','퀘스트') -contains $Slot
+}
+function Test-PointInsideSlotRegion([string]$Slot, [System.Drawing.Point]$Point, [System.Windows.Forms.Screen]$Screen) {
+    $rect = Get-SlotRegionScreenRect $Slot $Screen
+    if ($rect.IsEmpty) { return $true }
+    return $rect.Contains($Point)
 }
 function Test-SlotNeedsStableConfirm([string]$Slot) {
     return @('협동','메뉴','어비스','던전','입장','퀘스트','완료 확인','나가기') -contains $Slot
@@ -1771,13 +1836,13 @@ function Find-ValidSlotOnce([string]$Slot, [System.Windows.Forms.Screen]$Screen,
     $rect = Find-Slot $Slot $Screen
     if ($rect.IsEmpty) {
         $point = Get-SlotPointScreenPoint $Slot
-        if ($null -ne $point -and (Test-SlotAllowsCoordinateFallback $Slot)) {
-            $fallbackRect = [System.Drawing.Rectangle]::new([int]($point.X - 6), [int]($point.Y - 6), 12, 12)
-            Write-RoutineTrace $script:CurrentCycle 'single-find' $Slot 'coordinate-fallback' $fallbackRect 'image miss; using saved point'
+        if ($null -ne $point -and (Test-SlotAllowsCoordinateFallback $Slot) -and (Test-PointInsideSlotRegion $Slot $point $Screen)) {
+            $fallbackRect = [System.Drawing.Rectangle]::new([int]($point.X - 8), [int]($point.Y - 8), 16, 16)
+            Write-RoutineTrace $script:CurrentCycle 'single-find' $Slot 'coordinate-fallback' $fallbackRect 'image miss; saved point inside slot region'
             return $fallbackRect
         }
         if ($null -ne $point) {
-            Write-RoutineTrace $script:CurrentCycle 'single-find' $Slot 'image-miss-no-fallback' ([System.Drawing.Rectangle]::Empty) 'mask mode requires image match'
+            Write-RoutineTrace $script:CurrentCycle 'single-find' $Slot 'image-miss-no-fallback' ([System.Drawing.Rectangle]::Empty) 'saved point missing, disallowed, or outside slot region'
         }
         return [System.Drawing.Rectangle]::Empty
     }
@@ -1853,19 +1918,8 @@ function Invoke-ExitActionUntilClosed([System.Windows.Forms.Screen]$Screen, [Sys
         Write-RoutineTrace $script:CurrentCycle 'post-clear' '나가기' 'still-visible' $stillExit ('after-click-try=' + $try)
         $ExitRect = $stillExit
     }
-    Invoke-SpaceKey 'exit still visible after reinforced clicks'
-    [void](Sleep-WithStop 1000)
-    $afterSpace = Find-ValidSlotOnce '나가기' $Screen $true
-    if ($afterSpace.IsEmpty) {
-        if (Test-ExitClosedConfirmed $Screen) {
-            Write-RoutineTrace $script:CurrentCycle 'post-clear' '나가기' 'closed-by-space' ([System.Drawing.Rectangle]::Empty) ''
-            return [pscustomobject]@{ Closed = $true; Clicks = 3; Rect = [System.Drawing.Rectangle]::Empty }
-        }
-        Write-RoutineTrace $script:CurrentCycle 'post-clear' '나가기' 'space-closed-rejected' $ExitRect 'menu/coop not confirmed'
-        return [pscustomobject]@{ Closed = $false; Clicks = 3; Rect = $ExitRect }
-    }
-    Write-RoutineTrace $script:CurrentCycle 'post-clear' '나가기' 'space-no-effect' $afterSpace ''
-    return [pscustomobject]@{ Closed = $false; Clicks = 3; Rect = $afterSpace }
+    Write-RoutineTrace $script:CurrentCycle 'post-clear' '나가기' 'retry-without-space' $ExitRect 'space fallback disabled; keep exit stage'
+    return [pscustomobject]@{ Closed = $false; Clicks = 2; Rect = $ExitRect }
 }
 function Invoke-FoodButtonIfVisible([System.Windows.Forms.Screen]$Screen, [System.Windows.Forms.Label]$StatusLabel) {
     if ($null -eq $script:Samples['식사 버튼']) { return $false }
@@ -2319,6 +2373,21 @@ function Apply-UltimateProfileToControls {
     } catch { }
 }
 
+function Get-QuestProfileLabel([int]$Index) {
+    if ($Index -lt 0 -or $Index -ge $script:QuestProfiles.Count) { return '' }
+    $profile = $script:QuestProfiles[$Index]
+    return (($Index + 1).ToString() + '. ' + [string]$profile.Name)
+}
+
+function Refresh-QuestProfileCombo {
+    try {
+        $selected = [int]$script:SelectedQuestProfileIndex
+        $questProfileBox.Items.Clear()
+        for ($i = 0; $i -lt $script:QuestProfiles.Count; $i++) { [void]$questProfileBox.Items.Add((Get-QuestProfileLabel $i)) }
+        if ($questProfileBox.Items.Count -gt 0) { $questProfileBox.SelectedIndex = [Math]::Max(0, [Math]::Min($questProfileBox.Items.Count - 1, $selected)) }
+    } catch { }
+}
+
 function Save-UserSettings {
     try {
         Save-SelectedUltimateProfileFromControls
@@ -2336,6 +2405,7 @@ function Save-UserSettings {
             combat_enabled = $combatEnabled
             ultimate_profile_index = [int]$script:SelectedUltimateProfileIndex
             ultimate_profiles = $ultimateProfiles
+            quest_profile_index = [int]$script:SelectedQuestProfileIndex
             top_most = [bool]$topMostCheck.Checked
             beep = [bool]$beepCheck.Checked
             full_monitor_search = [bool]$fullMonitorCheck.Checked
@@ -2403,6 +2473,9 @@ function Load-UserSettings {
         }
         if ($null -ne $settings.ultimate_profile_index) {
             $script:SelectedUltimateProfileIndex = [Math]::Max(0, [Math]::Min($script:UltimateProfiles.Count - 1, [int]$settings.ultimate_profile_index))
+        }
+        if ($null -ne $settings.quest_profile_index) {
+            $script:SelectedQuestProfileIndex = [Math]::Max(0, [Math]::Min($script:QuestProfiles.Count - 1, [int]$settings.quest_profile_index))
         }
         if ($null -ne $settings.top_most) { $topMostCheck.Checked = [bool]$settings.top_most }
         if ($null -ne $settings.beep) { $beepCheck.Checked = [bool]$settings.beep }
@@ -2731,22 +2804,22 @@ $form = New-Object System.Windows.Forms.Form
 $uiFontName = [string](Get-UiValue 'app.fontName' 'Malgun Gothic')
 $uiFontSize = [float](Get-UiValue 'app.fontSize' 8)
 $uiBackground = Get-UiColor 'colors.background' ([System.Drawing.Color]::FromArgb(125,211,185))
-$form.Text = [string](Get-UiValue 'app.title' 'Local State Routine Runner')
+$form.Text = [string](Get-UiValue 'app.title' 'Gerinogi Mask Routine Runner')
 $form.StartPosition = 'CenterScreen'
 $form.Size = New-Object System.Drawing.Size((Get-UiInt 'window.width' 460), (Get-UiInt 'window.height' 920))
 $form.MinimumSize = New-Object System.Drawing.Size((Get-UiInt 'window.minWidth' 420), (Get-UiInt 'window.minHeight' 760))
 $form.Font = New-Object System.Drawing.Font($uiFontName, $uiFontSize)
 $form.TopMost = Get-UiBool 'app.topMost' $true
 $tabs = New-Object System.Windows.Forms.TabControl; $tabs.Dock = 'Fill'; $tabs.Appearance = 'Normal'
-$gamePage = New-Object System.Windows.Forms.TabPage; $gamePage.Text = [string](Get-UiValue 'tabs.main' '실험셋팅'); $gamePage.Padding = New-Object System.Windows.Forms.Padding(8); $gamePage.BackColor = $uiBackground
-$optionPage = New-Object System.Windows.Forms.TabPage; $optionPage.Text = [string](Get-UiValue 'tabs.options' '세부옵션'); $optionPage.Padding = New-Object System.Windows.Forms.Padding(8)
+$gamePage = New-Object System.Windows.Forms.TabPage; $gamePage.Text = [string](Get-UiValue 'tabs.main' '자동 인식'); $gamePage.Padding = New-Object System.Windows.Forms.Padding(8); $gamePage.BackColor = $uiBackground
+$optionPage = New-Object System.Windows.Forms.TabPage; $optionPage.Text = [string](Get-UiValue 'tabs.options' '설정'); $optionPage.Padding = New-Object System.Windows.Forms.Padding(8)
 [void]$tabs.TabPages.Add($gamePage); [void]$tabs.TabPages.Add($optionPage); $form.Controls.Add($tabs)
 
 $gameTable = New-Object System.Windows.Forms.TableLayoutPanel; $gameTable.Dock = 'Fill'; $gameTable.ColumnCount = 1; $gameTable.RowCount = 8; $gameTable.Padding = New-Object System.Windows.Forms.Padding(0); $gameTable.BackColor = $uiBackground
 foreach ($style in @(
     (New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 118)),
     (New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 48)),
-    (New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 390)),
+    (New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 430)),
     (New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 164)),
     (New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 34)),
     (New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 52)),
@@ -2777,22 +2850,23 @@ for ($i = 0; $i -lt $screens.Count; $i++) { $b = $screens[$i].Bounds; [void]$mon
 if ($monitorBox.Items.Count -gt 0) { $monitorBox.SelectedIndex = 0 }
 $targetTable.Controls.Add($monitorBox, 1, 1)
 
-$slotSelectGroup = New-Object System.Windows.Forms.GroupBox; $slotSelectGroup.Text = [string](Get-UiValue 'labels.slotSelect' '슬롯 선택'); $slotSelectGroup.Dock = 'Fill'; $slotSelectGroup.Padding = New-Object System.Windows.Forms.Padding(8,4,8,4)
+$slotSelectGroup = New-Object System.Windows.Forms.GroupBox; $slotSelectGroup.Text = '퀘스트 설정'; $slotSelectGroup.Dock = 'Fill'; $slotSelectGroup.Padding = New-Object System.Windows.Forms.Padding(8,4,8,4)
 $slotBox = New-Object System.Windows.Forms.ComboBox; $slotBox.DropDownStyle = 'DropDownList'; $slotBox.Dock = 'Fill'
 foreach ($slot in $script:Slots) { [void]$slotBox.Items.Add($slot) }; $slotBox.SelectedIndex = 0
-$slotSelectGroup.Controls.Add($slotBox); $gameTable.Controls.Add($slotSelectGroup, 0, 1)
+$questProfileBox = New-Object System.Windows.Forms.ComboBox; $questProfileBox.DropDownStyle = 'DropDownList'; $questProfileBox.Dock = 'Fill'; $questProfileBox.Font = New-Object System.Drawing.Font($uiFontName, 8)
+$slotSelectGroup.Controls.Add($questProfileBox); $gameTable.Controls.Add($slotSelectGroup, 0, 1)
 
 $slotPreviewGroup = New-Object System.Windows.Forms.GroupBox; $slotPreviewGroup.Text = '슬롯 분류'; $slotPreviewGroup.Dock = 'Fill'; $slotPreviewGroup.Padding = New-Object System.Windows.Forms.Padding(6)
 $slotPreviewTable = New-Object System.Windows.Forms.TableLayoutPanel; $slotPreviewTable.Dock = 'Fill'; $slotPreviewTable.ColumnCount = 1; $slotPreviewTable.RowCount = 4
 $slotPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 26))) | Out-Null
-$slotPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 78))) | Out-Null
+$slotPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 96))) | Out-Null
 $slotPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 52))) | Out-Null
 $slotPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 48))) | Out-Null
 $slotPreviewToggleButton = New-Object System.Windows.Forms.Button; $slotPreviewToggleButton.Text = '접기'; $slotPreviewToggleButton.Dock = 'Right'; $slotPreviewToggleButton.Width = 66
 
-$specialPreviewGroup = New-Object System.Windows.Forms.GroupBox; $specialPreviewGroup.Text = [string](Get-UiValue 'labels.specialSlotPreview' '특수카테고리'); $specialPreviewGroup.Dock = 'Fill'; $specialPreviewGroup.Padding = New-Object System.Windows.Forms.Padding(5)
+$specialPreviewGroup = New-Object System.Windows.Forms.GroupBox; $specialPreviewGroup.Text = [string](Get-UiValue 'labels.specialSlotPreview' '특수 카테고리'); $specialPreviewGroup.Dock = 'Fill'; $specialPreviewGroup.Padding = New-Object System.Windows.Forms.Padding(5)
 $specialPreviewTable = New-Object System.Windows.Forms.TableLayoutPanel; $specialPreviewTable.Dock = 'Fill'; $specialPreviewTable.ColumnCount = 1; $specialPreviewTable.RowCount = 2
-$specialPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 20))) | Out-Null
+$specialPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 22))) | Out-Null
 $specialPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
 $specialEnabledCheck = New-Object System.Windows.Forms.CheckBox; $specialEnabledCheck.Text = '협동 ON'; $specialEnabledCheck.Checked = $true; $specialEnabledCheck.Dock = 'Left'
 $script:SpecialSlotChecks['협동'] = $specialEnabledCheck
@@ -2803,7 +2877,7 @@ $specialPreviewTable.Controls.Add($specialEnabledCheck, 0, 0)
 $specialPreviewTable.Controls.Add($specialSlotPanel, 0, 1)
 $specialPreviewGroup.Controls.Add($specialPreviewTable)
 
-$routePreviewGroup = New-Object System.Windows.Forms.GroupBox; $routePreviewGroup.Text = '허상의 정박지'; $routePreviewGroup.Dock = 'Fill'; $routePreviewGroup.Padding = New-Object System.Windows.Forms.Padding(5)
+$routePreviewGroup = New-Object System.Windows.Forms.GroupBox; $routePreviewGroup.Text = '던전 루틴'; $routePreviewGroup.Dock = 'Fill'; $routePreviewGroup.Padding = New-Object System.Windows.Forms.Padding(5)
 $routePreviewTable = New-Object System.Windows.Forms.TableLayoutPanel; $routePreviewTable.Dock = 'Fill'; $routePreviewTable.ColumnCount = 1; $routePreviewTable.RowCount = 2
 $routePreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 22))) | Out-Null
 $routePreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
@@ -2926,7 +3000,8 @@ for ($pi = 0; $pi -lt 10; $pi++) {
     $cell.Margin = New-Object System.Windows.Forms.Padding(1)
     $cell.BackColor = $progressInactiveColor
     $cell.ForeColor = $progressInactiveTextColor
-    $cell.BorderStyle = 'FixedSingle'
+    $cell.BorderStyle = 'None'
+    $cell.Padding = New-Object System.Windows.Forms.Padding(1)
     $cell.Font = New-Object System.Drawing.Font($uiFontName, 7.5)
     $progressPanel.Controls.Add($cell, $pi, 0)
     $script:ProgressCells += $cell
@@ -3107,11 +3182,11 @@ function Update-SlotPreviewCollapsed {
     $specialPreviewGroup.Visible = -not $script:SlotPreviewCollapsed
     $routePreviewGroup.Visible = -not $script:SlotPreviewCollapsed
     $combatPreviewGroup.Visible = -not $script:SlotPreviewCollapsed
-    $slotPreviewTable.RowStyles[1].Height = if ($script:SlotPreviewCollapsed) { 0 } else { 78 }
-    $slotPreviewTable.RowStyles[2].Height = if ($script:SlotPreviewCollapsed) { 0 } else { 134 }
-    $slotPreviewTable.RowStyles[3].Height = if ($script:SlotPreviewCollapsed) { 0 } else { 138 }
+    $slotPreviewTable.RowStyles[1].Height = if ($script:SlotPreviewCollapsed) { 0 } else { 96 }
+    $slotPreviewTable.RowStyles[2].Height = if ($script:SlotPreviewCollapsed) { 0 } else { 146 }
+    $slotPreviewTable.RowStyles[3].Height = if ($script:SlotPreviewCollapsed) { 0 } else { 162 }
     $slotPreviewToggleButton.Text = if ($script:SlotPreviewCollapsed) { '열기' } else { '접기' }
-    $gameTable.RowStyles[2].Height = if ($script:SlotPreviewCollapsed) { 56 } else { 468 }
+    $gameTable.RowStyles[2].Height = if ($script:SlotPreviewCollapsed) { 56 } else { 508 }
 }
 function Toggle-SlotPreview {
     $script:SlotPreviewCollapsed = -not $script:SlotPreviewCollapsed
@@ -3165,11 +3240,11 @@ function Refresh-Slots {
         $card = New-Object System.Windows.Forms.Panel; $card.Dock = 'Fill'; $card.Margin = New-Object System.Windows.Forms.Padding(3); $card.BorderStyle = 'FixedSingle'
         if (-not (Test-SlotEnabled $slot)) { $card.BackColor = [System.Drawing.Color]::Gainsboro } elseif ($slot -eq $script:ActiveSlot) { $card.BackColor = [System.Drawing.Color]::Honeydew } elseif ($slot -eq $script:SelectedSlot) { $card.BackColor = [System.Drawing.Color]::FromArgb(255,236,148) } else { $card.BackColor = [System.Drawing.Color]::White }
         Add-DropHandlers $card $slot
-        $label = New-Object System.Windows.Forms.Label; $label.Text = $slot; $label.TextAlign = 'MiddleCenter'; $label.Width = 58; $label.Height = 16; $label.Left = 1; $label.Top = 56
+        $label = New-Object System.Windows.Forms.Label; $label.Text = $slot; $label.TextAlign = 'MiddleCenter'; $label.Width = 62; $label.Height = 18; $label.Left = 1; $label.Top = 60
         if ($slot -eq $script:ActiveSlot) { $label.ForeColor = [System.Drawing.Color]::DarkGreen; $label.Font = New-Object System.Drawing.Font('Malgun Gothic', 7, [System.Drawing.FontStyle]::Bold) } elseif ($slot -eq $script:SelectedSlot) { $label.ForeColor = [System.Drawing.Color]::FromArgb(120,72,0); $label.Font = New-Object System.Drawing.Font('Malgun Gothic', 7, [System.Drawing.FontStyle]::Bold) } else { $label.Font = New-Object System.Drawing.Font('Malgun Gothic', 7) }
         Add-DropHandlers $label $slot
-        if ($script:Samples[$slotKey]) { $image = Load-ImageUnlocked $script:Samples[$slotKey].Path; $card.Tag = $image; $pic = New-Object System.Windows.Forms.PictureBox; $pic.Image = $image; $pic.SizeMode = 'Zoom'; $pic.Width = 58; $pic.Height = 52; $pic.Left = 1; $pic.Top = 3; Add-DropHandlers $pic $slot; $pic.Add_Click({ Select-Slot $slot }.GetNewClosure()); $card.Controls.Add($pic) }
-        $pointLabel = New-Object System.Windows.Forms.Label; $point = $script:SlotPoints[$slotKey]; $region = $script:SlotRegions[$slotKey]; $regionMark = if ($null -ne $region) { ' / 구역' } else { '' }; if ($slot -eq '상태 기준') { $pointLabel.Text = '좌표 제외' + $regionMark } elseif ($null -eq $point) { $pointLabel.Text = '좌표 없음' + $regionMark } else { $pointLabel.Text = (Get-CoordinateModeLabel $point.Mode) + ' X=' + $point.X + ', Y=' + $point.Y + $regionMark }; $pointLabel.TextAlign = 'MiddleCenter'; $pointLabel.Width = 58; $pointLabel.Height = 13; $pointLabel.Left = 1; $pointLabel.Top = 70; $pointLabel.ForeColor = [System.Drawing.Color]::DimGray; $pointLabel.Font = New-Object System.Drawing.Font('Malgun Gothic', 6); Add-DropHandlers $pointLabel $slot; $pointLabel.Add_Click({ Select-Slot $slot }.GetNewClosure()); $card.Add_Click({ Select-Slot $slot }.GetNewClosure()); $label.Add_Click({ Select-Slot $slot }.GetNewClosure()); $card.Controls.Add($label); $card.Controls.Add($pointLabel)
+        if ($script:Samples[$slotKey]) { $image = Load-ImageUnlocked $script:Samples[$slotKey].Path; $card.Tag = $image; $pic = New-Object System.Windows.Forms.PictureBox; $pic.Image = $image; $pic.SizeMode = 'Zoom'; $pic.Width = 62; $pic.Height = 56; $pic.Left = 1; $pic.Top = 3; Add-DropHandlers $pic $slot; $pic.Add_Click({ Select-Slot $slot }.GetNewClosure()); $card.Controls.Add($pic) }
+        $pointLabel = New-Object System.Windows.Forms.Label; $point = $script:SlotPoints[$slotKey]; $region = $script:SlotRegions[$slotKey]; $regionMark = if ($null -ne $region) { ' / 구역' } else { '' }; if ($slot -eq '상태 기준') { $pointLabel.Text = '좌표 제외' + $regionMark } elseif ($null -eq $point) { $pointLabel.Text = '좌표 없음' + $regionMark } else { $pointLabel.Text = 'X=' + $point.X + ', Y=' + $point.Y + $regionMark }; $pointLabel.TextAlign = 'MiddleCenter'; $pointLabel.Width = 62; $pointLabel.Height = 15; $pointLabel.Left = 1; $pointLabel.Top = 78; $pointLabel.ForeColor = [System.Drawing.Color]::DimGray; $pointLabel.Font = New-Object System.Drawing.Font('Malgun Gothic', 5.8); Add-DropHandlers $pointLabel $slot; $pointLabel.Add_Click({ Select-Slot $slot }.GetNewClosure()); $card.Add_Click({ Select-Slot $slot }.GetNewClosure()); $label.Add_Click({ Select-Slot $slot }.GetNewClosure()); $card.Controls.Add($label); $card.Controls.Add($pointLabel)
         if ($script:SpecialSlots -contains $slot) {
             $specialSlotPanel.Controls.Add($card, ([array]::IndexOf($script:SpecialSlots, $slot)), 0)
         } elseif ($script:RouteSlots -contains $slot) {
@@ -3290,14 +3365,21 @@ $advancedToggleButton.Add_Click({ Toggle-AdvancedTools })
 $topMostCheck.Add_CheckedChanged({ $form.TopMost = $topMostCheck.Checked })
 $harborEnabledCheck.Add_CheckedChanged({ $script:HarborEnabled = [bool]$harborEnabledCheck.Checked; Refresh-Slots })
 $specialEnabledCheck.Add_CheckedChanged({ $script:SpecialSlotEnabled['협동'] = [bool]$specialEnabledCheck.Checked; Refresh-Slots })
-$ultimateProfileBox.Add_SelectionChangeCommitted({
+$ultimateProfileBox.Add_SelectedIndexChanged({
     Save-SelectedUltimateProfileFromControls
     if ($ultimateProfileBox.SelectedIndex -ge 0) { $script:SelectedUltimateProfileIndex = [int]$ultimateProfileBox.SelectedIndex }
     $script:SelectedSlot = '궁극기'
     if ($slotBox.SelectedItem -ne '궁극기') { $slotBox.SelectedItem = '궁극기' }
-    Apply-UltimateProfileToControls
+    try { $ultimateNameBox.Text = [string](Get-SelectedUltimateProfile).Name } catch { }
     Refresh-Slots
     $statusLabel.Text = '궁극기 설정 ' + ([int]$script:SelectedUltimateProfileIndex + 1) + ' 선택됨. Shift+F8로 영역 지정 후 Shift+F7로 촬영하세요.'
+})
+$questProfileBox.Add_SelectedIndexChanged({
+    if ($questProfileBox.SelectedIndex -ge 0) { $script:SelectedQuestProfileIndex = [int]$questProfileBox.SelectedIndex }
+    $script:SelectedSlot = '퀘스트'
+    if ($slotBox.SelectedItem -ne '퀘스트') { $slotBox.SelectedItem = '퀘스트' }
+    Refresh-Slots
+    $statusLabel.Text = '퀘스트 설정 ' + ([int]$script:SelectedQuestProfileIndex + 1) + ' 선택됨. Shift+F8로 영역 지정 후 Shift+F7로 촬영하세요.'
 })
 $ultimateNameBox.Add_Leave({ Save-SelectedUltimateProfileFromControls; Refresh-UltimateProfileCombo; Refresh-Slots })
 foreach ($slot in $script:CombatSlots) {
@@ -3309,6 +3391,7 @@ Refresh-WindowList
 $settingsLoadedOnStart = Load-UserSettings
 Apply-RoutineToggleStates
 Apply-UltimateProfileToControls
+Refresh-QuestProfileCombo
 $loadedOnStart = Load-SavedSamples
 $loadedPointsOnStart = Load-SlotPoints
 $loadedRegionsOnStart = Load-SlotRegions
@@ -3319,9 +3402,9 @@ Update-AdvancedToolsCollapsed
 $statusLabel.Text = '저장 폴더에서 ' + $loadedOnStart + '개 슬롯, 좌표 ' + $loadedPointsOnStart + '개, 슬롯구역 ' + $loadedRegionsOnStart + '개, 제외구역 ' + $loadedIgnoreZonesOnStart + '개를 불러왔습니다.'
 function Start-StateRoutine {
     if ($script:Running) { [System.Windows.Forms.MessageBox]::Show('이미 실행 중입니다.', '실행') | Out-Null; return }
-    if (-not (Test-HarborEnabled)) { [System.Windows.Forms.MessageBox]::Show('허상의 정박지가 OFF 상태입니다. 실행하려면 허상의 정박지 ON을 체크하세요.', '실행') | Out-Null; return }
+    if (-not (Test-HarborEnabled)) { [System.Windows.Forms.MessageBox]::Show('던전 루틴이 OFF 상태입니다. 실행하려면 던전 루틴 ON을 체크하세요.', '실행') | Out-Null; return }
     $optionalSlots = @('식사 버튼','궁극기','스킵','팔라딘')
-    foreach ($slot in $script:RouteSlots + @('상태 기준')) { if ($optionalSlots -contains $slot) { continue }; if (-not (Test-SlotEnabled $slot)) { continue }; if ($null -eq $script:Samples[$slot]) { [System.Windows.Forms.MessageBox]::Show($slot + ' 슬롯 이미지가 필요합니다.', '실행') | Out-Null; return } }
+    foreach ($slot in $script:RouteSlots + @('상태 기준')) { if ($optionalSlots -contains $slot) { continue }; if (-not (Test-SlotEnabled $slot)) { continue }; if ((Get-SlotSamplePaths $slot).Count -eq 0) { [System.Windows.Forms.MessageBox]::Show((Get-SlotStatusName $slot) + ' 슬롯 이미지가 필요합니다.', '실행') | Out-Null; return } }
     $titlePart = $titleBox.Text.Trim(); if ([string]::IsNullOrWhiteSpace($titlePart)) { [System.Windows.Forms.MessageBox]::Show('대상 창 제목을 반드시 입력해야 합니다.', '실행') | Out-Null; return }
     $target = Get-SelectedTargetWindow $titlePart; if ($null -eq $target) { [System.Windows.Forms.MessageBox]::Show('대상 창을 찾지 못했습니다.', '실행') | Out-Null; return }
     $script:TargetHandle = $target.Handle; $screen = $screens[$monitorBox.SelectedIndex]
