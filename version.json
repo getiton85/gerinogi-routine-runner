@@ -1,8 +1,13 @@
 ﻿{
-    "version":  "1.0.73",
+    "version":  "1.0.74",
     "update_mode":  "package",
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/state_routine_update_package_1.0.73_151811.zip?v=56720d8bb00a31c275729a47c8719b5e9dcb3c93d5ffff007061860bd32d7529",
-                    "sha256":  "56720d8bb00a31c275729a47c8719b5e9dcb3c93d5ffff007061860bd32d7529"
-                }
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/state_routine_update_package_1.0.74_auto0_sample_fallback.zip",
+                    "sha256":  "6e7d0157aebed23fb08fd006119ad05c5ad54ec61cae02e44d96160d3e7cda5a"
+                },
+    "notes":  [
+                  "자동0: 같은 슬롯/별칭의 과거 샘플도 함께 검사",
+                  "빈 검색영역이면 FindSample 호출을 건너뛰도록 방어",
+                  "최근 메뉴 샘플 실패 시 1단계 등 이전 샘플로 재시도"
+              ]
 }

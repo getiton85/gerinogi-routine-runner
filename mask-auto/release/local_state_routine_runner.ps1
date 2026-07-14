@@ -155,6 +155,8 @@ function Get-UiColor([string]$Path, [System.Drawing.Color]$Fallback) {
 $script:UiConfig = Load-UiConfig
 $script:DefaultSlots = @('협동','상태 기준','식사 버튼','메뉴','어비스','던전','입장','퀘스트','완료 확인','나가기','궁극기','스킵','팔라딘')
 $script:SpecialSlots = @('협동')
+$script:SpecialSlotEnabled = @{'협동' = $true}
+$script:SpecialSlotChecks = @{}
 $script:RouteSlots = @('메뉴','어비스','던전','입장','퀘스트','완료 확인','나가기')
 $script:CombatSlots = @('상태 기준','식사 버튼','궁극기','스킵','팔라딘')
 $script:SlotAliases = @{
@@ -201,7 +203,7 @@ $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
 $script:CrashLogPath = Join-Path $PSScriptRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $PSScriptRoot 'reports'
-$script:AppVersion = '1.0.27'
+$script:AppVersion = '1.0.33'
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
 $script:LongCompleteFallbackMs = 90000
@@ -327,6 +329,46 @@ public static class NativeInput {
 public static class VisionFinder {
     public static string LastMode = "";
     public static double LastScore = 0.0;
+    public static double LastSecondScore = 0.0;
+    public static double LastScoreGap = 0.0;
+    public static bool LastAmbiguous = false;
+
+    private static void ResetLastMatch() {
+        LastMode = "";
+        LastScore = 0.0;
+        LastSecondScore = 0.0;
+        LastScoreGap = 0.0;
+        LastAmbiguous = false;
+    }
+
+    private static bool IsFarCandidate(int x1, int y1, int x2, int y2, int templateWidth, int templateHeight) {
+        if (x1 < 0 || y1 < 0 || x2 < 0 || y2 < 0) return true;
+        int minDistance = Math.Max(12, Math.Min(templateWidth, templateHeight) / 3);
+        return Math.Abs(x1 - x2) > minDistance || Math.Abs(y1 - y2) > minDistance;
+    }
+
+    private static void TrackCandidate(double score, int x, int y, int templateWidth, int templateHeight, ref double bestScore, ref int bestX, ref int bestY, ref double secondScore) {
+        if (score > bestScore) {
+            if (bestScore >= 0.0 && IsFarCandidate(bestX, bestY, x, y, templateWidth, templateHeight) && bestScore > secondScore) {
+                secondScore = bestScore;
+            }
+            bestScore = score;
+            bestX = x;
+            bestY = y;
+            return;
+        }
+        if (IsFarCandidate(bestX, bestY, x, y, templateWidth, templateHeight) && score > secondScore) {
+            secondScore = score;
+        }
+    }
+
+    private static void SetMatchResult(string mode, double score, double secondScore) {
+        LastMode = mode;
+        LastScore = score;
+        LastSecondScore = Math.Max(0.0, secondScore);
+        LastScoreGap = score - LastSecondScore;
+        LastAmbiguous = LastSecondScore >= 0.0 && LastScoreGap < 0.035;
+    }
 
     public static Bitmap Capture(Rectangle bounds) {
         Bitmap bmp = new Bitmap(bounds.Width, bounds.Height, PixelFormat.Format32bppArgb);
@@ -369,8 +411,7 @@ public static class VisionFinder {
     }
 
     public static bool HasQuestTextSignal(Rectangle screenBounds) {
-        LastMode = "";
-        LastScore = 0.0;
+        ResetLastMatch();
         if (screenBounds.Width < 40 || screenBounds.Height < 20) return false;
         using (Bitmap screen = Capture(screenBounds)) {
             BitmapData sd = screen.LockBits(new Rectangle(0, 0, screen.Width, screen.Height), ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
@@ -402,16 +443,14 @@ public static class VisionFinder {
                 for (int y = 0; y < sh; y++) if (rowHits[y] >= 8) hitRows++;
                 double density = (double)textPixels / (double)(sw * sh);
                 double spread = ((double)hitCols / Math.Max(1, sw)) * 0.65 + ((double)hitRows / Math.Max(1, sh)) * 0.35;
-                LastMode = "quest-text-signal";
-                LastScore = Math.Min(1.0, density * 6.0 + spread * 0.75);
+                SetMatchResult("quest-text-signal", Math.Min(1.0, density * 6.0 + spread * 0.75), -1.0);
                 return textPixels >= 650 && hitCols >= Math.Min(110, sw / 3) && hitRows >= 18 && LastScore >= 0.62;
             } finally { screen.UnlockBits(sd); }
         }
     }
 
     public static Rectangle FindBrightTextSample(Rectangle screenBounds, string samplePath, int searchStep, int sampleStep, double requiredScore) {
-        LastMode = "";
-        LastScore = 0.0;
+        ResetLastMatch();
         using (Bitmap screen = Capture(screenBounds))
         using (Bitmap rawSample = new Bitmap(samplePath))
         using (Bitmap sample = new Bitmap(rawSample.Width, rawSample.Height, PixelFormat.Format32bppArgb)) {
@@ -442,7 +481,7 @@ public static class VisionFinder {
                 int textCount = textXs.Count;
                 if (textCount < Math.Max(6, (tw * th) / Math.Max(1, sampleStep * sampleStep * 120))) return Rectangle.Empty;
 
-                double bestScore = -1.0; int bestX = -1, bestY = -1;
+                double bestScore = -1.0; int bestX = -1, bestY = -1; double secondScore = -1.0;
                 for (int y = 0; y <= sh - th; y += searchStep) {
                     if ((NativeInput.GetAsyncKeyState(0x75) & unchecked((short)0x8000)) != 0) { LastMode = "stopped-f6"; return Rectangle.Empty; }
                     for (int x = 0; x <= sw - tw; x += searchStep) {
@@ -454,12 +493,11 @@ public static class VisionFinder {
                             if (IsBrightTextPixel(s[si], s[si + 1], s[si + 2], 255, 170)) ok++;
                         }
                         double score = (double)ok / textCount;
-                        if (score > bestScore) { bestScore = score; bestX = x; bestY = y; }
+                        TrackCandidate(score, x, y, tw, th, ref bestScore, ref bestX, ref bestY, ref secondScore);
                     }
                 }
                 if (bestScore >= requiredScore) {
-                    LastMode = "bright-text";
-                    LastScore = bestScore;
+                    SetMatchResult("bright-text", bestScore, secondScore);
                     return new Rectangle(screenBounds.Left + bestX, screenBounds.Top + bestY, tw, th);
                 }
                 return Rectangle.Empty;
@@ -468,8 +506,7 @@ public static class VisionFinder {
     }
 
     public static Rectangle FindSample(Rectangle screenBounds, string samplePath, int searchStep, int sampleStep, int tolerance, double requiredScore) {
-        LastMode = "";
-        LastScore = 0.0;
+        ResetLastMatch();
         using (Bitmap screen = Capture(screenBounds))
         using (Bitmap rawSample = new Bitmap(samplePath))
         using (Bitmap sample = new Bitmap(rawSample.Width, rawSample.Height, PixelFormat.Format32bppArgb)) {
@@ -508,8 +545,8 @@ public static class VisionFinder {
                 }
                 int maskThreshold = (minCh[maskChannel] + maxCh[maskChannel]) / 2;
                 int maskMargin = Math.Max(18, maskRange / 5);
-                double bestPrimaryScore = -1; int bestPrimaryX = -1, bestPrimaryY = -1; string bestPrimaryMode = "";
-                double bestFallbackScore = -1; int bestFallbackX = -1, bestFallbackY = -1; string bestFallbackMode = "";
+                double bestPrimaryScore = -1; int bestPrimaryX = -1, bestPrimaryY = -1; string bestPrimaryMode = ""; double secondPrimaryScore = -1;
+                double bestFallbackScore = -1; int bestFallbackX = -1, bestFallbackY = -1; string bestFallbackMode = ""; double secondFallbackScore = -1;
                 int grayTolerance = Math.Max(tolerance, 22);
                 int edgeTolerance = Math.Max(tolerance * 2, 55);
                 int contrastSlack = Math.Max(tolerance, 30);
@@ -560,23 +597,23 @@ public static class VisionFinder {
                             double primaryScore = originalScore;
                             string primaryMode = "original";
                             if (grayScore * 0.99 > primaryScore) { primaryScore = grayScore * 0.99; primaryMode = "gray"; }
-                            if (primaryScore > bestPrimaryScore) { bestPrimaryScore = primaryScore; bestPrimaryX = x; bestPrimaryY = y; bestPrimaryMode = primaryMode; }
+                            if (primaryScore > bestPrimaryScore) { bestPrimaryMode = primaryMode; }
+                            TrackCandidate(primaryScore, x, y, tw, th, ref bestPrimaryScore, ref bestPrimaryX, ref bestPrimaryY, ref secondPrimaryScore);
                         } else if (maskStrong && supportOk) {
                             double fallbackScore = maskScore * 0.98;
                             string fallbackMode = "channel-mask";
                             if (edgeStrong && edgeScore * 0.88 > fallbackScore) { fallbackScore = edgeScore * 0.88; fallbackMode = "channel-mask+edge"; }
-                            if (fallbackScore > bestFallbackScore) { bestFallbackScore = fallbackScore; bestFallbackX = x; bestFallbackY = y; bestFallbackMode = fallbackMode; }
+                            if (fallbackScore > bestFallbackScore) { bestFallbackMode = fallbackMode; }
+                            TrackCandidate(fallbackScore, x, y, tw, th, ref bestFallbackScore, ref bestFallbackX, ref bestFallbackY, ref secondFallbackScore);
                         }
                     }
                 }
                 if (bestPrimaryScore >= requiredScore) {
-                    LastMode = "primary-" + bestPrimaryMode;
-                    LastScore = bestPrimaryScore;
+                    SetMatchResult("primary-" + bestPrimaryMode, bestPrimaryScore, secondPrimaryScore);
                     return new Rectangle(screenBounds.Left + bestPrimaryX, screenBounds.Top + bestPrimaryY, tw, th);
                 }
                 if (bestFallbackScore >= requiredScore) {
-                    LastMode = "fallback-" + bestFallbackMode;
-                    LastScore = bestFallbackScore;
+                    SetMatchResult("fallback-" + bestFallbackMode, bestFallbackScore, secondFallbackScore);
                     return new Rectangle(screenBounds.Left + bestFallbackX, screenBounds.Top + bestFallbackY, tw, th);
                 }
                 return Rectangle.Empty;
@@ -1388,10 +1425,16 @@ function Test-SlotRequiresRegion([string]$Slot) {
     return @('협동','메뉴','어비스','던전','입장','퀘스트','완료 확인','나가기','식사 버튼','궁극기','스킵','팔라딘') -contains $Slot
 }
 function Test-SlotAllowsCoordinateFallback([string]$Slot) {
-    return @('메뉴') -contains $Slot
+    return $false
+}
+function Test-SlotNeedsStableConfirm([string]$Slot) {
+    return @('협동','메뉴','어비스','던전','입장','퀘스트','완료 확인','나가기') -contains $Slot
+}
+function Test-SlotRejectsAmbiguousMatch([string]$Slot) {
+    return @('협동','메뉴','어비스','던전','입장','퀘스트','완료 확인','나가기') -contains $Slot
 }
 function Test-SlotUsesBrightTextFirst([string]$Slot) {
-    return @('협동','던전','입장','퀘스트','상태 기준','완료 확인','나가기','스킵') -contains $Slot
+    return @('스킵') -contains $Slot
 }
 function Find-EntryBusyGuard([System.Windows.Forms.Screen]$Screen) {
     $guardPath = Join-Path (Join-Path $PSScriptRoot 'state_samples') '입장_전투중_가드.png'
@@ -1454,51 +1497,19 @@ function Expand-SearchBoundsForSample([System.Drawing.Rectangle]$Bounds, [string
     } catch {
         return $Bounds
     }
-    $pad = 18
-    $neededWidth = [Math]::Max($Bounds.Width, $sampleWidth + ($pad * 2))
-    $neededHeight = [Math]::Max($Bounds.Height, $sampleHeight + ($pad * 2))
-    if ($neededWidth -eq $Bounds.Width -and $neededHeight -eq $Bounds.Height) { return $Bounds }
-    $centerX = $Bounds.Left + ($Bounds.Width / 2.0)
-    $centerY = $Bounds.Top + ($Bounds.Height / 2.0)
-    $expanded = [System.Drawing.Rectangle]::new(
-        [int]($centerX - ($neededWidth / 2.0)),
-        [int]($centerY - ($neededHeight / 2.0)),
-        [int]$neededWidth,
-        [int]$neededHeight
-    )
-    $limit = Get-CurrentSearchBounds $Screen
-    $limited = Intersect-RectWithin $expanded $limit
-    if ($limited.IsEmpty) { return $Bounds }
-    Write-RoutineTrace $script:CurrentCycle 'vision' '' 'bounds-expanded' $limited (
-        ('sample={0}; old={1}x{2}; sampleSize={3}x{4}' -f
-            [System.IO.Path]::GetFileName($SamplePath), $Bounds.Width, $Bounds.Height, $sampleWidth, $sampleHeight)
-    )
-    return $limited
+    if ($sampleWidth -gt $Bounds.Width -or $sampleHeight -gt $Bounds.Height) {
+        Write-RoutineTrace $script:CurrentCycle 'vision' '' 'sample-too-large-for-region' $Bounds (
+            ('sample={0}; region={1}x{2}; sampleSize={3}x{4}' -f
+                [System.IO.Path]::GetFileName($SamplePath), $Bounds.Width, $Bounds.Height, $sampleWidth, $sampleHeight)
+        )
+        return [System.Drawing.Rectangle]::Empty
+    }
+    return $Bounds
 }
 function Get-SlotSearchBounds([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
     $bounds = Get-CurrentSearchBounds $Screen
     $regionRect = Get-SlotRegionScreenRect $Slot $Screen
     if (-not $regionRect.IsEmpty) {
-        if ($Slot -eq '메뉴') {
-            $wideMenuRect = [System.Drawing.Rectangle]::new(
-                [int]($bounds.Left + ($bounds.Width * 0.78)),
-                [int]$bounds.Top,
-                [int]($bounds.Width * 0.20),
-                [int]($bounds.Height * 0.18)
-            )
-            $wideMenuRect = Intersect-RectWithin $wideMenuRect $bounds
-            if (-not $wideMenuRect.IsEmpty) { return $wideMenuRect }
-        }
-        if ($Slot -eq '스킵') {
-            $wideSkipRect = [System.Drawing.Rectangle]::new(
-                [int]($regionRect.Left - 700),
-                [int]($regionRect.Top - 80),
-                [int]($regionRect.Width + 780),
-                [int]($regionRect.Height + 210)
-            )
-            $wideSkipRect = Intersect-RectWithin $wideSkipRect $bounds
-            if (-not $wideSkipRect.IsEmpty) { return $wideSkipRect }
-        }
         $limited = Intersect-RectWithin $regionRect $bounds
         if (-not $limited.IsEmpty) { return $limited }
     }
@@ -1549,6 +1560,10 @@ function Find-Slot([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
     if ($paths.Count -eq 0) { return [System.Drawing.Rectangle]::Empty }
     foreach ($samplePath in $paths) {
         $searchBounds = Expand-SearchBoundsForSample $bounds $samplePath $Screen
+        if ($searchBounds.IsEmpty) {
+            Write-RoutineTrace $script:CurrentCycle 'vision' $Slot 'sample-skip-empty-region' $bounds ([System.IO.Path]::GetFileName($samplePath))
+            continue
+        }
         $slotTolerance = Get-ColorTolerance
         $slotRequired = Get-MatchRequired
         if ($Slot -eq '궁극기') {
@@ -1565,7 +1580,12 @@ function Find-Slot([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
                     Write-RoutineTrace $script:CurrentCycle 'vision' $Slot 'ignored-zone' $brightRect ([System.IO.Path]::GetFileName($samplePath) + ' / bright-text')
                     continue
                 }
-                $script:LastMatchedSample = [System.IO.Path]::GetFileName($samplePath) + ' / ' + [VisionFinder]::LastMode + ' ' + ('{0:P1}' -f [VisionFinder]::LastScore)
+                $scoreDetail = [VisionFinder]::LastMode + ' ' + ('{0:P1}' -f [VisionFinder]::LastScore) + '; second=' + ('{0:P1}' -f [VisionFinder]::LastSecondScore) + '; gap=' + ('{0:P1}' -f [VisionFinder]::LastScoreGap)
+                if ((Test-SlotRejectsAmbiguousMatch $Slot) -and [VisionFinder]::LastAmbiguous) {
+                    Write-RoutineTrace $script:CurrentCycle 'vision' $Slot 'ambiguous-match' $brightRect ([System.IO.Path]::GetFileName($samplePath) + ' / ' + $scoreDetail)
+                    continue
+                }
+                $script:LastMatchedSample = [System.IO.Path]::GetFileName($samplePath) + ' / ' + $scoreDetail
                 Save-DiagnosticFrame $Slot 'found' $searchBounds $brightRect ($script:LastMatchedSample)
                 return $brightRect
             }
@@ -1576,19 +1596,14 @@ function Find-Slot([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
                 Write-RoutineTrace $script:CurrentCycle 'vision' $Slot 'ignored-zone' $rect ([System.IO.Path]::GetFileName($samplePath))
                 continue
             }
-            $script:LastMatchedSample = [System.IO.Path]::GetFileName($samplePath) + ' / ' + [VisionFinder]::LastMode + ' ' + ('{0:P1}' -f [VisionFinder]::LastScore)
+            $scoreDetail = [VisionFinder]::LastMode + ' ' + ('{0:P1}' -f [VisionFinder]::LastScore) + '; second=' + ('{0:P1}' -f [VisionFinder]::LastSecondScore) + '; gap=' + ('{0:P1}' -f [VisionFinder]::LastScoreGap)
+            if ((Test-SlotRejectsAmbiguousMatch $Slot) -and [VisionFinder]::LastAmbiguous) {
+                Write-RoutineTrace $script:CurrentCycle 'vision' $Slot 'ambiguous-match' $rect ([System.IO.Path]::GetFileName($samplePath) + ' / ' + $scoreDetail)
+                continue
+            }
+            $script:LastMatchedSample = [System.IO.Path]::GetFileName($samplePath) + ' / ' + $scoreDetail
             Save-DiagnosticFrame $Slot 'found' $searchBounds $rect ($script:LastMatchedSample)
             return $rect
-        }
-    }
-    if ($Slot -eq '퀘스트' -and [VisionFinder]::HasQuestTextSignal($bounds)) {
-        $point = Get-SlotPointScreenPoint '퀘스트'
-        if ($null -ne $point) {
-            $fallbackRect = [System.Drawing.Rectangle]::new([int]($point.X - 12), [int]($point.Y - 12), 24, 24)
-            $script:LastMatchedSample = 'quest-text-signal / ' + ('{0:P1}' -f [VisionFinder]::LastScore)
-            Save-DiagnosticFrame $Slot 'found' $bounds $fallbackRect $script:LastMatchedSample
-            Write-RoutineTrace $script:CurrentCycle 'vision' $Slot 'quest-text-fallback' $fallbackRect 'sample miss; orange/white quest text signal inside saved region'
-            return $fallbackRect
         }
     }
     if (($script:CurrentCycle % 10) -eq 0) {
@@ -1662,9 +1677,50 @@ function Find-ValidSlotOnce([string]$Slot, [System.Windows.Forms.Screen]$Screen,
             return [System.Drawing.Rectangle]::Empty
         }
     }
+    if (Test-SlotNeedsStableConfirm $Slot) {
+        Start-Sleep -Milliseconds 120
+        $confirmRect = Find-Slot $Slot $Screen
+        if ($confirmRect.IsEmpty) {
+            Write-RoutineTrace $script:CurrentCycle 'single-find' $Slot 'found-unstable' $rect 'second sample check missed'
+            return [System.Drawing.Rectangle]::Empty
+        }
+        if ($UsePointCheck) {
+            $confirmPointResult = Check-SlotPointMatch $Slot $confirmRect
+            if (-not $confirmPointResult.Ok) {
+                Write-RoutineTrace $script:CurrentCycle 'single-find' $Slot 'found-unstable' $confirmRect ('second sample point mismatch; ' + $confirmPointResult.Message)
+                return [System.Drawing.Rectangle]::Empty
+            }
+        }
+        $cx1 = [int]($rect.Left + $rect.Width / 2)
+        $cy1 = [int]($rect.Top + $rect.Height / 2)
+        $cx2 = [int]($confirmRect.Left + $confirmRect.Width / 2)
+        $cy2 = [int]($confirmRect.Top + $confirmRect.Height / 2)
+        if ([Math]::Abs($cx1 - $cx2) -gt 35 -or [Math]::Abs($cy1 - $cy2) -gt 35) {
+            Write-RoutineTrace $script:CurrentCycle 'single-find' $Slot 'found-unstable' $confirmRect ('second sample center moved; first=' + $cx1 + ',' + $cy1 + '; second=' + $cx2 + ',' + $cy2)
+            return [System.Drawing.Rectangle]::Empty
+        }
+        Write-RoutineTrace $script:CurrentCycle 'single-find' $Slot 'stable-confirmed' $confirmRect ('first=' + $cx1 + ',' + $cy1 + '; second=' + $cx2 + ',' + $cy2)
+    }
     Write-RoutineTrace $script:CurrentCycle 'single-find' $Slot 'found-valid' $rect ''
     return $rect
 }
+function Test-ExitClosedConfirmed([System.Windows.Forms.Screen]$Screen) {
+    $menuRect = Find-Slot '메뉴' $Screen
+    if (-not $menuRect.IsEmpty) {
+        Write-RoutineTrace $script:CurrentCycle 'post-clear' '나가기' 'closed-confirmed-menu' $menuRect 'menu image visible after exit'
+        return $true
+    }
+    if (Test-SpecialSlotEnabled '협동') {
+        $coopRect = Find-Slot '협동' $Screen
+        if (-not $coopRect.IsEmpty) {
+            Write-RoutineTrace $script:CurrentCycle 'post-clear' '나가기' 'closed-confirmed-coop' $coopRect 'coop confirmation visible after exit'
+            return $true
+        }
+    }
+    Write-RoutineTrace $script:CurrentCycle 'post-clear' '나가기' 'closed-not-confirmed' ([System.Drawing.Rectangle]::Empty) 'exit disappeared but menu/coop was not confirmed'
+    return $false
+}
+
 function Invoke-ExitActionUntilClosed([System.Windows.Forms.Screen]$Screen, [System.Windows.Forms.Label]$StatusLabel, [System.Drawing.Rectangle]$ExitRect) {
     for ($try = 1; $try -le 2; $try++) {
         $StatusLabel.Text = '나가기 감지: 종료 처리 ' + $try + '/2'
@@ -1676,8 +1732,12 @@ function Invoke-ExitActionUntilClosed([System.Windows.Forms.Screen]$Screen, [Sys
         if ($script:StopRequested) { return [pscustomobject]@{ Closed = $false; Clicks = $try; Rect = [System.Drawing.Rectangle]::Empty } }
         $stillExit = Find-ValidSlotOnce '나가기' $Screen $true
         if ($stillExit.IsEmpty) {
-            Write-RoutineTrace $script:CurrentCycle 'post-clear' '나가기' 'closed' ([System.Drawing.Rectangle]::Empty) ('clicks=' + $try)
-            return [pscustomobject]@{ Closed = $true; Clicks = $try; Rect = [System.Drawing.Rectangle]::Empty }
+            if (Test-ExitClosedConfirmed $Screen) {
+                Write-RoutineTrace $script:CurrentCycle 'post-clear' '나가기' 'closed' ([System.Drawing.Rectangle]::Empty) ('clicks=' + $try)
+                return [pscustomobject]@{ Closed = $true; Clicks = $try; Rect = [System.Drawing.Rectangle]::Empty }
+            }
+            Write-RoutineTrace $script:CurrentCycle 'post-clear' '나가기' 'closed-rejected' $ExitRect ('clicks=' + $try + '; keep exit stage')
+            continue
         }
         Write-RoutineTrace $script:CurrentCycle 'post-clear' '나가기' 'still-visible' $stillExit ('after-click-try=' + $try)
         $ExitRect = $stillExit
@@ -1686,8 +1746,12 @@ function Invoke-ExitActionUntilClosed([System.Windows.Forms.Screen]$Screen, [Sys
     [void](Sleep-WithStop 1000)
     $afterSpace = Find-ValidSlotOnce '나가기' $Screen $true
     if ($afterSpace.IsEmpty) {
-        Write-RoutineTrace $script:CurrentCycle 'post-clear' '나가기' 'closed-by-space' ([System.Drawing.Rectangle]::Empty) ''
-        return [pscustomobject]@{ Closed = $true; Clicks = 3; Rect = [System.Drawing.Rectangle]::Empty }
+        if (Test-ExitClosedConfirmed $Screen) {
+            Write-RoutineTrace $script:CurrentCycle 'post-clear' '나가기' 'closed-by-space' ([System.Drawing.Rectangle]::Empty) ''
+            return [pscustomobject]@{ Closed = $true; Clicks = 3; Rect = [System.Drawing.Rectangle]::Empty }
+        }
+        Write-RoutineTrace $script:CurrentCycle 'post-clear' '나가기' 'space-closed-rejected' $ExitRect 'menu/coop not confirmed'
+        return [pscustomobject]@{ Closed = $false; Clicks = 3; Rect = $ExitRect }
     }
     Write-RoutineTrace $script:CurrentCycle 'post-clear' '나가기' 'space-no-effect' $afterSpace ''
     return [pscustomobject]@{ Closed = $false; Clicks = 3; Rect = $afterSpace }
@@ -1736,7 +1800,7 @@ function Get-NextRoutineStage([string]$Slot) {
 }
 function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$Stage) {
     if ([string]::IsNullOrWhiteSpace($Stage)) { $Stage = '메뉴' }
-    if ($Stage -eq '메뉴' -and (Get-SlotSamplePaths '협동').Count -gt 0) {
+    if ($Stage -eq '메뉴' -and (Test-SpecialSlotEnabled '협동') -and (Get-SlotSamplePaths '협동').Count -gt 0) {
         $coopRect = Find-ValidSlotOnce '협동' $Screen $true
         if (-not $coopRect.IsEmpty) {
             Write-RoutineTrace $script:CurrentCycle 'stage-scan' '협동' 'candidate-before-menu' $coopRect 'stage=메뉴; special pre-check'
@@ -1791,14 +1855,7 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
                 Write-RoutineTrace $script:CurrentCycle 'stage-scan' '완료 확인' 'blocked-by-gate' ([System.Drawing.Rectangle]::Empty) (Get-CompleteGateDetail)
             }
         }
-        if ((Get-SlotSamplePaths '나가기').Count -gt 0) {
-            $exitRect = Find-ValidSlotOnce '나가기' $Screen $true
-            if (-not $exitRect.IsEmpty) {
-                Write-RoutineTrace $script:CurrentCycle 'stage-scan' '나가기' 'candidate-after-inside' $exitRect 'reward exit is already visible while stage=내부'
-                return [pscustomobject]@{ Slot = '나가기'; Rect = $exitRect; Stage = $Stage }
-            }
-        }
-        Write-RoutineTrace $script:CurrentCycle 'stage-scan' '' 'none' ([System.Drawing.Rectangle]::Empty) 'stage=내부; checked=상태 기준|스킵|식사 버튼|궁극기|팔라딘|완료 확인|나가기'
+        Write-RoutineTrace $script:CurrentCycle 'stage-scan' '' 'none' ([System.Drawing.Rectangle]::Empty) 'stage=내부; checked=상태 기준|스킵|식사 버튼|궁극기|팔라딘|완료 확인'
         return $null
     }
     $expectedSlot = $Stage
@@ -2080,8 +2137,19 @@ function Test-CombatSlotEnabled([string]$Slot) {
     return $true
 }
 
+function Test-SpecialSlotEnabled([string]$Slot) {
+    if (-not ($script:SpecialSlots -contains $Slot)) { return $true }
+    try {
+        if ($script:SpecialSlotChecks -and $script:SpecialSlotChecks.ContainsKey($Slot)) {
+            return [bool]$script:SpecialSlotChecks[$Slot].Checked
+        }
+    } catch { }
+    if ($script:SpecialSlotEnabled.ContainsKey($Slot)) { return [bool]$script:SpecialSlotEnabled[$Slot] }
+    return $true
+}
+
 function Test-SlotEnabled([string]$Slot) {
-    if ($script:SpecialSlots -contains $Slot) { return $true }
+    if ($script:SpecialSlots -contains $Slot) { return (Test-SpecialSlotEnabled $Slot) }
     if ($script:RouteSlots -contains $Slot) { return (Test-HarborEnabled) }
     if ($script:CombatSlots -contains $Slot) { return (Test-CombatSlotEnabled $Slot) }
     return $true
@@ -2597,10 +2665,17 @@ $slotPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([Syste
 $slotPreviewToggleButton = New-Object System.Windows.Forms.Button; $slotPreviewToggleButton.Text = '접기'; $slotPreviewToggleButton.Dock = 'Right'; $slotPreviewToggleButton.Width = 66
 
 $specialPreviewGroup = New-Object System.Windows.Forms.GroupBox; $specialPreviewGroup.Text = [string](Get-UiValue 'labels.specialSlotPreview' '특수카테고리'); $specialPreviewGroup.Dock = 'Fill'; $specialPreviewGroup.Padding = New-Object System.Windows.Forms.Padding(5)
+$specialPreviewTable = New-Object System.Windows.Forms.TableLayoutPanel; $specialPreviewTable.Dock = 'Fill'; $specialPreviewTable.ColumnCount = 1; $specialPreviewTable.RowCount = 2
+$specialPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 20))) | Out-Null
+$specialPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
+$specialEnabledCheck = New-Object System.Windows.Forms.CheckBox; $specialEnabledCheck.Text = '협동 ON'; $specialEnabledCheck.Checked = $true; $specialEnabledCheck.Dock = 'Left'
+$script:SpecialSlotChecks['협동'] = $specialEnabledCheck
 $specialSlotPanel = New-Object System.Windows.Forms.TableLayoutPanel; $specialSlotPanel.Dock = 'Fill'; $specialSlotPanel.ColumnCount = 1; $specialSlotPanel.RowCount = 1; $specialSlotPanel.AutoScroll = $false; $specialSlotPanel.Padding = New-Object System.Windows.Forms.Padding(0)
 $specialSlotPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
 $specialSlotPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
-$specialPreviewGroup.Controls.Add($specialSlotPanel)
+$specialPreviewTable.Controls.Add($specialEnabledCheck, 0, 0)
+$specialPreviewTable.Controls.Add($specialSlotPanel, 0, 1)
+$specialPreviewGroup.Controls.Add($specialPreviewTable)
 
 $routePreviewGroup = New-Object System.Windows.Forms.GroupBox; $routePreviewGroup.Text = '허상의 정박지'; $routePreviewGroup.Dock = 'Fill'; $routePreviewGroup.Padding = New-Object System.Windows.Forms.Padding(5)
 $routePreviewTable = New-Object System.Windows.Forms.TableLayoutPanel; $routePreviewTable.Dock = 'Fill'; $routePreviewTable.ColumnCount = 1; $routePreviewTable.RowCount = 2
@@ -3088,6 +3163,7 @@ $exitButton.Add_Click({ $script:StopRequested = $true; $form.Close() })
 $advancedToggleButton.Add_Click({ Toggle-AdvancedTools })
 $topMostCheck.Add_CheckedChanged({ $form.TopMost = $topMostCheck.Checked })
 $harborEnabledCheck.Add_CheckedChanged({ $script:HarborEnabled = [bool]$harborEnabledCheck.Checked; Refresh-Slots })
+$specialEnabledCheck.Add_CheckedChanged({ $script:SpecialSlotEnabled['협동'] = [bool]$specialEnabledCheck.Checked; Refresh-Slots })
 $ultimateProfileBox.Add_SelectionChangeCommitted({
     Save-SelectedUltimateProfileFromControls
     if ($ultimateProfileBox.SelectedIndex -ge 0) { $script:SelectedUltimateProfileIndex = [int]$ultimateProfileBox.SelectedIndex }
@@ -3221,3 +3297,8 @@ try {
 } finally {
     Write-CrashLog 'app-exit' $null
 }
+
+
+
+
+

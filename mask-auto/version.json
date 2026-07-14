@@ -1,18 +1,18 @@
 ﻿{
-    "version":  "1.0.27",
-    "packageUrl":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.27_quest_text_signal.zip",
-    "sha256":  "B649F523AD15433F89390E528AFDA6972ED34A44FA17AB3E854AEA54A55C3A12",
-    "files":  [
-                  "local_state_routine_runner.ps1",
-                  "slot_points.csv",
-                  "slot_regions.csv",
-                  "state_samples"
-              ],
+    "version":  "1.0.34",
+    "update_mode":  "package",
+    "package":  {
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.34_auto1_sample_recovery.zip",
+                    "sha256":  "cb214e9ac2deb641282ae2d8c3b6bd75843fdee324eb702f114a9c1f6173bb2b",
+                    "files":  [
+                                  "local_state_routine_runner.ps1",
+                                  "state_samples/궁극기_2_20260714_124457_140.png"
+                              ]
+                },
     "notes":  [
-                  "퀘스트 이미지 매칭 실패 시 저장된 퀘스트 영역 안의 주황/흰색 문구 신호로 보조 판정",
-                  "퀘스트 보조 판정 성공 시 기존 퀘스트 좌표 중심으로 클릭",
-                  "퀘스트 단계 유지 로직은 1.0.26 기준 유지"
-              ],
-    "requiresReinstall":  false,
-    "createdAt":  "2026-07-13T02:14:42"
+                  "동일 슬롯의 모든 샘플 후보를 순서대로 검사",
+                  "샘플이 등록 영역보다 조금 클 때 제한적으로 검색 영역 보정",
+                  "궁극기 2번 샘플 등록",
+                  "수동 클릭 기록기 생성자 호출 오류 수정"
+              ]
 }

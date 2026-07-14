@@ -200,7 +200,7 @@ $script:ClickTracePath = Join-Path $PSScriptRoot 'click_trace_log.csv'
 $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
 $script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $PSScriptRoot 'reports'
-$script:AppVersion = '1.0.73'
+$script:AppVersion = '1.0.74'
 $script:DiagnosticFailureCount = 0
 $script:DiagnosticDisabledUntil = [DateTime]::MinValue
 $script:IgnoreZones = New-Object System.Collections.Generic.List[object]
@@ -761,6 +761,12 @@ function Get-SlotSamplePaths([string]$Slot) {
     $slotKey = Get-EffectiveSlotKey $Slot
     if ($script:Samples[$slotKey] -and [System.IO.File]::Exists($script:Samples[$slotKey].Path)) {
         [void]$paths.Add([string]$script:Samples[$slotKey].Path)
+    }
+    foreach ($loadName in (Get-SlotLoadNames $slotKey)) {
+        $prefix = $loadName.Replace(' ', '_') + '_'
+        foreach ($file in (Get-ChildItem -LiteralPath $script:SampleDir -File -Filter '*.png' | Where-Object { $_.Name.StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase) } | Sort-Object LastWriteTime -Descending)) {
+            [void]$paths.Add($file.FullName)
+        }
     }
     $folder = Get-MultiSampleFolder $Slot
     if (-not [string]::IsNullOrWhiteSpace($folder) -and [System.IO.Directory]::Exists($folder)) {
@@ -1354,6 +1360,10 @@ function Find-Slot([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
     if ($paths.Count -eq 0) { return [System.Drawing.Rectangle]::Empty }
     foreach ($samplePath in $paths) {
         $searchBounds = Expand-SearchBoundsForSample $bounds $samplePath $Screen
+        if ($searchBounds.IsEmpty) {
+            Write-RoutineTrace $script:CurrentCycle 'vision' $Slot 'sample-skip-empty-region' $bounds ([System.IO.Path]::GetFileName($samplePath))
+            continue
+        }
         $slotTolerance = Get-ColorTolerance
         $slotRequired = Get-MatchRequired
         if ($Slot -eq '궁극기') {

@@ -1,0 +1,16 @@
+﻿{
+    "version":  "1.0.33",
+    "update_mode":  "package",
+    "package":  {
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.33_region_empty_guard.zip",
+                    "sha256":  "b59fa5bdc8bc09dd10507f991c0d97006158567c81a67cc72121df6744d9cc45",
+                    "files":  [
+                                  "local_state_routine_runner.ps1"
+                              ]
+                },
+    "notes":  [
+                  "샘플 이미지가 등록 영역보다 클 때 FindSample 호출을 중단",
+                  "sample-skip-empty-region 로그 추가",
+                  "Start 직후 매개 변수가 잘못되었습니다 오류 방어"
+              ]
+}
