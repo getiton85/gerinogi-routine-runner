@@ -203,7 +203,7 @@ $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
 $script:CrashLogPath = Join-Path $PSScriptRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $PSScriptRoot 'reports'
-$script:AppVersion = '1.0.34'
+$script:AppVersion = '1.0.35'
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
 $script:LongCompleteFallbackMs = 90000
@@ -380,6 +380,12 @@ public static class VisionFinder {
         return (r * 299 + g * 587 + b * 114) / 1000;
     }
 
+    private static int SaturationRange(byte b, byte g, byte r) {
+        int max = Math.Max(r, Math.Max(g, b));
+        int min = Math.Min(r, Math.Min(g, b));
+        return max - min;
+    }
+
     private static int GrayAt(byte[] data, int stride, int width, int height, int x, int y) {
         if (x < 0) x = 0; if (y < 0) y = 0;
         if (x >= width) x = width - 1; if (y >= height) y = height - 1;
@@ -408,6 +414,70 @@ public static class VisionFinder {
         int max = Math.Max(r, Math.Max(g, b));
         int min = Math.Min(r, Math.Min(g, b));
         return gray >= threshold && (max - min) <= 60;
+    }
+
+    public static Rectangle FindSaturatedColorSample(Rectangle screenBounds, string samplePath, int searchStep, int sampleStep, int tolerance, double requiredScore) {
+        ResetLastMatch();
+        using (Bitmap screen = Capture(screenBounds))
+        using (Bitmap rawSample = new Bitmap(samplePath))
+        using (Bitmap sample = new Bitmap(rawSample.Width, rawSample.Height, PixelFormat.Format32bppArgb)) {
+            using (Graphics sg = Graphics.FromImage(sample)) { sg.DrawImage(rawSample, 0, 0, rawSample.Width, rawSample.Height); }
+            if (sample.Width > screen.Width || sample.Height > screen.Height) return Rectangle.Empty;
+            Rectangle sr = new Rectangle(0, 0, screen.Width, screen.Height);
+            Rectangle tr = new Rectangle(0, 0, sample.Width, sample.Height);
+            BitmapData sd = screen.LockBits(sr, ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+            BitmapData td = sample.LockBits(tr, ImageLockMode.ReadOnly, PixelFormat.Format32bppArgb);
+            try {
+                int ss = sd.Stride, ts = td.Stride, sw = screen.Width, sh = screen.Height, tw = sample.Width, th = sample.Height;
+                byte[] s = new byte[ss * sh];
+                byte[] t = new byte[ts * th];
+                Marshal.Copy(sd.Scan0, s, 0, s.Length);
+                Marshal.Copy(td.Scan0, t, 0, t.Length);
+                int[] xs = new int[tw * th];
+                int[] ys = new int[tw * th];
+                int colorCount = 0;
+                for (int ty = 0; ty < th; ty += sampleStep) {
+                    int tRow = ty * ts;
+                    for (int tx = 0; tx < tw; tx += sampleStep) {
+                        int ti = tRow + tx * 4;
+                        byte tb = t[ti], tg = t[ti + 1], trc = t[ti + 2], ta = t[ti + 3];
+                        int sat = SaturationRange(tb, tg, trc);
+                        int max = Math.Max(trc, Math.Max(tg, tb));
+                        if (ta >= 24 && sat >= 45 && max >= 95) {
+                            xs[colorCount] = tx;
+                            ys[colorCount] = ty;
+                            colorCount++;
+                        }
+                    }
+                }
+                if (colorCount < 12) return Rectangle.Empty;
+                double bestScore = -1.0, secondScore = -1.0;
+                int bestX = -1, bestY = -1;
+                int colorTolerance = Math.Max(tolerance, 48);
+                for (int y = 0; y <= sh - th; y += searchStep) {
+                    if ((NativeInput.GetAsyncKeyState(0x75) & unchecked((short)0x8000)) != 0) { LastMode = "stopped-f6"; return Rectangle.Empty; }
+                    for (int x = 0; x <= sw - tw; x += searchStep) {
+                        int ok = 0;
+                        for (int i = 0; i < colorCount; i++) {
+                            int tx = xs[i], ty = ys[i];
+                            int si = (y + ty) * ss + (x + tx) * 4;
+                            int ti = ty * ts + tx * 4;
+                            byte sb = s[si], sgc = s[si + 1], srcc = s[si + 2];
+                            byte tb = t[ti], tg = t[ti + 1], trc = t[ti + 2];
+                            if (SaturationRange(sb, sgc, srcc) < 35) continue;
+                            if (Math.Abs(sb - tb) <= colorTolerance && Math.Abs(sgc - tg) <= colorTolerance && Math.Abs(srcc - trc) <= colorTolerance) ok++;
+                        }
+                        double score = (double)ok / colorCount;
+                        TrackCandidate(score, x, y, tw, th, ref bestScore, ref bestX, ref bestY, ref secondScore);
+                    }
+                }
+                if (bestScore >= requiredScore) {
+                    SetMatchResult("saturated-color", bestScore, secondScore);
+                    return new Rectangle(screenBounds.Left + bestX, screenBounds.Top + bestY, tw, th);
+                }
+                return Rectangle.Empty;
+            } finally { screen.UnlockBits(sd); sample.UnlockBits(td); }
+        }
     }
 
     public static bool HasQuestTextSignal(Rectangle screenBounds) {
@@ -1442,7 +1512,7 @@ function Test-SlotRejectsAmbiguousMatch([string]$Slot) {
     return @('협동','메뉴','어비스','던전','입장','퀘스트','완료 확인','나가기') -contains $Slot
 }
 function Test-SlotUsesBrightTextFirst([string]$Slot) {
-    return @('스킵') -contains $Slot
+    return @('협동','메뉴','어비스','던전','입장','퀘스트','완료 확인','나가기','식사 버튼','스킵') -contains $Slot
 }
 function Find-EntryBusyGuard([System.Windows.Forms.Screen]$Screen) {
     $guardPath = Join-Path (Join-Path $PSScriptRoot 'state_samples') '입장_전투중_가드.png'
@@ -1597,6 +1667,19 @@ function Find-Slot([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
         if ($Slot -eq '궁극기') {
             $slotTolerance = [Math]::Max($slotTolerance, 38)
             $slotRequired = [Math]::Min($slotRequired, 0.82)
+        }
+        if (@('궁극기','팔라딘') -contains $Slot) {
+            $colorRect = [VisionFinder]::FindSaturatedColorSample($searchBounds, $samplePath, 3, 5, [Math]::Max($slotTolerance, 48), 0.58)
+            if (-not $colorRect.IsEmpty) {
+                if (Test-RectInIgnoreZone $colorRect) {
+                    Write-RoutineTrace $script:CurrentCycle 'vision' $Slot 'ignored-zone' $colorRect ([System.IO.Path]::GetFileName($samplePath) + ' / saturated-color')
+                    continue
+                }
+                $scoreDetail = [VisionFinder]::LastMode + ' ' + ('{0:P1}' -f [VisionFinder]::LastScore) + '; second=' + ('{0:P1}' -f [VisionFinder]::LastSecondScore) + '; gap=' + ('{0:P1}' -f [VisionFinder]::LastScoreGap)
+                $script:LastMatchedSample = [System.IO.Path]::GetFileName($samplePath) + ' / ' + $scoreDetail
+                Save-DiagnosticFrame $Slot 'found' $searchBounds $colorRect ($script:LastMatchedSample)
+                return $colorRect
+            }
         }
         if (Test-SlotUsesBrightTextFirst $Slot) {
             $slotTolerance = [Math]::Min($slotTolerance, 45)
@@ -1822,19 +1905,28 @@ function Get-NextRoutineStage([string]$Slot) {
         '팔라딘' { return '내부' }
         '입장_전투중' { return '내부' }
         '완료 확인' { return '나가기' }
-        '나가기' { return '메뉴' }
+        '나가기' {
+            if ((Test-SpecialSlotEnabled '협동') -and (Get-SlotSamplePaths '협동').Count -gt 0) { return '협동' }
+            return '메뉴'
+        }
+        '__협동없음' { return '메뉴' }
         default { return '' }
     }
 }
 function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$Stage) {
     if ([string]::IsNullOrWhiteSpace($Stage)) { $Stage = '메뉴' }
-    if ($Stage -eq '메뉴' -and (Test-SpecialSlotEnabled '협동') -and (Get-SlotSamplePaths '협동').Count -gt 0) {
+    if ($Stage -eq '협동') {
+        if (-not (Test-SpecialSlotEnabled '협동') -or (Get-SlotSamplePaths '협동').Count -eq 0) {
+            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '협동' 'skip-special-after-loop' ([System.Drawing.Rectangle]::Empty) 'special disabled or missing sample; continue to menu'
+            return [pscustomobject]@{ Slot = '__협동없음'; Rect = [System.Drawing.Rectangle]::Empty; Stage = $Stage }
+        }
         $coopRect = Find-ValidSlotOnce '협동' $Screen $true
         if (-not $coopRect.IsEmpty) {
-            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '협동' 'candidate-before-menu' $coopRect 'stage=메뉴; special pre-check'
+            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '협동' 'candidate-after-loop' $coopRect 'stage=협동; special after loop'
             return [pscustomobject]@{ Slot = '협동'; Rect = $coopRect; Stage = $Stage }
         }
-        Write-RoutineTrace $script:CurrentCycle 'stage-scan' '협동' 'miss-before-menu' ([System.Drawing.Rectangle]::Empty) 'stage=메뉴; continue to menu'
+        Write-RoutineTrace $script:CurrentCycle 'stage-scan' '협동' 'miss-special-after-loop' ([System.Drawing.Rectangle]::Empty) 'special not visible; continue to menu'
+        return [pscustomobject]@{ Slot = '__협동없음'; Rect = [System.Drawing.Rectangle]::Empty; Stage = $Stage }
     }
     if (@('입장','내부','나가기','종료') -contains $Stage) {
         $entryBusyRect = Find-EntryBusyGuard $Screen
@@ -1958,6 +2050,12 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
     $nextStage = Get-NextRoutineStage $slot
     Mark-ActiveSlot $slot
     switch ($slot) {
+        '__협동없음' {
+            $StatusLabel.Text = '협동 없음: 메뉴 단계로 이동'
+            [System.Windows.Forms.Application]::DoEvents()
+            Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'advance-no-click' $rect 'next=메뉴'
+            return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = '협동 없음'; NextStage = $nextStage }
+        }
         '협동' {
             $StatusLabel.Text = '협동 감지: 클릭 후 메뉴 확인'
             [System.Windows.Forms.Application]::DoEvents()

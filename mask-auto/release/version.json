@@ -1,16 +1,20 @@
 ﻿{
-    "version":  "1.0.33",
+    "version":  "1.0.35",
     "update_mode":  "package",
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.33_region_empty_guard.zip",
-                    "sha256":  "b59fa5bdc8bc09dd10507f991c0d97006158567c81a67cc72121df6744d9cc45",
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.35_special_after_loop_color_skill.zip",
+                    "sha256":  "a9b6b96f2e098b758b883ce240f4bee499570e4dd8cc9aa146792caf86d894bf",
                     "files":  [
-                                  "local_state_routine_runner.ps1"
+                                  "local_state_routine_runner.ps1",
+                                  "slot_points.csv",
+                                  "slot_regions.csv",
+                                  "state_samples/궁극기_2_20260714_124457_140.png"
                               ]
                 },
     "notes":  [
-                  "샘플 이미지가 등록 영역보다 클 때 FindSample 호출을 중단",
-                  "sample-skip-empty-region 로그 추가",
-                  "Start 직후 매개 변수가 잘못되었습니다 오류 방어"
+                  "협동 특수카테고리를 메뉴 전 선검사에서 제거",
+                  "나가기 이후에만 협동을 검사하고 없으면 메뉴로 진행",
+                  "궁극기/팔라딘 활성 컬러 아이콘용 채도 기반 검출 추가",
+                  "메뉴 등 마스크 샘플은 밝은 픽셀 기반 검출 우선"
               ]
 }

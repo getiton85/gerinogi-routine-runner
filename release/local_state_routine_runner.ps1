@@ -200,7 +200,7 @@ $script:ClickTracePath = Join-Path $PSScriptRoot 'click_trace_log.csv'
 $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
 $script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $PSScriptRoot 'reports'
-$script:AppVersion = '1.0.74'
+$script:AppVersion = '1.0.75'
 $script:DiagnosticFailureCount = 0
 $script:DiagnosticDisabledUntil = [DateTime]::MinValue
 $script:IgnoreZones = New-Object System.Collections.Generic.List[object]
@@ -1498,19 +1498,28 @@ function Get-NextRoutineStage([string]$Slot) {
         '스킵' { return '내부' }
         '팔라딘' { return '내부' }
         '완료 확인' { return '나가기' }
-        '나가기' { return '메뉴' }
+        '나가기' {
+            if ((Get-SlotSamplePaths '협동').Count -gt 0) { return '협동' }
+            return '메뉴'
+        }
+        '__협동없음' { return '메뉴' }
         default { return '' }
     }
 }
 function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$Stage) {
     if ([string]::IsNullOrWhiteSpace($Stage)) { $Stage = '메뉴' }
-    if ($Stage -eq '메뉴' -and (Get-SlotSamplePaths '협동').Count -gt 0) {
+    if ($Stage -eq '협동') {
+        if ((Get-SlotSamplePaths '협동').Count -eq 0) {
+            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '협동' 'skip-special-after-loop' ([System.Drawing.Rectangle]::Empty) 'missing sample; continue to menu'
+            return [pscustomobject]@{ Slot = '__협동없음'; Rect = [System.Drawing.Rectangle]::Empty; Stage = $Stage }
+        }
         $coopRect = Find-ValidSlotOnce '협동' $Screen $true
         if (-not $coopRect.IsEmpty) {
-            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '협동' 'candidate-before-menu' $coopRect 'stage=메뉴; special pre-check'
+            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '협동' 'candidate-after-loop' $coopRect 'stage=협동; special after loop'
             return [pscustomobject]@{ Slot = '협동'; Rect = $coopRect; Stage = $Stage }
         }
-        Write-RoutineTrace $script:CurrentCycle 'stage-scan' '협동' 'miss-before-menu' ([System.Drawing.Rectangle]::Empty) 'stage=메뉴; continue to menu'
+        Write-RoutineTrace $script:CurrentCycle 'stage-scan' '협동' 'miss-special-after-loop' ([System.Drawing.Rectangle]::Empty) 'special not visible; continue to menu'
+        return [pscustomobject]@{ Slot = '__협동없음'; Rect = [System.Drawing.Rectangle]::Empty; Stage = $Stage }
     }
     if ($Stage -eq '내부') {
         $stateRect = [System.Drawing.Rectangle]::Empty
@@ -1596,6 +1605,12 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
     $nextStage = Get-NextRoutineStage $slot
     Mark-ActiveSlot $slot
     switch ($slot) {
+        '__협동없음' {
+            $StatusLabel.Text = '협동 없음: 메뉴 단계로 이동'
+            [System.Windows.Forms.Application]::DoEvents()
+            Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'advance-no-click' $rect 'next=메뉴'
+            return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = '협동 없음'; NextStage = $nextStage }
+        }
         '협동' {
             $StatusLabel.Text = '협동 감지: 클릭 후 메뉴 확인'
             [System.Windows.Forms.Application]::DoEvents()
