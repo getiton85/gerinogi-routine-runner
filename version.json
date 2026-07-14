@@ -5,7 +5,13 @@
                     "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/state_routine_update_package_1.0.78_quest_profile_validation.zip",
                     "sha256":  "59f6202e53877d2f48e1925a3da64c4436bbe74f0f53e8d9cb7046076d464fc7",
                     "files":  [
-                                  "local_state_routine_runner.ps1"
+                                  "local_state_routine_runner.ps1",
+                                  "ui_config.json",
+                                  "상태루틴 관리자 실행.bat",
+                                  "상태루틴 관리자 실행.vbs",
+                                  "상태루틴 실행.bat",
+                                  "상태루틴 실행.vbs",
+                                  "상태루틴 디버그 실행.bat"
                               ]
                 },
     "notes":  [
