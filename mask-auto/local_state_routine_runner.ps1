@@ -203,7 +203,7 @@ $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
 $script:CrashLogPath = Join-Path $PSScriptRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $PSScriptRoot 'reports'
-$script:AppVersion = '1.0.39'
+$script:AppVersion = '1.0.40'
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
 $script:LongCompleteFallbackMs = 90000
@@ -1571,7 +1571,7 @@ function Test-PointInsideSlotRegion([string]$Slot, [System.Drawing.Point]$Point,
     return $rect.Contains($Point)
 }
 function Test-SlotNeedsStableConfirm([string]$Slot) {
-    return @('협동','메뉴','어비스','던전','입장','퀘스트','완료 확인','나가기') -contains $Slot
+    return @('협동','메뉴','어비스','던전','입장','완료 확인','나가기') -contains $Slot
 }
 function Test-SlotRejectsAmbiguousMatch([string]$Slot) {
     return @('협동','메뉴','어비스','던전','입장','퀘스트','완료 확인','나가기') -contains $Slot

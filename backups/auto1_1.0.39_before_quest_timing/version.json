@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "1.0.40",
+    "version":  "1.0.39",
     "update_mode":  "package",
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.40_quest_timing_auto0.zip",
-                    "sha256":  "20df44bd17325fc4eac95e624a73b370390f124bbdb32100b780eecedf112680",
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.39_combat_state_guard.zip",
+                    "sha256":  "adafe2494ee47bb6eca3a0e1062dff91630eb10a7b5d7befa8345067d1b3d946",
                     "files":  [
                                   "local_state_routine_runner.ps1",
                                   "ui_config.json"
@@ -13,7 +13,6 @@
                   "완료 확인/나가기 좌표 단독 보조 클릭 차단",
                   "진단 이미지/보고서/백업 자동 정리 추가",
                   "사용자별 좌표/영역/샘플 설정 파일은 업데이트 패키지에서 제외",
-                  "상태 기준 미감지 중 전투 슬롯 오작동 차단",
-                  "퀘스트 단계는 자동0처럼 2차 안정 재확인 없이 즉시 후보 처리"
+                  "상태 기준 미감지 중 전투 슬롯 오작동 차단"
               ]
 }

@@ -202,7 +202,7 @@ $script:ClickTracePath = Join-Path $PSScriptRoot 'click_trace_log.csv'
 $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
 $script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $PSScriptRoot 'reports'
-$script:AppVersion = '1.0.79'
+$script:AppVersion = '1.0.78'
 $script:DiagnosticFailureCount = 0
 $script:DiagnosticDisabledUntil = [DateTime]::MinValue
 $script:IgnoreZones = New-Object System.Collections.Generic.List[object]
@@ -1613,40 +1613,29 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
         if ($null -ne $script:Samples['상태 기준']) {
             $stateRect = Find-ValidSlotOnce '상태 기준' $Screen $true
         }
-        $stateNote = 'state marker not visible'
         if (-not $stateRect.IsEmpty) {
-            $stateNote = 'state marker visible'
             Write-RoutineTrace $script:CurrentCycle 'stage-scan' '상태 기준' 'inside-lock' $stateRect 'stage=내부; allowed=스킵|식사 버튼|궁극기|팔라딘|상태 기준'
+            foreach ($slot in @('스킵','식사 버튼','궁극기','팔라딘')) {
+                if (Test-StopRequested) { return $null }
+                if ((Get-SlotSamplePaths $slot).Count -eq 0) {
+                    Write-RoutineTrace $script:CurrentCycle 'stage-scan' $slot 'missing-sample-inside' ([System.Drawing.Rectangle]::Empty) 'state marker visible'
+                    continue
+                }
+                $rect = Find-ValidSlotOnce $slot $Screen $true
+                if (-not $rect.IsEmpty) {
+                    Write-RoutineTrace $script:CurrentCycle 'stage-scan' $slot 'candidate-inside-only' $rect 'state marker visible'
+                    return [pscustomobject]@{ Slot = $slot; Rect = $rect; Stage = $Stage }
+                }
+                Write-RoutineTrace $script:CurrentCycle 'stage-scan' $slot 'miss-inside' ([System.Drawing.Rectangle]::Empty) 'state marker visible'
+            }
+            return [pscustomobject]@{ Slot = '상태 기준'; Rect = $stateRect; Stage = $Stage }
         }
-        if ((Get-SlotSamplePaths '스킵').Count -gt 0) {
+        if ($null -ne $script:Samples['스킵']) {
             $skipRect = Find-ValidSlotOnce '스킵' $Screen $true
             if (-not $skipRect.IsEmpty) {
-                Write-RoutineTrace $script:CurrentCycle 'stage-scan' '스킵' 'candidate-inside-only' $skipRect $stateNote
+                Write-RoutineTrace $script:CurrentCycle 'stage-scan' '스킵' 'candidate-no-state' $skipRect 'state marker not visible'
                 return [pscustomobject]@{ Slot = '스킵'; Rect = $skipRect; Stage = $Stage }
             }
-            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '스킵' 'miss-inside' ([System.Drawing.Rectangle]::Empty) $stateNote
-        } else {
-            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '스킵' 'missing-sample-inside' ([System.Drawing.Rectangle]::Empty) $stateNote
-        }
-        if ($stateRect.IsEmpty) {
-            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '전투슬롯' 'blocked-state-missing' ([System.Drawing.Rectangle]::Empty) 'state marker not visible; skip food/ultimate/paladin'
-        }
-        foreach ($slot in @('식사 버튼','궁극기','팔라딘')) {
-            if (Test-StopRequested) { return $null }
-            if ($stateRect.IsEmpty) { continue }
-            if ((Get-SlotSamplePaths $slot).Count -eq 0) {
-                Write-RoutineTrace $script:CurrentCycle 'stage-scan' $slot 'missing-sample-inside' ([System.Drawing.Rectangle]::Empty) $stateNote
-                continue
-            }
-            $rect = Find-ValidSlotOnce $slot $Screen $true
-            if (-not $rect.IsEmpty) {
-                Write-RoutineTrace $script:CurrentCycle 'stage-scan' $slot 'candidate-inside-only' $rect $stateNote
-                return [pscustomobject]@{ Slot = $slot; Rect = $rect; Stage = $Stage }
-            }
-            Write-RoutineTrace $script:CurrentCycle 'stage-scan' $slot 'miss-inside' ([System.Drawing.Rectangle]::Empty) $stateNote
-        }
-        if (-not $stateRect.IsEmpty) {
-            return [pscustomobject]@{ Slot = '상태 기준'; Rect = $stateRect; Stage = $Stage }
         }
         if ($null -ne $script:Samples['완료 확인']) {
             $completeRect = Find-ValidSlotOnce '완료 확인' $Screen $true
@@ -3085,4 +3074,3 @@ $script:HotKeyFilter = New-Object HotKeyWindowFilter
 $script:HotKeyFilter.OnHotKey = [Action[int]]{ param($id) if($id -eq 801 -and -not $script:Running){ Add-SlotSample }; if($id -eq 807 -and -not $script:Running){ Add-ExtraSlotSample }; if($id -eq 803 -and -not $script:Running){ Start-StateRoutine }; if($id -eq 804){ $script:StopRequested=$true; $statusLabel.Text='중단 요청됨.' }; if($id -eq 805 -and -not $script:Running){ Save-CurrentPointForSelectedSlot } }
 [System.Windows.Forms.Application]::AddMessageFilter($script:HotKeyFilter)
 [void]$form.ShowDialog()
-

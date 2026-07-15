@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "1.0.79",
+    "version":  "1.0.78",
     "update_mode":  "package",
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/state_routine_update_package_1.0.79_auto1_skip_flow.zip",
-                    "sha256":  "e662526d41b552dd44e44e3fe29f82b90ea8b1748db6d83694e99eae62a4bd2d",
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/state_routine_update_package_1.0.78_quest_profile_validation.zip",
+                    "sha256":  "59f6202e53877d2f48e1925a3da64c4436bbe74f0f53e8d9cb7046076d464fc7",
                     "files":  [
                                   "local_state_routine_runner.ps1",
                                   "ui_config.json",
@@ -21,7 +21,6 @@
                   "나가기 Space 보강 입력 제거",
                   "진단 이미지/보고서/백업 자동 정리 추가",
                   "사용자별 좌표/영역/샘플 설정 파일은 업데이트 패키지에서 제외",
-                  "퀘스트 프로필 선택값 기준으로 시작 전 샘플 검증",
-                  "자동1 스킵 우선 검사 흐름을 자동0 내부 단계에 적용"
+                  "퀘스트 프로필 선택값 기준으로 시작 전 샘플 검증"
               ]
 }
