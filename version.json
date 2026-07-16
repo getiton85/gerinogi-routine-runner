@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "1.0.79",
+    "version":  "1.0.80",
     "update_mode":  "package",
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/state_routine_update_package_1.0.79_auto1_skip_flow.zip",
-                    "sha256":  "e662526d41b552dd44e44e3fe29f82b90ea8b1748db6d83694e99eae62a4bd2d",
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/state_routine_update_package_1.0.80_shift_hotkeys_no_quest_skip.zip",
+                    "sha256":  "8c4f1abd18a86f96a2e3697dfed93d9c1deb1c79a21e53d50c97b2d764d45df7",
                     "files":  [
                                   "local_state_routine_runner.ps1",
                                   "ui_config.json",
@@ -15,13 +15,10 @@
                               ]
                 },
     "notes":  [
-                  "협동 특수카테고리 ON/OFF 추가",
-                  "퀘스트 1~4 프로필 선택 추가",
-                  "완료 확인/나가기 좌표 단독 보조 클릭 차단",
-                  "나가기 Space 보강 입력 제거",
-                  "진단 이미지/보고서/백업 자동 정리 추가",
-                  "사용자별 좌표/영역/샘플 설정 파일은 업데이트 패키지에서 제외",
-                  "퀘스트 프로필 선택값 기준으로 시작 전 샘플 검증",
-                  "자동1 스킵 우선 검사 흐름을 자동0 내부 단계에 적용"
+                  "퀘스트 슬롯과 퀘스트 단계 제거: 입장 후 내부 감시로 바로 전환",
+                  "F5/F6/F7/F8 전역 단축키를 Shift+F5/Shift+F6/Shift+F7/Shift+F8로 변경",
+                  "자동1에서 검증된 스킵 밝은글자 감지 기준을 자동0에 반영",
+                  "깨진 ui_config.json을 유효한 JSON으로 정리",
+                  "사용자별 좌표/영역/샘플 설정 파일은 업데이트 패키지에서 제외"
               ]
 }
