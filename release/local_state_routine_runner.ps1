@@ -202,7 +202,7 @@ $script:ClickTracePath = Join-Path $PSScriptRoot 'click_trace_log.csv'
 $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
 $script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $PSScriptRoot 'reports'
-$script:AppVersion = '1.0.80'
+$script:AppVersion = '1.0.81'
 $script:DiagnosticFailureCount = 0
 $script:DiagnosticDisabledUntil = [DateTime]::MinValue
 $script:IgnoreZones = New-Object System.Collections.Generic.List[object]
@@ -229,6 +229,19 @@ $script:UpdateManifestPath = Join-Path $PSScriptRoot 'update_manifest_url.txt'
 $script:BackupDir = Join-Path $PSScriptRoot 'update_backup'
 $script:NewLine = [Environment]::NewLine
 New-Item -ItemType Directory -Force -Path $script:SampleDir | Out-Null
+$script:BundledSkipSampleBase64 = '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'
+function Ensure-BundledSkipSample {
+    try {
+        if (-not [System.IO.Directory]::Exists($script:SampleDir)) { New-Item -ItemType Directory -Force -Path $script:SampleDir | Out-Null }
+        $target = Join-Path $script:SampleDir '½ºÅµ_¸¶½ºÅ©Å×½ºÆ®.png'
+        if (-not [System.IO.File]::Exists($target)) {
+            [System.IO.File]::WriteAllBytes($target, [Convert]::FromBase64String($script:BundledSkipSampleBase64))
+        }
+    } catch {
+        Write-DebugLog ('bundled skip sample failed: ' + $_.Exception.Message)
+    }
+}
+
 New-Item -ItemType Directory -Force -Path $script:BackupDir | Out-Null
 New-Item -ItemType Directory -Force -Path $script:DiagnosticDir | Out-Null
 
@@ -323,6 +336,46 @@ public static class NativeInput {
 public static class VisionFinder {
     public static string LastMode = "";
     public static double LastScore = 0.0;
+    public static double LastSecondScore = 0.0;
+    public static double LastScoreGap = 0.0;
+    public static bool LastAmbiguous = false;
+
+    private static void ResetLastMatch() {
+        LastMode = "";
+        LastScore = 0.0;
+        LastSecondScore = 0.0;
+        LastScoreGap = 0.0;
+        LastAmbiguous = false;
+    }
+
+    private static bool IsFarCandidate(int x1, int y1, int x2, int y2, int templateWidth, int templateHeight) {
+        if (x1 < 0 || y1 < 0 || x2 < 0 || y2 < 0) return true;
+        int minDistance = Math.Max(12, Math.Min(templateWidth, templateHeight) / 3);
+        return Math.Abs(x1 - x2) > minDistance || Math.Abs(y1 - y2) > minDistance;
+    }
+
+    private static void TrackCandidate(double score, int x, int y, int templateWidth, int templateHeight, ref double bestScore, ref int bestX, ref int bestY, ref double secondScore) {
+        if (score > bestScore) {
+            if (bestScore >= 0.0 && IsFarCandidate(bestX, bestY, x, y, templateWidth, templateHeight) && bestScore > secondScore) {
+                secondScore = bestScore;
+            }
+            bestScore = score;
+            bestX = x;
+            bestY = y;
+            return;
+        }
+        if (IsFarCandidate(bestX, bestY, x, y, templateWidth, templateHeight) && score > secondScore) {
+            secondScore = score;
+        }
+    }
+
+    private static void SetMatchResult(string mode, double score, double secondScore) {
+        LastMode = mode;
+        LastScore = score;
+        LastSecondScore = Math.Max(0.0, secondScore);
+        LastScoreGap = score - LastSecondScore;
+        LastAmbiguous = LastSecondScore >= 0.0 && LastScoreGap < 0.035;
+    }
 
     public static Bitmap Capture(Rectangle bounds) {
         Bitmap bmp = new Bitmap(bounds.Width, bounds.Height, PixelFormat.Format32bppArgb);
@@ -365,8 +418,7 @@ public static class VisionFinder {
     }
 
     public static Rectangle FindBrightTextSample(Rectangle screenBounds, string samplePath, int searchStep, int sampleStep, double requiredScore) {
-        LastMode = "";
-        LastScore = 0.0;
+        ResetLastMatch();
         using (Bitmap screen = Capture(screenBounds))
         using (Bitmap rawSample = new Bitmap(samplePath))
         using (Bitmap sample = new Bitmap(rawSample.Width, rawSample.Height, PixelFormat.Format32bppArgb)) {
@@ -388,7 +440,7 @@ public static class VisionFinder {
                     int tRow = ty * ts;
                     for (int tx = 0; tx < tw; tx += sampleStep) {
                         int ti = tRow + tx * 4;
-                        if (IsBrightTextPixel(t[ti], t[ti + 1], t[ti + 2], t[ti + 3], 155)) {
+                        if (IsBrightTextPixel(t[ti], t[ti + 1], t[ti + 2], t[ti + 3], 170)) {
                             textXs.Add(tx);
                             textYs.Add(ty);
                         }
@@ -397,7 +449,7 @@ public static class VisionFinder {
                 int textCount = textXs.Count;
                 if (textCount < Math.Max(6, (tw * th) / Math.Max(1, sampleStep * sampleStep * 120))) return Rectangle.Empty;
 
-                double bestScore = -1.0; int bestX = -1, bestY = -1;
+                double bestScore = -1.0; int bestX = -1, bestY = -1; double secondScore = -1.0;
                 for (int y = 0; y <= sh - th; y += searchStep) {
                     if ((NativeInput.GetAsyncKeyState(0x75) & unchecked((short)0x8000)) != 0) { LastMode = "stopped-f6"; return Rectangle.Empty; }
                     for (int x = 0; x <= sw - tw; x += searchStep) {
@@ -406,15 +458,14 @@ public static class VisionFinder {
                             int sx = x + textXs[i];
                             int sy = y + textYs[i];
                             int si = sy * ss + sx * 4;
-                            if (IsBrightTextPixel(s[si], s[si + 1], s[si + 2], 255, 142)) ok++;
+                            if (IsBrightTextPixel(s[si], s[si + 1], s[si + 2], 255, 170)) ok++;
                         }
                         double score = (double)ok / textCount;
-                        if (score > bestScore) { bestScore = score; bestX = x; bestY = y; }
+                        TrackCandidate(score, x, y, tw, th, ref bestScore, ref bestX, ref bestY, ref secondScore);
                     }
                 }
                 if (bestScore >= requiredScore) {
-                    LastMode = "bright-text";
-                    LastScore = bestScore;
+                    SetMatchResult("bright-text", bestScore, secondScore);
                     return new Rectangle(screenBounds.Left + bestX, screenBounds.Top + bestY, tw, th);
                 }
                 return Rectangle.Empty;
@@ -1458,7 +1509,12 @@ function Find-Slot([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
                     Write-RoutineTrace $script:CurrentCycle 'vision' $Slot 'ignored-zone' $brightRect ([System.IO.Path]::GetFileName($samplePath) + ' / bright-text')
                     continue
                 }
-                $script:LastMatchedSample = [System.IO.Path]::GetFileName($samplePath) + ' / ' + [VisionFinder]::LastMode + ' ' + ('{0:P1}' -f [VisionFinder]::LastScore)
+                $scoreDetail = [VisionFinder]::LastMode + ' ' + ('{0:P1}' -f [VisionFinder]::LastScore) + '; second=' + ('{0:P1}' -f [VisionFinder]::LastSecondScore) + '; gap=' + ('{0:P1}' -f [VisionFinder]::LastScoreGap)
+                if ($Slot -eq '½ºÅµ' -and [VisionFinder]::LastAmbiguous) {
+                    Write-RoutineTrace $script:CurrentCycle 'vision' $Slot 'ambiguous-match' $brightRect ([System.IO.Path]::GetFileName($samplePath) + ' / ' + $scoreDetail)
+                    continue
+                }
+                $script:LastMatchedSample = [System.IO.Path]::GetFileName($samplePath) + ' / ' + $scoreDetail
                 Save-DiagnosticFrame $Slot 'found' $searchBounds $brightRect ($script:LastMatchedSample)
                 return $brightRect
             }
@@ -3002,6 +3058,7 @@ $settingsLoadedOnStart = Load-UserSettings
 Apply-RoutineToggleStates
 Apply-UltimateProfileToControls
 Refresh-QuestProfileCombo
+Ensure-BundledSkipSample
 $loadedOnStart = Load-SavedSamples
 $loadedPointsOnStart = Load-SlotPoints
 $loadedRegionsOnStart = Load-SlotRegions
@@ -3093,4 +3150,5 @@ $script:HotKeyFilter = New-Object HotKeyWindowFilter
 $script:HotKeyFilter.OnHotKey = [Action[int]]{ param($id) if($id -eq 801 -and -not $script:Running){ Add-SlotSample }; if($id -eq 803 -and -not $script:Running){ Start-StateRoutine }; if($id -eq 804){ $script:StopRequested=$true; $statusLabel.Text='Áß´Ü ¿äÃ»µÊ.' }; if($id -eq 805 -and -not $script:Running){ Save-CurrentPointForSelectedSlot } }
 [System.Windows.Forms.Application]::AddMessageFilter($script:HotKeyFilter)
 [void]$form.ShowDialog()
+
 

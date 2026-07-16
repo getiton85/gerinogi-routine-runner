@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "1.0.80",
+    "version":  "1.0.81",
     "update_mode":  "package",
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/state_routine_update_package_1.0.80_shift_hotkeys_no_quest_skip.zip",
-                    "sha256":  "8c4f1abd18a86f96a2e3697dfed93d9c1deb1c79a21e53d50c97b2d764d45df7",
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/state_routine_update_package_1.0.81_auto1_skip_method_sample.zip",
+                    "sha256":  "1a1b9b64950603fc99b30fc331ea55d506a28f7b717460ee00b06e2395fa7297",
                     "files":  [
                                   "local_state_routine_runner.ps1",
                                   "ui_config.json",
@@ -15,10 +15,8 @@
                               ]
                 },
     "notes":  [
-                  "퀘스트 슬롯과 퀘스트 단계 제거: 입장 후 내부 감시로 바로 전환",
-                  "F5/F6/F7/F8 전역 단축키를 Shift+F5/Shift+F6/Shift+F7/Shift+F8로 변경",
-                  "자동1에서 검증된 스킵 밝은글자 감지 기준을 자동0에 반영",
-                  "깨진 ui_config.json을 유효한 JSON으로 정리",
-                  "사용자별 좌표/영역/샘플 설정 파일은 업데이트 패키지에서 제외"
+                  "자동1 스킵 밝은글자 인식의 후보 점수/애매 후보 거부 로직을 자동0 스킵에 이식",
+                  "자동1 스킵 샘플을 자동0 스크립트 내장 샘플로 추가하고 실행 시 없으면 자동 생성",
+                  "기존 사용자 좌표/영역/샘플 설정은 덮어쓰지 않음"
               ]
 }
