@@ -202,7 +202,7 @@ $script:ClickTracePath = Join-Path $PSScriptRoot 'click_trace_log.csv'
 $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
 $script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $PSScriptRoot 'reports'
-$script:AppVersion = '1.0.81'
+$script:AppVersion = '1.0.82'
 $script:DiagnosticFailureCount = 0
 $script:DiagnosticDisabledUntil = [DateTime]::MinValue
 $script:IgnoreZones = New-Object System.Collections.Generic.List[object]
@@ -1500,10 +1500,11 @@ function Find-Slot([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
             $slotTolerance = [Math]::Max($slotTolerance, 38)
             $slotRequired = [Math]::Min($slotRequired, 0.82)
         }
-        if ($Slot -eq '스킵') {
+        if ($Slot -eq '스킵' -or $Slot -eq '완료 확인') {
             $slotTolerance = [Math]::Min($slotTolerance, 45)
             $slotRequired = [Math]::Max($slotRequired, 0.82)
-            $brightRect = [VisionFinder]::FindBrightTextSample($searchBounds, $samplePath, 3, 5, 0.55)
+            $brightRequired = if ($Slot -eq '완료 확인') { 0.62 } else { 0.55 }
+            $brightRect = [VisionFinder]::FindBrightTextSample($searchBounds, $samplePath, 3, 5, $brightRequired)
             if (-not $brightRect.IsEmpty) {
                 if (Test-RectInIgnoreZone $brightRect) {
                     Write-RoutineTrace $script:CurrentCycle 'vision' $Slot 'ignored-zone' $brightRect ([System.IO.Path]::GetFileName($samplePath) + ' / bright-text')

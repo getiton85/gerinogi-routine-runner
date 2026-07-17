@@ -203,7 +203,7 @@ $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
 $script:CrashLogPath = Join-Path $PSScriptRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $PSScriptRoot 'reports'
-$script:AppVersion = '1.0.41'
+$script:AppVersion = '1.0.42'
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
 $script:LongCompleteFallbackMs = 90000
@@ -1406,6 +1406,32 @@ function Load-SlotRegions {
     }
     return $loaded
 }
+function Invoke-AbyssCoordinateMigration {
+    $changedPoint = $false
+    $changedRegion = $false
+    try {
+        $oldPoint = $script:SlotPoints['어비스']
+        if ($null -eq $oldPoint -or (([Math]::Abs([int]$oldPoint.X - 2940) -le 100) -and ([Math]::Abs([int]$oldPoint.Y - 1032) -le 130))) {
+            $script:SlotPoints['어비스'] = [pscustomobject]@{ X = 2818; Y = 716; Mode = 'window'; WindowWidth = 3440; WindowHeight = 1440 }
+            $changedPoint = $true
+        }
+        $oldRegion = $script:SlotRegions['어비스']
+        if ($null -eq $oldRegion -or (([Math]::Abs([int]$oldRegion.X - 2894) -le 100) -and ([Math]::Abs([int]$oldRegion.Y - 976) -le 130))) {
+            $script:SlotRegions['어비스'] = [pscustomobject]@{ X = 2774; Y = 660; Width = 87; Height = 112; Mode = 'window'; WindowWidth = 3440; WindowHeight = 1440 }
+            $changedRegion = $true
+        }
+        if ($changedPoint) { Save-SlotPoints }
+        if ($changedRegion) { Save-SlotRegions }
+        if ($changedPoint -or $changedRegion) {
+            Write-CrashLog ('abyss-coordinate-migration point=' + $changedPoint + '; region=' + $changedRegion) $null
+            return $true
+        }
+    } catch {
+        Write-CrashLog 'abyss-coordinate-migration failed' $_
+    }
+    return $false
+}
+
 function Get-CurrentCursorPoint {
     $point = New-Object 'NativeInput+POINT'
     if ([NativeInput]::GetCursorPos([ref]$point)) { return [pscustomobject]@{ X = [int]$point.X; Y = [int]$point.Y } }
@@ -3422,6 +3448,7 @@ Refresh-QuestProfileCombo
 $loadedOnStart = Load-SavedSamples
 $loadedPointsOnStart = Load-SlotPoints
 $loadedRegionsOnStart = Load-SlotRegions
+$abyssMigratedOnStart = Invoke-AbyssCoordinateMigration
 $loadedIgnoreZonesOnStart = Load-IgnoreZones
 Refresh-Slots
 Update-SlotPreviewCollapsed

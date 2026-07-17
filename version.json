@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "1.0.81",
+    "version":  "1.0.82",
     "update_mode":  "package",
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/state_routine_update_package_1.0.81_auto1_skip_method_sample.zip",
-                    "sha256":  "1a1b9b64950603fc99b30fc331ea55d506a28f7b717460ee00b06e2395fa7297",
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/state_routine_update_package_1.0.82_done_bright_text.zip",
+                    "sha256":  "7eac97ef92e89894464bdbf59c60dd0e1d991ff666fe804dbb818f2981a7fe19",
                     "files":  [
                                   "local_state_routine_runner.ps1",
                                   "ui_config.json",
@@ -15,8 +15,8 @@
                               ]
                 },
     "notes":  [
-                  "자동1 스킵 밝은글자 인식의 후보 점수/애매 후보 거부 로직을 자동0 스킵에 이식",
-                  "자동1 스킵 샘플을 자동0 스크립트 내장 샘플로 추가하고 실행 시 없으면 자동 생성",
-                  "기존 사용자 좌표/영역/샘플 설정은 덮어쓰지 않음"
+                  "자동0 완료 확인 단계에 밝은 글자 기반 매칭 추가",
+                  "완료 확인 문구가 보이지만 RGB/마스크 매칭이 실패하는 경우 보강",
+                  "좌표/영역 밖 클릭 금지와 기존 좌표 검증은 유지"
               ]
 }

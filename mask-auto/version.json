@@ -1,18 +1,16 @@
 ﻿{
-    "version":  "1.0.41",
+    "version":  "1.0.42",
     "update_mode":  "package",
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.41_no_quest_route.zip",
-                    "sha256":  "9beeb3e11a3253f355ebe3f6d8608c6dc2fd770ea50fa2106c1e1c8eb6faced3",
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.42_abyss_coordinate_migration.zip",
+                    "sha256":  "320c50538eeb420051b9967ed3823afa4feb954250999e6756670aed5d38b068",
                     "files":  [
-                                  "local_state_routine_runner.ps1",
-                                  "ui_config.json"
+                                  "local_state_routine_runner.ps1"
                               ]
                 },
     "notes":  [
-                  "퀘스트 슬롯과 퀘스트 단계 제거: 입장 후 내부 감시로 바로 전환",
-                  "자동 인식 슬롯 목록에서 퀘스트 제외",
-                  "깨진 ui_config.json을 유효한 JSON으로 정리",
-                  "사용자별 좌표/영역/샘플 설정 파일은 업데이트 패키지에서 제외"
+                  "자동1 어비스 구형 좌표를 자동0 기준 좌표로 보정",
+                  "기존 사용자 좌표 파일 전체를 덮어쓰지 않고 구형 어비스 값만 실행 시 마이그레이션",
+                  "배포 기본 slot_points.csv와 slot_regions.csv의 어비스 값도 갱신"
               ]
 }
