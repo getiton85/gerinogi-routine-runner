@@ -1,16 +1,16 @@
 ﻿{
-    "version":  "1.0.43",
+    "version":  "1.0.44",
     "update_mode":  "package",
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.43_exit_cycle_guard.zip",
-                    "sha256":  "e463a2e081a894fce859ac4e1e71c7813bdb09d99569a32e0a9ba9992f787e07",
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.44_food_without_state_gate.zip",
+                    "sha256":  "6c22fa312e65b7677c251440c9248b0e3053b88b9b15060db56232d8f0b16141",
                     "files":  [
                                   "local_state_routine_runner.ps1"
                               ]
                 },
     "notes":  [
-                  "나가기 버튼이 사라지면 메뉴/협동 즉시 확인 전이라도 종료 화면 이탈로 인정해 다음 순환으로 진행",
-                  "입장_전투중 가드를 입장 단계에만 적용해 나가기 후 내부 상태로 되돌아가는 오탐 차단",
-                  "전투 슬롯은 상태 기준이 보일 때만 기존처럼 식사/궁극기/팔라딘을 감시"
+                  "상태 기준 영역이 어긋나도 내부 단계에서 식사 버튼은 독립 검사",
+                  "식사 버튼 발견 시 기존처럼 B 입력 수행",
+                  "궁극기와 팔라딘은 기존 상태 기준 게이트 유지"
               ]
 }

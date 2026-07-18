@@ -203,7 +203,7 @@ $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
 $script:CrashLogPath = Join-Path $PSScriptRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $PSScriptRoot 'reports'
-$script:AppVersion = '1.0.43'
+$script:AppVersion = '1.0.44'
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
 $script:LongCompleteFallbackMs = 90000
@@ -2041,7 +2041,7 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
         }
         foreach ($slot in @('½Ä»ç ¹öÆ°','±Ã±Ø±â','ÆÈ¶óµò')) {
             if (Test-StopRequested) { return $null }
-            if ($stateRect.IsEmpty) { continue }
+            if ($stateRect.IsEmpty -and $slot -ne '½Ä»ç ¹öÆ°') { continue }
             if ((Get-SlotSamplePaths $slot).Count -eq 0) {
                 Write-RoutineTrace $script:CurrentCycle 'stage-scan' $slot 'missing-sample-inside' ([System.Drawing.Rectangle]::Empty) $stateNote
                 continue
