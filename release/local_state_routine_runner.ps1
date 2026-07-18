@@ -202,7 +202,7 @@ $script:ClickTracePath = Join-Path $PSScriptRoot 'click_trace_log.csv'
 $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
 $script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $PSScriptRoot 'reports'
-$script:AppVersion = '1.0.83'
+$script:AppVersion = '1.0.84'
 $script:DiagnosticFailureCount = 0
 $script:DiagnosticDisabledUntil = [DateTime]::MinValue
 $script:IgnoreZones = New-Object System.Collections.Generic.List[object]
@@ -318,10 +318,12 @@ public static class NativeInput {
     [DllImport("user32.dll", SetLastError=true)] public static extern bool PostMessage(IntPtr hWnd, uint Msg, UIntPtr wParam, IntPtr lParam);
     [DllImport("user32.dll")] public static extern bool MessageBeep(uint uType);
     [DllImport("user32.dll", SetLastError=true)] public static extern uint SendInput(uint nInputs, INPUT[] pInputs, int cbSize);
+    [DllImport("user32.dll")] public static extern void keybd_event(byte bVk, byte bScan, uint dwFlags, UIntPtr dwExtraInfo);
     [DllImport("user32.dll")] public static extern void mouse_event(uint dwFlags, uint dx, uint dy, uint dwData, UIntPtr dwExtraInfo);
     [DllImport("user32.dll")] public static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
     [DllImport("user32.dll")] public static extern bool UnregisterHotKey(IntPtr hWnd, int id);
     public const uint INPUT_MOUSE = 0;
+    public const uint KEYEVENTF_KEYUP = 0x0002;
     public const uint MOUSEEVENTF_LEFTDOWN = 0x0002;
     public const uint MOUSEEVENTF_LEFTUP = 0x0004;
     public const uint WM_MOUSEMOVE = 0x0200;
@@ -747,8 +749,10 @@ function Invoke-UltimateKey([string]$ProfileName) {
         [void][NativeInput]::SetForegroundWindow($script:TargetHandle)
         Start-Sleep -Milliseconds 80
     }
-    [System.Windows.Forms.SendKeys]::SendWait('6')
-    Write-RoutineTrace $script:CurrentCycle 'key' '±Ã±Ø±â' 'send-6' ([System.Drawing.Rectangle]::Empty) $ProfileName
+    [NativeInput]::keybd_event(0x36, 0, 0, [UIntPtr]::Zero)
+    Start-Sleep -Milliseconds 70
+    [NativeInput]::keybd_event(0x36, 0, [NativeInput]::KEYEVENTF_KEYUP, [UIntPtr]::Zero)
+    Write-RoutineTrace $script:CurrentCycle 'key' '±Ã±Ø±â' 'send-vk6' ([System.Drawing.Rectangle]::Empty) $ProfileName
     Start-Sleep -Milliseconds 120
 }
 function Invoke-BKey([string]$Reason) {
