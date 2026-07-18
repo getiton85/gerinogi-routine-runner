@@ -1,16 +1,16 @@
 ﻿{
-    "version":  "1.0.42",
+    "version":  "1.0.43",
     "update_mode":  "package",
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.42_abyss_coordinate_migration.zip",
-                    "sha256":  "320c50538eeb420051b9967ed3823afa4feb954250999e6756670aed5d38b068",
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.43_exit_cycle_guard.zip",
+                    "sha256":  "e463a2e081a894fce859ac4e1e71c7813bdb09d99569a32e0a9ba9992f787e07",
                     "files":  [
                                   "local_state_routine_runner.ps1"
                               ]
                 },
     "notes":  [
-                  "자동1 어비스 구형 좌표를 자동0 기준 좌표로 보정",
-                  "기존 사용자 좌표 파일 전체를 덮어쓰지 않고 구형 어비스 값만 실행 시 마이그레이션",
-                  "배포 기본 slot_points.csv와 slot_regions.csv의 어비스 값도 갱신"
+                  "나가기 버튼이 사라지면 메뉴/협동 즉시 확인 전이라도 종료 화면 이탈로 인정해 다음 순환으로 진행",
+                  "입장_전투중 가드를 입장 단계에만 적용해 나가기 후 내부 상태로 되돌아가는 오탐 차단",
+                  "전투 슬롯은 상태 기준이 보일 때만 기존처럼 식사/궁극기/팔라딘을 감시"
               ]
 }

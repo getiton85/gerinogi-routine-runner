@@ -203,7 +203,7 @@ $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
 $script:CrashLogPath = Join-Path $PSScriptRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $PSScriptRoot 'reports'
-$script:AppVersion = '1.0.42'
+$script:AppVersion = '1.0.43'
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
 $script:LongCompleteFallbackMs = 90000
@@ -1919,8 +1919,8 @@ function Test-ExitClosedConfirmed([System.Windows.Forms.Screen]$Screen) {
             return $true
         }
     }
-    Write-RoutineTrace $script:CurrentCycle 'post-clear' '나가기' 'closed-not-confirmed' ([System.Drawing.Rectangle]::Empty) 'exit disappeared but menu/coop was not confirmed'
-    return $false
+    Write-RoutineTrace $script:CurrentCycle 'post-clear' '나가기' 'closed-confirmed-disappeared' ([System.Drawing.Rectangle]::Empty) 'exit button disappeared; accept closed and advance to menu recovery'
+    return $true
 }
 
 function Invoke-ExitActionUntilClosed([System.Windows.Forms.Screen]$Screen, [System.Windows.Forms.Label]$StatusLabel, [System.Drawing.Rectangle]$ExitRect) {
@@ -2007,10 +2007,10 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
         Write-RoutineTrace $script:CurrentCycle 'stage-scan' '협동' 'miss-special-after-loop' ([System.Drawing.Rectangle]::Empty) 'special not visible; continue to menu'
         return [pscustomobject]@{ Slot = '__협동없음'; Rect = [System.Drawing.Rectangle]::Empty; Stage = $Stage }
     }
-    if (@('입장','내부','나가기','종료') -contains $Stage) {
+    if ($Stage -eq '입장') {
         $entryBusyRect = Find-EntryBusyGuard $Screen
         if (-not $entryBusyRect.IsEmpty) {
-            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '입장_전투중' 'route-guard-candidate' $entryBusyRect ('stage=' + $Stage + '; block route/exit false positives')
+            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '입장_전투중' 'route-guard-candidate' $entryBusyRect ('stage=' + $Stage + '; entry screen already in battle')
             return [pscustomobject]@{ Slot = '입장_전투중'; Rect = $entryBusyRect; Stage = $Stage }
         }
     }
