@@ -202,7 +202,7 @@ $script:ClickTracePath = Join-Path $PSScriptRoot 'click_trace_log.csv'
 $script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
 $script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $PSScriptRoot 'reports'
-$script:AppVersion = '1.0.82'
+$script:AppVersion = '1.0.83'
 $script:DiagnosticFailureCount = 0
 $script:DiagnosticDisabledUntil = [DateTime]::MinValue
 $script:IgnoreZones = New-Object System.Collections.Generic.List[object]
@@ -1718,6 +1718,13 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
     if ($Stage -eq '메뉴확인') { $expectedSlot = '메뉴' }
     if ($Stage -eq '완료') { $expectedSlot = '완료 확인' }
     if ($Stage -eq '종료') { $expectedSlot = '나가기' }
+    if ($Stage -eq '나가기' -and (Get-SlotSamplePaths '완료 확인').Count -gt 0) {
+        $stillCompleteRect = Find-ValidSlotOnce '완료 확인' $Screen $true
+        if (-not $stillCompleteRect.IsEmpty) {
+            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '완료 확인' 'still-visible-before-exit' $stillCompleteRect 'stage=나가기; complete screen still visible; retry complete click'
+            return [pscustomobject]@{ Slot = '완료 확인'; Rect = $stillCompleteRect; Stage = $Stage }
+        }
+    }
     if ((Get-SlotSamplePaths $expectedSlot).Count -eq 0) {
         Write-RoutineTrace $script:CurrentCycle 'stage-scan' $expectedSlot 'missing-sample' ([System.Drawing.Rectangle]::Empty) ('stage=' + $Stage)
         return $null

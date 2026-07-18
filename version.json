@@ -1,22 +1,16 @@
 ﻿{
-    "version":  "1.0.82",
+    "version":  "1.0.83",
     "update_mode":  "package",
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/state_routine_update_package_1.0.82_done_bright_text.zip",
-                    "sha256":  "7eac97ef92e89894464bdbf59c60dd0e1d991ff666fe804dbb818f2981a7fe19",
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/state_routine_update_package_1.0.83_retry_complete_before_exit.zip",
+                    "sha256":  "4389d1a212fa989acd87e58375d48e39e2fbaa8e6a28dad9945f15b314636fd1",
                     "files":  [
-                                  "local_state_routine_runner.ps1",
-                                  "ui_config.json",
-                                  "상태루틴 관리자 실행.bat",
-                                  "상태루틴 관리자 실행.vbs",
-                                  "상태루틴 실행.bat",
-                                  "상태루틴 실행.vbs",
-                                  "상태루틴 디버그 실행.bat"
+                                  "local_state_routine_runner.ps1"
                               ]
                 },
     "notes":  [
-                  "자동0 완료 확인 단계에 밝은 글자 기반 매칭 추가",
-                  "완료 확인 문구가 보이지만 RGB/마스크 매칭이 실패하는 경우 보강",
-                  "좌표/영역 밖 클릭 금지와 기존 좌표 검증은 유지"
+                  "나가기 단계에서 완료 확인 화면이 아직 남아있으면 완료 확인을 먼저 재시도",
+                  "완료 확인 클릭 후 화면 전환이 누락되어 나가기 단계에서 멈추는 문제 방어",
+                  "기존 영역 제한과 샘플 기반 클릭 조건은 유지"
               ]
 }
