@@ -192,17 +192,37 @@ $script:Running = $false
 $script:StopRequested = $false
 $script:TargetHandle = [IntPtr]::Zero
 $script:CurrentCycle = 0
-$script:SampleDir = Join-Path $PSScriptRoot 'state_samples'
-$script:LogPath = Join-Path $PSScriptRoot 'local_state_routine_log.csv'
-$script:SlotPointPath = Join-Path $PSScriptRoot 'slot_points.csv'
-$script:SlotRegionPath = Join-Path $PSScriptRoot 'slot_regions.csv'
-$script:IgnoreZonePath = Join-Path $PSScriptRoot 'ignore_zones.csv'
-$script:UserSettingsPath = Join-Path $PSScriptRoot 'user_settings.json'
-$script:ClickTracePath = Join-Path $PSScriptRoot 'click_trace_log.csv'
-$script:RoutineTracePath = Join-Path $PSScriptRoot 'routine_trace_log.csv'
-$script:DiagnosticDir = Join-Path $PSScriptRoot 'diagnostic_frames'
-$script:ReportDir = Join-Path $PSScriptRoot 'reports'
-$script:AppVersion = '1.0.84'
+$script:DefaultSampleDir = Join-Path $PSScriptRoot 'state_samples'
+$script:UserDataRoot = Join-Path $PSScriptRoot 'user_data'
+$script:UserSampleDir = Join-Path $script:UserDataRoot 'state_samples'
+foreach ($dir in @($script:UserDataRoot, $script:UserSampleDir)) {
+    if (-not [System.IO.Directory]::Exists($dir)) { [System.IO.Directory]::CreateDirectory($dir) | Out-Null }
+}
+$script:LegacyUserDataFiles = @('slot_points.csv','slot_regions.csv','ignore_zones.csv','user_settings.json')
+foreach ($name in $script:LegacyUserDataFiles) {
+    $source = Join-Path $PSScriptRoot $name
+    $target = Join-Path $script:UserDataRoot $name
+    if ([System.IO.File]::Exists($source) -and -not [System.IO.File]::Exists($target)) { Copy-Item -LiteralPath $source -Destination $target -Force }
+}
+
+if ([System.IO.Directory]::Exists($script:DefaultSampleDir)) {
+    Get-ChildItem -LiteralPath $script:DefaultSampleDir -File -Filter '*.png' -ErrorAction SilentlyContinue | ForEach-Object {
+        $target = Join-Path $script:UserSampleDir $_.Name
+        if (-not [System.IO.File]::Exists($target)) { Copy-Item -LiteralPath $_.FullName -Destination $target -Force }
+    }
+}
+$script:SampleDir = $script:UserSampleDir
+$script:LogPath = Join-Path $script:UserDataRoot 'local_state_routine_log.csv'
+$script:SlotPointPath = Join-Path $script:UserDataRoot 'slot_points.csv'
+$script:SlotRegionPath = Join-Path $script:UserDataRoot 'slot_regions.csv'
+$script:IgnoreZonePath = Join-Path $script:UserDataRoot 'ignore_zones.csv'
+$script:UserSettingsPath = Join-Path $script:UserDataRoot 'user_settings.json'
+$script:ClickTracePath = Join-Path $script:UserDataRoot 'click_trace_log.csv'
+$script:RoutineTracePath = Join-Path $script:UserDataRoot 'routine_trace_log.csv'
+$script:CrashLogPath = Join-Path $script:UserDataRoot 'crash_log.txt'
+$script:DiagnosticDir = Join-Path $script:UserDataRoot 'diagnostic_frames'
+$script:ReportDir = Join-Path $script:UserDataRoot 'reports'
+$script:AppVersion = '1.0.86'
 $script:DiagnosticFailureCount = 0
 $script:DiagnosticDisabledUntil = [DateTime]::MinValue
 $script:IgnoreZones = New-Object System.Collections.Generic.List[object]

@@ -1,16 +1,21 @@
 ﻿{
-    "version":  "1.0.84",
+    "version":  "1.0.86",
     "update_mode":  "package",
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/state_routine_update_package_1.0.84_native_ultimate_key.zip",
-                    "sha256":  "cda7e533c03a416c693d2f3123bcb77664aa3429593aafc1f31cd9dbd6d68ea8",
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/state_routine_update_package_1.0.86_user_data_migration.zip",
+                    "sha256":  "4a025b90b11ba71798e437b5466aa1f24174cd9dc93179a421275a4313f10842",
                     "files":  [
                                   "local_state_routine_runner.ps1"
                               ]
                 },
+    "installer":  {
+                      "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/installers/%EC%83%81%ED%83%9C%EB%A3%A8%ED%8B%B4%20%EC%84%A4%EC%B9%98_1.0.86.exe",
+                      "sha256":  "1260d0c7f60872d031779e21adc8b37a0935f0b5fad8be127d5233837939514c",
+                      "file":  "상태루틴 설치_1.0.86.exe"
+                  },
     "notes":  [
-                  "궁극기 실행 키를 SendKeys 방식에서 네이티브 VK_6 누름/해제 방식으로 변경",
-                  "이미지 인식, 상태 기준, 식사, 스킵, 클릭 흐름은 기존 자동0 동작 유지",
-                  "궁극기 인식 후 실제 키 입력이 대상 창에 전달되지 않는 문제 방어"
+                  "사용자별 좌표/영역/샘플/로그를 user_data 폴더로 분리",
+                  "기존 루트 설정 파일이 있으면 최초 실행 시 user_data로 자동 이관",
+                  "설치기와 업데이트 패키지는 user_data를 덮어쓰지 않음"
               ]
 }

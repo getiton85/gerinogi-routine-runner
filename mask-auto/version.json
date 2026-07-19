@@ -1,16 +1,23 @@
 ﻿{
-    "version":  "1.0.44",
+    "version":  "1.0.48",
     "update_mode":  "package",
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.44_food_without_state_gate.zip",
-                    "sha256":  "6c22fa312e65b7677c251440c9248b0e3053b88b9b15060db56232d8f0b16141",
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.48_ultimate_profile_card_fix.zip",
+                    "sha256":  "30c10839304df6fd095fa5b908cb71519e7881f55308b37803bd6b9e029651be",
                     "files":  [
                                   "local_state_routine_runner.ps1"
                               ]
                 },
+    "installer":  {
+                      "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/installers/%EB%A7%88%EC%8A%A4%ED%81%AC%ED%85%8C%EC%8A%A4%ED%8A%B8%20%EC%84%A4%EC%B9%98_1.0.48.exe",
+                      "sha256":  "63938056a1dec9d38e8ad3fbf0c5db791dd8ba412bd7cd9cc84dfebde1135636",
+                      "file":  "마스크테스트 설치_1.0.48.exe"
+                  },
     "notes":  [
-                  "상태 기준 영역이 어긋나도 내부 단계에서 식사 버튼은 독립 검사",
-                  "식사 버튼 발견 시 기존처럼 B 입력 수행",
-                  "궁극기와 팔라딘은 기존 상태 기준 게이트 유지"
+                  "궁극기 설정 1~5의 미리보기 카드 이벤트를 프로필별로 고정",
+                  "궁극기 설정 드롭다운 변경 로그 추가",
+                  "전투관련 슬롯 미리보기에서 궁극기 카드만 현재 선택 프로필 샘플을 참조하도록 유지",
+                  "궁극기 입력은 native VK_6 방식 유지",
+                  "user_data 설정과 샘플은 업데이트/설치로 덮어쓰지 않음"
               ]
 }
