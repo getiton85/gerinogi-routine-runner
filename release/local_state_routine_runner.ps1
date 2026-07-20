@@ -222,7 +222,7 @@ $script:RoutineTracePath = Join-Path $script:UserDataRoot 'routine_trace_log.csv
 $script:CrashLogPath = Join-Path $script:UserDataRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $script:UserDataRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $script:UserDataRoot 'reports'
-$script:AppVersion = '1.0.86'
+$script:AppVersion = '1.0.87'
 $script:DiagnosticFailureCount = 0
 $script:DiagnosticDisabledUntil = [DateTime]::MinValue
 $script:IgnoreZones = New-Object System.Collections.Generic.List[object]
@@ -1527,7 +1527,7 @@ function Find-Slot([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
         if ($Slot -eq '스킵' -or $Slot -eq '완료 확인') {
             $slotTolerance = [Math]::Min($slotTolerance, 45)
             $slotRequired = [Math]::Max($slotRequired, 0.82)
-            $brightRequired = if ($Slot -eq '완료 확인') { 0.62 } else { 0.55 }
+            $brightRequired = if ($Slot -eq '완료 확인') { 0.62 } elseif ($Slot -eq '스킵') { 0.50 } else { 0.55 }
             $brightRect = [VisionFinder]::FindBrightTextSample($searchBounds, $samplePath, 3, 5, $brightRequired)
             if (-not $brightRect.IsEmpty) {
                 if (Test-RectInIgnoreZone $brightRect) {

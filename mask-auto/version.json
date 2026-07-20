@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "1.0.48",
+    "version":  "1.0.49",
     "update_mode":  "package",
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.48_ultimate_profile_card_fix.zip",
-                    "sha256":  "30c10839304df6fd095fa5b908cb71519e7881f55308b37803bd6b9e029651be",
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.49_food_bounds_fix.zip",
+                    "sha256":  "5926b96441fd6259a34300b7d5d86886d644ff785719227482a2e00ca439d932",
                     "files":  [
                                   "local_state_routine_runner.ps1"
                               ]
@@ -14,10 +14,8 @@
                       "file":  "마스크테스트 설치_1.0.48.exe"
                   },
     "notes":  [
-                  "궁극기 설정 1~5의 미리보기 카드 이벤트를 프로필별로 고정",
-                  "궁극기 설정 드롭다운 변경 로그 추가",
-                  "전투관련 슬롯 미리보기에서 궁극기 카드만 현재 선택 프로필 샘플을 참조하도록 유지",
-                  "궁극기 입력은 native VK_6 방식 유지",
-                  "user_data 설정과 샘플은 업데이트/설치로 덮어쓰지 않음"
+                  "자동1 식사 버튼 검색영역을 저장 영역과 좌상단 기본 영역의 합집합으로 보강",
+                  "기존 user_data 좌표/영역/샘플/로그 유지",
+                  "설치파일 없이 업데이트 패키지로 적용"
               ]
 }

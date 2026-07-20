@@ -222,7 +222,7 @@ $script:RoutineTracePath = Join-Path $script:UserDataRoot 'routine_trace_log.csv
 $script:CrashLogPath = Join-Path $script:UserDataRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $script:UserDataRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $script:UserDataRoot 'reports'
-$script:AppVersion = '1.0.48'
+$script:AppVersion = '1.0.49'
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
 $script:LongCompleteFallbackMs = 90000
@@ -1722,19 +1722,31 @@ function Expand-SearchBoundsForSample([System.Drawing.Rectangle]$Bounds, [string
 function Get-SlotSearchBounds([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
     $bounds = Get-CurrentSearchBounds $Screen
     $regionRect = Get-SlotRegionScreenRect $Slot $Screen
+    if ($Slot -eq '식사 버튼') {
+        $fallback = [System.Drawing.Rectangle]::new(
+            [int]$bounds.Left,
+            [int]$bounds.Top,
+            [int]($bounds.Width * 0.25),
+            [int]($bounds.Height * 0.20)
+        )
+        if (-not $regionRect.IsEmpty) {
+            $limitedRegion = Intersect-RectWithin $regionRect $bounds
+            if (-not $limitedRegion.IsEmpty) {
+                $left = [Math]::Min($limitedRegion.Left, $fallback.Left)
+                $top = [Math]::Min($limitedRegion.Top, $fallback.Top)
+                $right = [Math]::Max($limitedRegion.Right, $fallback.Right)
+                $bottom = [Math]::Max($limitedRegion.Bottom, $fallback.Bottom)
+                return [System.Drawing.Rectangle]::new([int]$left, [int]$top, [int]($right - $left), [int]($bottom - $top))
+            }
+        }
+        return $fallback
+    }
     if (-not $regionRect.IsEmpty) {
         $limited = Intersect-RectWithin $regionRect $bounds
         if (-not $limited.IsEmpty) { return $limited }
     }
     if (Test-SlotRequiresRegion $Slot) {
         return [System.Drawing.Rectangle]::Empty
-    }
-    if ($Slot -eq '식사 버튼') {
-        $x = [int]$bounds.Left
-        $y = [int]$bounds.Top
-        $w = [int]($bounds.Width * 0.25)
-        $h = [int]($bounds.Height * 0.20)
-        return [System.Drawing.Rectangle]::new($x, $y, $w, $h)
     }
     if ($Slot -eq '완료 확인') {
         $x = [int]($bounds.Left + ($bounds.Width * 0.18))

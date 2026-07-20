@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "1.0.86",
+    "version":  "1.0.87",
     "update_mode":  "package",
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/state_routine_update_package_1.0.86_user_data_migration.zip",
-                    "sha256":  "4a025b90b11ba71798e437b5466aa1f24174cd9dc93179a421275a4313f10842",
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/state_routine_update_package_1.0.87_skip_bright_fix.zip",
+                    "sha256":  "9820dd3fffcfc90938b5f794691b14fdd3d9acf041e836eca87e4ff4894df438",
                     "files":  [
                                   "local_state_routine_runner.ps1"
                               ]
@@ -14,8 +14,8 @@
                       "file":  "상태루틴 설치_1.0.86.exe"
                   },
     "notes":  [
-                  "사용자별 좌표/영역/샘플/로그를 user_data 폴더로 분리",
-                  "기존 루트 설정 파일이 있으면 최초 실행 시 user_data로 자동 이관",
-                  "설치기와 업데이트 패키지는 user_data를 덮어쓰지 않음"
+                  "자동0 스킵 밝은 글자 인식 기준을 저장 영역 내부에서만 보강",
+                  "기존 user_data 좌표/영역/샘플/로그 유지",
+                  "설치파일 없이 업데이트 패키지로 적용"
               ]
 }
