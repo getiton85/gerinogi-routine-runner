@@ -4,18 +4,18 @@
                       "sha256":  "63938056a1dec9d38e8ad3fbf0c5db791dd8ba412bd7cd9cc84dfebde1135636",
                       "file":  "마스크테스트 설치_1.0.48.exe"
                   },
-    "version":  "1.0.52",
+    "version":  "1.0.53",
     "update_mode":  "package",
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.52_coop_retry_before_menu.zip",
-                    "sha256":  "c71709be52955d41aa4025c2ef3f25b6e969df65b36a7c3a06ed3e78a5779715",
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.53_complete_visual_gate_fix.zip",
+                    "sha256":  "e2e612a7e8c78d93e87c5ec998642d4f181a9c6ad0151eb8fc8653ba5fd1a627",
                     "files":  [
                                   "local_state_routine_runner.ps1"
                               ]
                 },
     "notes":  [
-                  "자동1 협동 클릭 후 메뉴확인 단계에서 협동이 아직 보이면 재클릭하도록 보강",
-                  "자동0과 동일하게 협동 클릭 실패 후 단계 오판 방지",
-                  "기존 user_data 설정과 샘플 유지"
+                  "자동1 완료 확인 단계에서 gate가 이미지 검색 자체를 막던 구조 수정",
+                  "완료 확인 이미지를 안정적으로 2회 확인하면 보수 gate보다 시각 확인을 우선",
+                  "완료 확인 밝은 글자 기준만 86%에서 82%로 조정하고 기존 경로/전투 루틴은 유지"
               ]
 }

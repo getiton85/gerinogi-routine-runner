@@ -222,7 +222,7 @@ $script:RoutineTracePath = Join-Path $script:UserDataRoot 'routine_trace_log.csv
 $script:CrashLogPath = Join-Path $script:UserDataRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $script:UserDataRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $script:UserDataRoot 'reports'
-$script:AppVersion = '1.0.52'
+$script:AppVersion = '1.0.53'
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
 $script:LongCompleteFallbackMs = 90000
@@ -1811,7 +1811,7 @@ function Find-Slot([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
         if (Test-SlotUsesBrightTextFirst $Slot) {
             $slotTolerance = [Math]::Min($slotTolerance, 45)
             $slotRequired = [Math]::Max($slotRequired, 0.82)
-        $brightRequired = if ($Slot -eq '스킵') { 0.55 } elseif ($Slot -eq '상태 기준') { 0.62 } elseif ($Slot -eq '완료 확인') { 0.86 } elseif ($Slot -eq '던전') { 0.68 } else { 0.72 }
+        $brightRequired = if ($Slot -eq '스킵') { 0.55 } elseif ($Slot -eq '상태 기준') { 0.62 } elseif ($Slot -eq '완료 확인') { 0.82 } elseif ($Slot -eq '던전') { 0.68 } else { 0.72 }
             $brightRect = [VisionFinder]::FindBrightTextSample($searchBounds, $samplePath, 3, 5, $brightRequired)
             if (-not $brightRect.IsEmpty) {
                 if (Test-RectInIgnoreZone $brightRect) {
@@ -1863,6 +1863,13 @@ function Test-CompleteAllowed {
     if (-not $script:CombatMarkerSeen -and -not $longFallbackReady) { return $false }
     if ($script:BossSkipSeen -and -not $script:CombatMarkerSeenAfterSkip -and -not $longFallbackReady) { return $false }
     return $true
+}
+function Test-CompleteVisualCandidateAllowed {
+    if (Test-CompleteAllowed) { return $true }
+    if (-not (Test-CompleteWaitElapsed)) { return $false }
+    if ($script:CombatMarkerSeen) { return $true }
+    if ($script:BossSkipSeen) { return $true }
+    return $false
 }
 function Test-CompleteRecoveryScanAllowed([string]$Stage) {
     if (Test-CompleteAllowed) { return $true }
@@ -2098,13 +2105,14 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
             return [pscustomobject]@{ Slot = '상태 기준'; Rect = $stateRect; Stage = $Stage }
         }
         if ($null -ne $script:Samples['완료 확인']) {
-            if (Test-CompleteRecoveryScanAllowed $Stage) {
-                $completeRect = Find-ValidSlotOnce '완료 확인' $Screen $true
-                if (-not $completeRect.IsEmpty) {
-                    Write-RoutineTrace $script:CurrentCycle 'stage-scan' '완료 확인' 'candidate-after-inside' $completeRect ($stateNote + '; ' + (Get-CompleteGateDetail))
+            $completeRect = Find-ValidSlotOnce '완료 확인' $Screen $true
+            if (-not $completeRect.IsEmpty) {
+                if (Test-CompleteVisualCandidateAllowed) {
+                    Write-RoutineTrace $script:CurrentCycle 'stage-scan' '완료 확인' 'candidate-after-inside' $completeRect ($stateNote + '; visual-confirmed; ' + (Get-CompleteGateDetail))
                     return [pscustomobject]@{ Slot = '완료 확인'; Rect = $completeRect; Stage = $Stage }
                 }
-            } else {
+                Write-RoutineTrace $script:CurrentCycle 'stage-scan' '완료 확인' 'candidate-blocked-by-gate' $completeRect ($stateNote + '; visual-confirmed; ' + (Get-CompleteGateDetail))
+            } elseif (-not (Test-CompleteRecoveryScanAllowed $Stage)) {
                 Write-RoutineTrace $script:CurrentCycle 'stage-scan' '완료 확인' 'blocked-by-gate' ([System.Drawing.Rectangle]::Empty) (Get-CompleteGateDetail)
             }
         }
@@ -2147,13 +2155,14 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
             }
         }
         if ((Get-SlotSamplePaths '완료 확인').Count -gt 0) {
-            if (Test-CompleteRecoveryScanAllowed $Stage) {
-                $recoveryCompleteRect = Find-ValidSlotOnce '완료 확인' $Screen $true
-                if (-not $recoveryCompleteRect.IsEmpty) {
-                    Write-RoutineTrace $script:CurrentCycle 'stage-scan' '완료 확인' 'recovery-candidate' $recoveryCompleteRect ('expected=' + $expectedSlot + '; stage=' + $Stage + '; ' + (Get-CompleteGateDetail))
+            $recoveryCompleteRect = Find-ValidSlotOnce '완료 확인' $Screen $true
+            if (-not $recoveryCompleteRect.IsEmpty) {
+                if (Test-CompleteVisualCandidateAllowed) {
+                    Write-RoutineTrace $script:CurrentCycle 'stage-scan' '완료 확인' 'recovery-candidate' $recoveryCompleteRect ('expected=' + $expectedSlot + '; stage=' + $Stage + '; visual-confirmed; ' + (Get-CompleteGateDetail))
                     return [pscustomobject]@{ Slot = '완료 확인'; Rect = $recoveryCompleteRect; Stage = $Stage }
                 }
-            } else {
+                Write-RoutineTrace $script:CurrentCycle 'stage-scan' '완료 확인' 'recovery-candidate-blocked-by-gate' $recoveryCompleteRect ('expected=' + $expectedSlot + '; stage=' + $Stage + '; visual-confirmed; ' + (Get-CompleteGateDetail))
+            } elseif (-not (Test-CompleteRecoveryScanAllowed $Stage)) {
                 Write-RoutineTrace $script:CurrentCycle 'stage-scan' '완료 확인' 'recovery-blocked-by-gate' ([System.Drawing.Rectangle]::Empty) ('expected=' + $expectedSlot + '; stage=' + $Stage + '; ' + (Get-CompleteGateDetail))
             }
         }
