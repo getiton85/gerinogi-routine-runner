@@ -222,7 +222,7 @@ $script:RoutineTracePath = Join-Path $script:UserDataRoot 'routine_trace_log.csv
 $script:CrashLogPath = Join-Path $script:UserDataRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $script:UserDataRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $script:UserDataRoot 'reports'
-$script:AppVersion = '1.0.87'
+$script:AppVersion = '1.0.88'
 $script:DiagnosticFailureCount = 0
 $script:DiagnosticDisabledUntil = [DateTime]::MinValue
 $script:IgnoreZones = New-Object System.Collections.Generic.List[object]
@@ -1742,6 +1742,13 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
     if ($Stage -eq '메뉴확인') { $expectedSlot = '메뉴' }
     if ($Stage -eq '완료') { $expectedSlot = '완료 확인' }
     if ($Stage -eq '종료') { $expectedSlot = '나가기' }
+    if ($Stage -eq '메뉴확인' -and (Test-SpecialSlotEnabled '협동') -and (Get-SlotSamplePaths '협동').Count -gt 0) {
+        $stillCoopRect = Find-ValidSlotOnce '협동' $Screen $true
+        if (-not $stillCoopRect.IsEmpty) {
+            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '협동' 'still-visible-before-menu' $stillCoopRect 'stage=메뉴확인; coop prompt still visible; retry coop click'
+            return [pscustomobject]@{ Slot = '협동'; Rect = $stillCoopRect; Stage = $Stage }
+        }
+    }
     if ($Stage -eq '나가기' -and (Get-SlotSamplePaths '완료 확인').Count -gt 0) {
         $stillCompleteRect = Find-ValidSlotOnce '완료 확인' $Screen $true
         if (-not $stillCompleteRect.IsEmpty) {

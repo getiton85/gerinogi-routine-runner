@@ -4,19 +4,18 @@
                       "sha256":  "63938056a1dec9d38e8ad3fbf0c5db791dd8ba412bd7cd9cc84dfebde1135636",
                       "file":  "마스크테스트 설치_1.0.48.exe"
                   },
-    "version":  "1.0.51",
+    "version":  "1.0.52",
     "update_mode":  "package",
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.51_combat_state_gate_restore.zip",
-                    "sha256":  "74ad5f3ef7058c1a29987ed2aa08b689cfab3a9d5477b73ee22dd8090d203f67",
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.52_coop_retry_before_menu.zip",
+                    "sha256":  "c71709be52955d41aa4025c2ef3f25b6e969df65b36a7c3a06ed3e78a5779715",
                     "files":  [
                                   "local_state_routine_runner.ps1"
                               ]
                 },
     "notes":  [
-                  "자동1 완료 확인 진입 차단 원인 수정",
-                  "상태 기준 미감지 시 궁극기/팔라딘 실행 차단 복구",
-                  "스킵은 기존처럼 상태 기준 미감지 상태에서도 먼저 검사",
+                  "자동1 협동 클릭 후 메뉴확인 단계에서 협동이 아직 보이면 재클릭하도록 보강",
+                  "자동0과 동일하게 협동 클릭 실패 후 단계 오판 방지",
                   "기존 user_data 설정과 샘플 유지"
               ]
 }

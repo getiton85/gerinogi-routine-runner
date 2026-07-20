@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "1.0.87",
+    "version":  "1.0.88",
     "update_mode":  "package",
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/state_routine_update_package_1.0.87_skip_bright_fix.zip",
-                    "sha256":  "9820dd3fffcfc90938b5f794691b14fdd3d9acf041e836eca87e4ff4894df438",
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/state_routine_update_package_1.0.88_coop_retry_before_menu.zip",
+                    "sha256":  "ca33bac162b8b5db044e8a3ecd469ed4cdd541e0504837f866c179812c8f7019",
                     "files":  [
                                   "local_state_routine_runner.ps1"
                               ]
@@ -14,7 +14,8 @@
                       "file":  "상태루틴 설치_1.0.86.exe"
                   },
     "notes":  [
-                  "자동0 스킵 밝은 글자 인식 기준을 저장 영역 내부에서만 보강",
+                  "자동0 협동 클릭 후 메뉴확인 단계에서 협동이 아직 보이면 재클릭하도록 보강",
+                  "클릭이 씹힌 상태에서 메뉴/어비스 단계로 넘어가는 오판 방지",
                   "기존 user_data 좌표/영역/샘플/로그 유지",
                   "설치파일 없이 업데이트 패키지로 적용"
               ]
