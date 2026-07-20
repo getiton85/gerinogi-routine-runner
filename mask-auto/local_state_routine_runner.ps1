@@ -222,7 +222,7 @@ $script:RoutineTracePath = Join-Path $script:UserDataRoot 'routine_trace_log.csv
 $script:CrashLogPath = Join-Path $script:UserDataRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $script:UserDataRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $script:UserDataRoot 'reports'
-$script:AppVersion = '1.0.49'
+$script:AppVersion = '1.0.51'
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
 $script:LongCompleteFallbackMs = 90000
@@ -2077,7 +2077,11 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
         }
         foreach ($slot in @('식사 버튼','궁극기','팔라딘')) {
             if (Test-StopRequested) { return $null }
-            if ($stateRect.IsEmpty -and $slot -ne '식사 버튼') { continue }
+            $allowCombatScan = (-not $stateRect.IsEmpty) -or ($slot -eq '식사 버튼')
+            if (-not $allowCombatScan) {
+                Write-RoutineTrace $script:CurrentCycle 'stage-scan' $slot 'blocked-state-missing' ([System.Drawing.Rectangle]::Empty) 'state marker not visible; active combat slot skipped'
+                continue
+            }
             if ((Get-SlotSamplePaths $slot).Count -eq 0) {
                 Write-RoutineTrace $script:CurrentCycle 'stage-scan' $slot 'missing-sample-inside' ([System.Drawing.Rectangle]::Empty) $stateNote
                 continue
@@ -3675,6 +3679,7 @@ try {
 } finally {
     Write-CrashLog 'app-exit' $null
 }
+
 
 
 
