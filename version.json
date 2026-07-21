@@ -1,26 +1,16 @@
 ﻿{
-    "version":  "1.0.91",
+    "version":  "1.0.92",
     "update_mode":  "package",
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/gerinogi_update_package_1.0.91_coop_priority_fix.zip",
-                    "sha256":  "a0d604e26050a5267c61faabfdfe9b28ad983e6262685ee313fc3d4b3729f54f",
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/gerinogi_update_package_1.0.92_coop_ui_groups.zip",
+                    "sha256":  "5ce5923ca2f8e83ae3e77a751313f1c3e0933a9b48ed3783d48cfcdbd0550e2a",
                     "files":  [
-                                  "local_state_routine_runner.ps1",
-                                  "ui_config.json",
-                                  "update_manifest_url.txt",
-                                  "상태루틴 관리자 실행.bat",
-                                  "상태루틴 관리자 실행.vbs",
-                                  "상태루틴 디버그 실행.bat",
-                                  "상태루틴 실행.bat",
-                                  "상태루틴 실행.vbs",
-                                  "state_samples\\스킵_마스크테스트.png",
-                                  "state_samples\\완료_확인_20260703_164148_745.png",
-                                  "state_samples\\협동_20260708_063905_004.png"
+                                  "local_state_routine_runner.ps1"
                               ]
                 },
     "required_reinstall":  false,
     "notes":  [
-                  "Auto0 prioritizes coop prompt during menu/internal/menu verification stages.",
-                  "Auto0 package includes coop sample image."
+                  "Auto0 blocks coop coordinate fallback unless the coop image is actually matched.",
+                  "Auto0 adds the 광기의 동굴 slot preview group and separate fold controls for route/combat groups."
               ]
 }
