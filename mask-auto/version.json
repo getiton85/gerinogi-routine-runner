@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "1.0.58",
+    "version":  "1.0.59",
     "update_mode":  "package",
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.58_internal_flow_guard.zip",
-                    "sha256":  "6b32771a679faee44b0945a3ada1fe5429293b1e2fc1bffa3811bc8eed6878f7",
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.59_complete_gate_fix.zip",
+                    "sha256":  "1aa112de6881d74109657d8080bbd55a34de22711986fa66cc7c3b4a28e1bcd1",
                     "files":  [
                                   "local_state_routine_runner.ps1",
                                   "state_samples",
@@ -13,13 +13,12 @@
                               ]
                 },
     "installer":  {
-                      "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/installers/%EB%A7%88%EC%8A%A4%ED%81%AC%ED%85%8C%EC%8A%A4%ED%8A%B8%20%EC%84%A4%EC%B9%98_1.0.48.exe",
-                      "sha256":  "63938056a1dec9d38e8ad3fbf0c5db791dd8ba412bd7cd9cc84dfebde1135636",
-                      "file":  "마스크테스트 설치_1.0.48.exe"
+                      "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/mask install 1.0.48.exe",
+                      "version":  "1.0.48"
                   },
     "notes":  [
-                  "자동1 내부 단계 완료 판정을 Test-CompleteAllowed로 통일",
-                  "스킵 후 상태 기준 재확인 전 완료 확인 진입 차단",
-                  "내부 단계에서 전투 중 입장 화면 재감지 시 ESC 복구"
+                  "자동1 완료 확인 시각 후보가 2회 안정 매칭되면 30초 이후 완료대기로 진입",
+                  "상태 기준 미감지 시 대체 완료 게이트를 90초에서 60초로 단축",
+                  "이미지 매칭 실패 시 무작정 클릭하지 않는 기존 제한 유지"
               ]
 }

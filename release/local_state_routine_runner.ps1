@@ -222,7 +222,7 @@ $script:RoutineTracePath = Join-Path $script:UserDataRoot 'routine_trace_log.csv
 $script:CrashLogPath = Join-Path $script:UserDataRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $script:UserDataRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $script:UserDataRoot 'reports'
-$script:AppVersion = '1.0.89'
+$script:AppVersion = '1.0.91'
 $script:PendingCompleteSeen = 0
 $script:DiagnosticFailureCount = 0
 $script:DiagnosticDisabledUntil = [DateTime]::MinValue
@@ -1672,7 +1672,17 @@ function Get-NextRoutineStage([string]$Slot) {
 }
 function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$Stage) {
     if ([string]::IsNullOrWhiteSpace($Stage)) { $Stage = '¸Þ´º' }
-    if ($Stage -eq 'Çùµ¿') {
+    if ($Stage -in @('¸Þ´º','³»ºÎ','¸Þ´ºÈ®ÀÎ')) {
+        if ((Test-SpecialSlotEnabled 'Çùµ¿') -and (Get-SlotSamplePaths 'Çùµ¿').Count -gt 0) {
+            $priorityCoopRect = Find-ValidSlotOnce 'Çùµ¿' $Screen $true
+            if (-not $priorityCoopRect.IsEmpty) {
+                $script:PendingCompleteSeen = 0
+                Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'Çùµ¿' 'candidate-priority-special' $priorityCoopRect ('stage=' + $Stage + '; coop prompt priority')
+                return [pscustomobject]@{ Slot = 'Çùµ¿'; Rect = $priorityCoopRect; Stage = $Stage }
+            }
+            Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'Çùµ¿' 'miss-priority-special' ([System.Drawing.Rectangle]::Empty) ('stage=' + $Stage + '; coop prompt not visible')
+        }
+    }    if ($Stage -eq 'Çùµ¿') {
         if (-not (Test-SpecialSlotEnabled 'Çùµ¿')) {
             Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'Çùµ¿' 'skip-special-disabled' ([System.Drawing.Rectangle]::Empty) 'special disabled; continue to menu'
             return [pscustomobject]@{ Slot = '__Çùµ¿¾øÀ½'; Rect = [System.Drawing.Rectangle]::Empty; Stage = $Stage }
@@ -1711,6 +1721,15 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
         } else {
             Write-RoutineTrace $script:CurrentCycle 'stage-scan' '½ºÅµ' 'missing-sample-inside' ([System.Drawing.Rectangle]::Empty) $stateNote
         }
+        if ($stateRect.IsEmpty -and (Test-SpecialSlotEnabled 'Çùµ¿') -and (Get-SlotSamplePaths 'Çùµ¿').Count -gt 0) {
+            $coopInsideRect = Find-ValidSlotOnce 'Çùµ¿' $Screen $true
+            if (-not $coopInsideRect.IsEmpty) {
+                $script:PendingCompleteSeen = 0
+                Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'Çùµ¿' 'candidate-inside-special' $coopInsideRect 'state marker not visible; coop prompt before complete'
+                return [pscustomobject]@{ Slot = 'Çùµ¿'; Rect = $coopInsideRect; Stage = $Stage }
+            }
+            Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'Çùµ¿' 'miss-inside-special' ([System.Drawing.Rectangle]::Empty) 'state marker not visible; coop not visible'
+        }
         if ($stateRect.IsEmpty) {
             Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'ÀüÅõ½½·Ô' 'blocked-state-missing' ([System.Drawing.Rectangle]::Empty) 'state marker not visible; skip food/ultimate/paladin'
         }
@@ -1745,7 +1764,7 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
             }
         }
         $script:PendingCompleteSeen = 0
-        Write-RoutineTrace $script:CurrentCycle 'stage-scan' '' 'none' ([System.Drawing.Rectangle]::Empty) 'stage=³»ºÎ; checked=»óÅÂ ±âÁØ|½ºÅµ|½Ä»ç ¹öÆ°|±Ã±Ø±â|ÆÈ¶óµò|¿Ï·á È®ÀÎ'
+        Write-RoutineTrace $script:CurrentCycle 'stage-scan' '' 'none' ([System.Drawing.Rectangle]::Empty) 'stage=³»ºÎ; checked=»óÅÂ ±âÁØ|½ºÅµ|Çùµ¿|½Ä»ç ¹öÆ°|±Ã±Ø±â|ÆÈ¶óµò|¿Ï·á È®ÀÎ'
         return $null
     }
     $expectedSlot = $Stage
@@ -3199,5 +3218,7 @@ $script:HotKeyFilter = New-Object HotKeyWindowFilter
 $script:HotKeyFilter.OnHotKey = [Action[int]]{ param($id) if($id -eq 801 -and -not $script:Running){ Add-SlotSample }; if($id -eq 803 -and -not $script:Running){ Start-StateRoutine }; if($id -eq 804){ $script:StopRequested=$true; $statusLabel.Text='Áß´Ü ¿äÃ»µÊ.' }; if($id -eq 805 -and -not $script:Running){ Save-CurrentPointForSelectedSlot } }
 [System.Windows.Forms.Application]::AddMessageFilter($script:HotKeyFilter)
 [void]$form.ShowDialog()
+
+
 
 

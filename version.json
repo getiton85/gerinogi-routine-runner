@@ -1,21 +1,26 @@
 ﻿{
-    "version":  "1.0.89",
+    "version":  "1.0.91",
     "update_mode":  "package",
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/gerinogi_update_package_1.0.89_complete_stable_gate.zip",
-                    "sha256":  "2abcbb72261df5fa7050d49f6030576ad398b87f0de42dac6398601a918ffc56",
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/gerinogi_update_package_1.0.91_coop_priority_fix.zip",
+                    "sha256":  "a0d604e26050a5267c61faabfdfe9b28ad983e6262685ee313fc3d4b3729f54f",
                     "files":  [
                                   "local_state_routine_runner.ps1",
                                   "ui_config.json",
+                                  "update_manifest_url.txt",
                                   "상태루틴 관리자 실행.bat",
                                   "상태루틴 관리자 실행.vbs",
+                                  "상태루틴 디버그 실행.bat",
                                   "상태루틴 실행.bat",
                                   "상태루틴 실행.vbs",
-                                  "상태루틴 디버그 실행.bat"
+                                  "state_samples\\스킵_마스크테스트.png",
+                                  "state_samples\\완료_확인_20260703_164148_745.png",
+                                  "state_samples\\협동_20260708_063905_004.png"
                               ]
                 },
     "required_reinstall":  false,
     "notes":  [
-                  "완료 확인 안정화: 내부 단계에서 완료 화면을 2회 연속 확인한 뒤에만 다음 단계로 진행"
+                  "Auto0 prioritizes coop prompt during menu/internal/menu verification stages.",
+                  "Auto0 package includes coop sample image."
               ]
 }

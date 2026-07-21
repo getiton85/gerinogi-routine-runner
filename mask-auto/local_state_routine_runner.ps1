@@ -222,11 +222,11 @@ $script:RoutineTracePath = Join-Path $script:UserDataRoot 'routine_trace_log.csv
 $script:CrashLogPath = Join-Path $script:UserDataRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $script:UserDataRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $script:UserDataRoot 'reports'
-$script:AppVersion = '1.0.58'
+$script:AppVersion = '1.0.59'
 $script:PendingCompleteSeen = 0
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
-$script:LongCompleteFallbackMs = 90000
+$script:LongCompleteFallbackMs = 60000
 $script:CombatMarkerSeen = $false
 $script:BossSkipSeen = $false
 $script:CombatMarkerSeenAfterSkip = $false
@@ -1880,7 +1880,8 @@ function Test-CompleteAllowed {
     return $true
 }
 function Test-CompleteVisualCandidateAllowed {
-    return (Test-CompleteAllowed)
+    if (-not (Test-CompleteWaitElapsed)) { return $false }
+    return $true
 }
 function Test-CompleteRecoveryScanAllowed([string]$Stage) {
     if (Test-CompleteAllowed) { return $true }
