@@ -222,7 +222,8 @@ $script:RoutineTracePath = Join-Path $script:UserDataRoot 'routine_trace_log.csv
 $script:CrashLogPath = Join-Path $script:UserDataRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $script:UserDataRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $script:UserDataRoot 'reports'
-$script:AppVersion = '1.0.55'
+$script:AppVersion = '1.0.57'
+$script:PendingCompleteSeen = 0
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
 $script:LongCompleteFallbackMs = 90000
@@ -950,6 +951,20 @@ function Invoke-PaladinKey([string]$Reason) {
     Write-RoutineTrace $script:CurrentCycle 'key' '팔라딘' 'send-f5' ([System.Drawing.Rectangle]::Empty) $Reason
     Start-Sleep -Milliseconds 180
 }
+function Invoke-EscapeTwice([string]$Reason) {
+    if ($script:TargetHandle -ne [IntPtr]::Zero) {
+        [void][NativeInput]::SetForegroundWindow($script:TargetHandle)
+        Start-Sleep -Milliseconds 100
+    }
+    for ($i = 1; $i -le 2; $i++) {
+        [NativeInput]::keybd_event(0x1B, 0, 0, [UIntPtr]::Zero)
+        Start-Sleep -Milliseconds 70
+        [NativeInput]::keybd_event(0x1B, 0, [NativeInput]::KEYEVENTF_KEYUP, [UIntPtr]::Zero)
+        Write-RoutineTrace $script:CurrentCycle 'key' '입장_전투중' ('send-esc-' + $i) ([System.Drawing.Rectangle]::Empty) $Reason
+        if ($i -lt 2) { Sleep-WithStop 500 }
+    }
+    Start-Sleep -Milliseconds 180
+}
 function Load-ImageUnlocked([string]$Path) {
     $bytes = [System.IO.File]::ReadAllBytes($Path)
     $stream = New-Object System.IO.MemoryStream(,$bytes)
@@ -1613,7 +1628,7 @@ function Test-SlotRequiresRegion([string]$Slot) {
     return @('협동','메뉴','어비스','던전','입장','완료 확인','나가기','식사 버튼','궁극기','스킵','팔라딘') -contains $Slot
 }
 function Test-SlotAllowsCoordinateFallback([string]$Slot) {
-    return @('협동','메뉴','어비스','던전','입장') -contains $Slot
+    return @('메뉴','어비스','던전','입장') -contains $Slot
 }
 function Test-PointInsideSlotRegion([string]$Slot, [System.Drawing.Point]$Point, [System.Windows.Forms.Screen]$Screen) {
     $rect = Get-SlotRegionScreenRect $Slot $Screen
@@ -1881,6 +1896,17 @@ function Get-CompleteGateDetail {
     $elapsedMs = [int](((Get-Date) - $script:InsideStartedAt).TotalMilliseconds)
     return ('elapsedMs={0}; requiredMs={1}; fallbackMs={2}; fallbackReady={3}; combatSeen={4}; skipSeen={5}; combatAfterSkip={6}' -f $elapsedMs, $script:MinimumCompleteWaitMs, $script:LongCompleteFallbackMs, ($elapsedMs -ge [int]$script:LongCompleteFallbackMs), $script:CombatMarkerSeen, $script:BossSkipSeen, $script:CombatMarkerSeenAfterSkip)
 }
+function Test-StableCompleteCandidate([System.Drawing.Rectangle]$Rect, [string]$Context) {
+    if ($Rect.IsEmpty) {
+        $script:PendingCompleteSeen = 0
+        return $false
+    }
+    $script:PendingCompleteSeen++
+    Write-RoutineTrace $script:CurrentCycle 'stage-scan' '완료 확인' 'candidate-pending' $Rect ($Context + '; stable=' + $script:PendingCompleteSeen + '/2')
+    if ($script:PendingCompleteSeen -lt 2) { return $false }
+    $script:PendingCompleteSeen = 0
+    return $true
+}
 function Test-StopRequested {
     if ($script:StopRequested) { return $true }
     if (([NativeInput]::GetAsyncKeyState(0x75) -band 0x8000) -ne 0) {
@@ -2116,6 +2142,7 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
             Write-RoutineTrace $script:CurrentCycle 'stage-scan' $slot 'miss-inside' ([System.Drawing.Rectangle]::Empty) $stateNote
         }
         if (-not $stateRect.IsEmpty) {
+            $script:PendingCompleteSeen = 0
             Write-RoutineTrace $script:CurrentCycle 'stage-scan' '상태 기준' 'inside-keep-block-route' $stateRect 'state marker visible; skip complete/exit scan'
             return [pscustomobject]@{ Slot = '상태 기준'; Rect = $stateRect; Stage = $Stage }
         }
@@ -2123,9 +2150,14 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
             $completeRect = Find-ValidSlotOnce '완료 확인' $Screen $true
             if (-not $completeRect.IsEmpty) {
                 if (Test-CompleteVisualCandidateAllowed) {
-                    Write-RoutineTrace $script:CurrentCycle 'stage-scan' '완료 확인' 'candidate-after-inside' $completeRect ($stateNote + '; visual-confirmed; ' + (Get-CompleteGateDetail))
-                    return [pscustomobject]@{ Slot = '완료 확인'; Rect = $completeRect; Stage = $Stage }
+                    $completeContext = $stateNote + '; visual-confirmed; ' + (Get-CompleteGateDetail)
+                    if (Test-StableCompleteCandidate $completeRect $completeContext) {
+                        Write-RoutineTrace $script:CurrentCycle 'stage-scan' '완료 확인' 'candidate-after-inside' $completeRect ($completeContext + '; stable-confirmed')
+                        return [pscustomobject]@{ Slot = '완료 확인'; Rect = $completeRect; Stage = $Stage }
+                    }
+                    return $null
                 }
+                $script:PendingCompleteSeen = 0
                 Write-RoutineTrace $script:CurrentCycle 'stage-scan' '완료 확인' 'candidate-blocked-by-gate' $completeRect ($stateNote + '; visual-confirmed; ' + (Get-CompleteGateDetail))
             } elseif (-not (Test-CompleteRecoveryScanAllowed $Stage)) {
                 Write-RoutineTrace $script:CurrentCycle 'stage-scan' '완료 확인' 'blocked-by-gate' ([System.Drawing.Rectangle]::Empty) (Get-CompleteGateDetail)
@@ -2173,9 +2205,14 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
             $recoveryCompleteRect = Find-ValidSlotOnce '완료 확인' $Screen $true
             if (-not $recoveryCompleteRect.IsEmpty) {
                 if (Test-CompleteVisualCandidateAllowed) {
-                    Write-RoutineTrace $script:CurrentCycle 'stage-scan' '완료 확인' 'recovery-candidate' $recoveryCompleteRect ('expected=' + $expectedSlot + '; stage=' + $Stage + '; visual-confirmed; ' + (Get-CompleteGateDetail))
-                    return [pscustomobject]@{ Slot = '완료 확인'; Rect = $recoveryCompleteRect; Stage = $Stage }
+                    $recoveryCompleteContext = 'expected=' + $expectedSlot + '; stage=' + $Stage + '; visual-confirmed; ' + (Get-CompleteGateDetail)
+                    if (Test-StableCompleteCandidate $recoveryCompleteRect $recoveryCompleteContext) {
+                        Write-RoutineTrace $script:CurrentCycle 'stage-scan' '완료 확인' 'recovery-candidate' $recoveryCompleteRect ($recoveryCompleteContext + '; stable-confirmed')
+                        return [pscustomobject]@{ Slot = '완료 확인'; Rect = $recoveryCompleteRect; Stage = $Stage }
+                    }
+                    return $null
                 }
+                $script:PendingCompleteSeen = 0
                 Write-RoutineTrace $script:CurrentCycle 'stage-scan' '완료 확인' 'recovery-candidate-blocked-by-gate' $recoveryCompleteRect ('expected=' + $expectedSlot + '; stage=' + $Stage + '; visual-confirmed; ' + (Get-CompleteGateDetail))
             } elseif (-not (Test-CompleteRecoveryScanAllowed $Stage)) {
                 Write-RoutineTrace $script:CurrentCycle 'stage-scan' '완료 확인' 'recovery-blocked-by-gate' ([System.Drawing.Rectangle]::Empty) ('expected=' + $expectedSlot + '; stage=' + $Stage + '; ' + (Get-CompleteGateDetail))
@@ -2257,15 +2294,18 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
             return [pscustomobject]@{ Clicks = [int]$exitResult.Clicks; Completed = $false; Message = '나가기 재탐색'; NextStage = '나가기' }
         }
         '입장_전투중' {
-            $StatusLabel.Text = '전투중 화면 감지: 내부 감시로 복귀'
+            $StatusLabel.Text = '전투중 화면 감지: ESC 복구 후 내부 감시'
             [System.Windows.Forms.Application]::DoEvents()
-            Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'inside-monitor-restore' $rect 'no click; prevents 전투중 from matching 나가기'
+            Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'inside-monitor-restore-before-esc' $rect 'entry screen is already in combat; press ESC twice and return to state monitor'
+            Invoke-EscapeTwice 'entry busy guard'
+            Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'inside-monitor-restore-after-esc' $rect 'esc recovery sent'
             $InsidePhase.Value = $true
             if ($null -eq $script:InsideStartedAt) { $script:InsideStartedAt = Get-Date }
             if (-not $script:CombatMarkerSeen) { $script:CombatMarkerSeen = $true }
+            $script:PendingCompleteSeen = 0
             Set-ProgressStep 5
             Wait-StateActionSettle '상태 기준'
-            return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = '전투중 화면 보호'; NextStage = $nextStage }
+            return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = '전투중 화면 ESC 복구'; NextStage = $nextStage }
         }
         '완료 확인' {
             $StatusLabel.Text = '완료 확인 감지: 클릭'
