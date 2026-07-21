@@ -1,17 +1,17 @@
 ﻿{
-    "version":  "1.0.93",
+    "version":  "1.0.94",
     "update_mode":  "package",
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/gerinogi_update_package_1.0.93_dungeon_toggle_split.zip",
-                    "sha256":  "f387d69b97f16d679ee849c09e31bfd74ac01b6c06b08f193096e93f0f8cf672",
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/gerinogi_update_package_1.0.94_slot_scroll_cave_split.zip",
+                    "sha256":  "78acc05ca916e1db1b5e674006eba1654848c0218724c240a0c7791fff33b091",
                     "files":  [
                                   "local_state_routine_runner.ps1"
                               ]
                 },
     "required_reinstall":  false,
     "notes":  [
-                  "Auto0 separates Harbor and Cave routine ON states.",
-                  "Auto0 Cave routine checkbox no longer shares Harbor state.",
-                  "Only one dungeon routine can be enabled at a time."
+                  "Auto0 adds scroll support to the slot classification area.",
+                  "Auto0 separates Harbor and Cave route slot cards, samples, regions, and coordinates.",
+                  "Auto0 Cave route cards no longer share selection/storage with Harbor cards."
               ]
 }

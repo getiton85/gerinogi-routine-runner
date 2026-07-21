@@ -230,7 +230,7 @@ $script:RoutineTracePath = Join-Path $script:UserDataRoot 'routine_trace_log.csv
 $script:CrashLogPath = Join-Path $script:UserDataRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $script:UserDataRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $script:UserDataRoot 'reports'
-$script:AppVersion = '1.0.93'
+$script:AppVersion = '1.0.94'
 $script:PendingCompleteSeen = 0
 $script:DiagnosticFailureCount = 0
 $script:DiagnosticDisabledUntil = [DateTime]::MinValue
@@ -810,9 +810,25 @@ function Get-QuestSlotKey([int]$Index = -1) {
     $Index = [Math]::Max(0, [Math]::Min(3, $Index))
     return 'ƒ˘Ω∫∆Æ_' + ($Index + 1)
 }
+function Get-DungeonRouteSlotKey([string]$DungeonName, [string]$Slot) {
+    if (($DungeonName -eq '±§±‚¿« µø±º') -and ($script:RouteSlots -contains $Slot)) { return '±§±‚¿« µø±º_' + $Slot }
+    return $Slot
+}
+function Get-SlotDisplayName([string]$Slot) {
+    if ($Slot -like '±§±‚¿« µø±º_*') { return $Slot.Substring('±§±‚¿« µø±º_'.Length) }
+    return $Slot
+}
+function Resolve-RouteSlotFromStorageKey([string]$Slot) {
+    if ($Slot -like '±§±‚¿« µø±º_*') {
+        $base = $Slot.Substring('±§±‚¿« µø±º_'.Length)
+        if ($script:RouteSlots -contains $base) { return $base }
+    }
+    return $Slot
+}
 function Get-EffectiveSlotKey([string]$Slot) {
     if ($Slot -eq '±√±ÿ±‚') { return Get-UltimateSlotKey }
     if ($Slot -eq 'ƒ˘Ω∫∆Æ') { return Get-QuestSlotKey }
+    if ($Slot -like '±§±‚¿« µø±º_*') { return $Slot }
     return $Slot
 }
 function Get-SlotStorageKeys {
@@ -826,6 +842,7 @@ function Get-SlotStorageKeys {
             [void]$keys.Add($slot)
         }
     }
+    foreach ($slot in $script:RouteSlots) { [void]$keys.Add((Get-DungeonRouteSlotKey '±§±‚¿« µø±º' $slot)) }
     return @($keys | Select-Object -Unique)
 }
 function Get-SlotFileStem([string]$Slot) {
@@ -834,7 +851,7 @@ function Get-SlotFileStem([string]$Slot) {
 function Get-SlotStatusName([string]$Slot) {
     if ($Slot -eq '±√±ÿ±‚') { return $Slot + ' º≥¡§ ' + ([int]$script:SelectedUltimateProfileIndex + 1) }
     if ($Slot -eq 'ƒ˘Ω∫∆Æ') { return $Slot + ' º≥¡§ ' + ([int]$script:SelectedQuestProfileIndex + 1) }
-    return $Slot
+    return Get-SlotDisplayName $Slot
 }
 function Assign-ImageFileToSlot([string]$Slot, [string]$SourcePath) {
     if (-not [System.IO.File]::Exists($SourcePath)) { return }
@@ -871,6 +888,7 @@ function Resolve-SlotStorageName([string]$Name) {
     if ([string]::IsNullOrWhiteSpace($Name)) { return $null }
     if ($Name -match '^±√±ÿ±‚_([1-5])$') { return $Name }
     if ($Name -match '^ƒ˘Ω∫∆Æ_([1-4])$') { return $Name }
+    if ($Name -like '±§±‚¿« µø±º_*') { return $Name }
     if ($Name -eq '±√±ÿ±‚') { return '±√±ÿ±‚_1' }
     if ($Name -eq 'ƒ˘Ω∫∆Æ') { return 'ƒ˘Ω∫∆Æ_1' }
     return Resolve-SlotName $Name
@@ -2065,7 +2083,8 @@ function Test-SpecialSlotEnabled([string]$Slot) {
 
 function Test-SlotEnabled([string]$Slot) {
     if ($script:SpecialSlots -contains $Slot) { return (Test-SpecialSlotEnabled $Slot) }
-    if ($script:RouteSlots -contains $Slot) { return (Test-AnyDungeonRoutineEnabled) }
+    $baseSlot = Resolve-RouteSlotFromStorageKey $Slot
+    if ($script:RouteSlots -contains $baseSlot) { return (Test-AnyDungeonRoutineEnabled) }
     if ($script:CombatSlots -contains $Slot) { return (Test-CombatSlotEnabled $Slot) }
     return $true
 }
@@ -2724,7 +2743,14 @@ $slotPreviewTable.Controls.Add($specialPreviewGroup, 0, 1)
 $slotPreviewTable.Controls.Add($routePreviewGroup, 0, 2)
 $slotPreviewTable.Controls.Add($cavePreviewGroup, 0, 3)
 $slotPreviewTable.Controls.Add($combatPreviewGroup, 0, 4)
-$slotPreviewGroup.Controls.Add($slotPreviewTable); $gameTable.Controls.Add($slotPreviewGroup, 0, 2)
+$slotPreviewTable.Dock = 'Top'
+$slotPreviewTable.AutoSize = $true
+$slotPreviewTable.AutoSizeMode = 'GrowAndShrink'
+$slotPreviewScrollPanel = New-Object System.Windows.Forms.Panel
+$slotPreviewScrollPanel.Dock = 'Fill'
+$slotPreviewScrollPanel.AutoScroll = $true
+$slotPreviewScrollPanel.Controls.Add($slotPreviewTable)
+$slotPreviewGroup.Controls.Add($slotPreviewScrollPanel); $gameTable.Controls.Add($slotPreviewGroup, 0, 2)
 $buttonPanel = New-Object System.Windows.Forms.TableLayoutPanel; $buttonPanel.Dock = 'Fill'; $buttonPanel.ColumnCount = 4; $buttonPanel.RowCount = 4
 $buttonPanel.Padding = New-Object System.Windows.Forms.Padding(0,2,0,2)
 for ($bi = 0; $bi -lt 4; $bi++) { $buttonPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 25))) | Out-Null }
@@ -3078,7 +3104,7 @@ function Set-DungeonRoutineToggle([string]$Name, [bool]$Enabled) {
     }
     Refresh-Slots
 }
-function Select-Slot([string]$Slot) { $script:SelectedSlot = $Slot; if ($slotBox.SelectedItem -ne $Slot) { $slotBox.SelectedItem = $Slot }; Refresh-Slots }
+function Select-Slot([string]$Slot) { $script:SelectedSlot = $Slot; $baseSlot = Resolve-RouteSlotFromStorageKey $Slot; if ($slotBox.Items.Contains($baseSlot) -and $slotBox.SelectedItem -ne $baseSlot) { $slotBox.SelectedItem = $baseSlot }; Refresh-Slots }
 function Mark-ActiveSlot([string]$Slot) { $script:ActiveSlot = $Slot; switch ($Slot) { '∏ﬁ¥∫' { Set-ProgressStep 1 } 'æÓ∫ÒΩ∫' { Set-ProgressStep 2 } '¥¯¿¸' { Set-ProgressStep 3 } '¿‘¿Â' { Set-ProgressStep 4 } 'ªÛ≈¬ ±‚¡ÿ' { Set-ProgressStep 5 } 'øœ∑· »Æ¿Œ' { Set-ProgressStep 8 } '≥™∞°±‚' { Set-ProgressStep 9 } default { } } }
 function Handle-FileDrop([string]$Slot, $Data) { $paths = $Data.GetData([System.Windows.Forms.DataFormats]::FileDrop); if ($paths -and $paths.Length -gt 0) { Select-Slot $Slot; Assign-ImageFileToSlot $Slot $paths[0]; Refresh-Slots; $statusLabel.Text = (Get-SlotStatusName $Slot) + ' ΩΩ∑‘ø° ¿ÃπÃ¡ˆ ∆ƒ¿œ¿ª ø¨∞·«ﬂΩ¿¥œ¥Ÿ.' } }
 function Add-DropHandlers($Control, [string]$Slot) { $Control.AllowDrop = $true; $Control.Add_DragEnter({ if ($_.Data.GetDataPresent([System.Windows.Forms.DataFormats]::FileDrop)) { $_.Effect = [System.Windows.Forms.DragDropEffects]::Copy } }.GetNewClosure()); $Control.Add_DragDrop({ Handle-FileDrop $Slot $_.Data }.GetNewClosure()) }
@@ -3087,7 +3113,7 @@ function New-SlotPreviewCard([string]$Slot) {
     $card = New-Object System.Windows.Forms.Panel; $card.Dock = 'Fill'; $card.Margin = New-Object System.Windows.Forms.Padding(3); $card.BorderStyle = 'FixedSingle'
     if (-not (Test-SlotEnabled $Slot)) { $card.BackColor = [System.Drawing.Color]::Gainsboro } elseif ($Slot -eq $script:ActiveSlot) { $card.BackColor = [System.Drawing.Color]::Honeydew } elseif ($Slot -eq $script:SelectedSlot) { $card.BackColor = [System.Drawing.Color]::FromArgb(255,236,148) } else { $card.BackColor = [System.Drawing.Color]::White }
     Add-DropHandlers $card $Slot
-    $label = New-Object System.Windows.Forms.Label; $label.Text = $Slot; $label.TextAlign = 'MiddleCenter'; $label.Width = 58; $label.Height = 16; $label.Left = 1; $label.Top = 56
+    $label = New-Object System.Windows.Forms.Label; $label.Text = (Get-SlotDisplayName $Slot); $label.TextAlign = 'MiddleCenter'; $label.Width = 58; $label.Height = 16; $label.Left = 1; $label.Top = 56
     if ($Slot -eq $script:ActiveSlot) { $label.ForeColor = [System.Drawing.Color]::DarkGreen; $label.Font = New-Object System.Drawing.Font('Malgun Gothic', 7, [System.Drawing.FontStyle]::Bold) } elseif ($Slot -eq $script:SelectedSlot) { $label.ForeColor = [System.Drawing.Color]::FromArgb(120,72,0); $label.Font = New-Object System.Drawing.Font('Malgun Gothic', 7, [System.Drawing.FontStyle]::Bold) } else { $label.Font = New-Object System.Drawing.Font('Malgun Gothic', 7) }
     Add-DropHandlers $label $Slot
     if ($script:Samples[$slotKey]) { $image = Load-ImageUnlocked $script:Samples[$slotKey].Path; $card.Tag = $image; $pic = New-Object System.Windows.Forms.PictureBox; $pic.Image = $image; $pic.SizeMode = 'Zoom'; $pic.Width = 58; $pic.Height = 52; $pic.Left = 1; $pic.Top = 3; Add-DropHandlers $pic $Slot; $pic.Add_Click({ Select-Slot $Slot }.GetNewClosure()); $card.Controls.Add($pic) }
@@ -3105,7 +3131,7 @@ function Refresh-Slots {
     foreach ($slot in $script:RouteSlots) {
         $idx = [array]::IndexOf($script:RouteSlots, $slot)
         $routeSlotPanel.Controls.Add((New-SlotPreviewCard $slot), $idx, 0)
-        $caveSlotPanel.Controls.Add((New-SlotPreviewCard $slot), $idx, 0)
+        $caveSlotPanel.Controls.Add((New-SlotPreviewCard (Get-DungeonRouteSlotKey '±§±‚¿« µø±º' $slot)), $idx, 0)
     }
     foreach ($slot in $script:CombatSlots) {
         $combatSlotPanel.Controls.Add((New-SlotPreviewCard $slot), ([array]::IndexOf($script:CombatSlots, $slot)), 0)

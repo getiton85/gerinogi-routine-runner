@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "1.0.64",
+    "version":  "1.0.65",
     "update_mode":  "package",
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.64_special_toggle_persist.zip",
-                    "sha256":  "36d7d065e73e0538400a53e4b4622240d060b4bba2474c278cc8231528ea1e32",
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.65_slot_scroll_cave_split.zip",
+                    "sha256":  "ececad6bda592709f8a1b1f88747d6783515254a0e021a04e7b45321ee8f2871",
                     "files":  [
                                   "local_state_routine_runner.ps1",
                                   "state_samples",
@@ -18,8 +18,8 @@
                   },
     "required_reinstall":  false,
     "notes":  [
-                  "Auto1 persists cooperation ON/OFF setting.",
-                  "Auto1 blocks cooperation global-priority clicks when cooperation is disabled.",
-                  "Existing mask routine and samples are preserved."
+                  "Auto1 adds scroll support to the slot classification area.",
+                  "Auto1 displays independent Cave route slots for menu, abyss, dungeon, enter, complete, and exit.",
+                  "Auto1 Cave route cards use separate samples, regions, and coordinates from Harbor cards."
               ]
 }

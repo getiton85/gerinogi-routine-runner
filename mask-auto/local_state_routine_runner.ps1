@@ -227,7 +227,7 @@ $script:RoutineTracePath = Join-Path $script:UserDataRoot 'routine_trace_log.csv
 $script:CrashLogPath = Join-Path $script:UserDataRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $script:UserDataRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $script:UserDataRoot 'reports'
-$script:AppVersion = '1.0.64'
+$script:AppVersion = '1.0.65'
 $script:PendingCompleteSeen = 0
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
@@ -987,9 +987,25 @@ function Get-QuestSlotKey([int]$Index = -1) {
     $Index = [Math]::Max(0, [Math]::Min(3, $Index))
     return '퀘스트_' + ($Index + 1)
 }
+function Get-DungeonRouteSlotKey([string]$DungeonName, [string]$Slot) {
+    if (($DungeonName -eq '광기의 동굴') -and ($script:RouteSlots -contains $Slot)) { return '광기의 동굴_' + $Slot }
+    return $Slot
+}
+function Get-SlotDisplayName([string]$Slot) {
+    if ($Slot -like '광기의 동굴_*') { return $Slot.Substring('광기의 동굴_'.Length) }
+    return $Slot
+}
+function Resolve-RouteSlotFromStorageKey([string]$Slot) {
+    if ($Slot -like '광기의 동굴_*') {
+        $base = $Slot.Substring('광기의 동굴_'.Length)
+        if ($script:RouteSlots -contains $base) { return $base }
+    }
+    return $Slot
+}
 function Get-EffectiveSlotKey([string]$Slot) {
     if ($Slot -eq '궁극기') { return Get-UltimateSlotKey }
     if ($Slot -eq '퀘스트') { return Get-QuestSlotKey }
+    if ($Slot -like '광기의 동굴_*') { return $Slot }
     return $Slot
 }
 function Get-SlotStorageKeys {
@@ -1003,6 +1019,7 @@ function Get-SlotStorageKeys {
             [void]$keys.Add($slot)
         }
     }
+    foreach ($slot in $script:RouteSlots) { [void]$keys.Add((Get-DungeonRouteSlotKey '광기의 동굴' $slot)) }
     return @($keys | Select-Object -Unique)
 }
 function Get-SlotFileStem([string]$Slot) {
@@ -1011,7 +1028,7 @@ function Get-SlotFileStem([string]$Slot) {
 function Get-SlotStatusName([string]$Slot) {
     if ($Slot -eq '궁극기') { return $Slot + ' 설정 ' + ([int]$script:SelectedUltimateProfileIndex + 1) }
     if ($Slot -eq '퀘스트') { return $Slot + ' 설정 ' + ([int]$script:SelectedQuestProfileIndex + 1) }
-    return $Slot
+    return Get-SlotDisplayName $Slot
 }
 function Assign-ImageFileToSlot([string]$Slot, [string]$SourcePath) {
     if (-not [System.IO.File]::Exists($SourcePath)) { return }
@@ -1048,6 +1065,7 @@ function Resolve-SlotStorageName([string]$Name) {
     if ([string]::IsNullOrWhiteSpace($Name)) { return $null }
     if ($Name -match '^궁극기_([1-5])$') { return $Name }
     if ($Name -match '^퀘스트_([1-4])$') { return $Name }
+    if ($Name -like '광기의 동굴_*') { return $Name }
     if ($Name -eq '궁극기') { return '궁극기_1' }
     if ($Name -eq '퀘스트') { return '퀘스트_1' }
     return Resolve-SlotName $Name
@@ -2568,7 +2586,8 @@ function Test-SpecialSlotEnabled([string]$Slot) {
 
 function Test-SlotEnabled([string]$Slot) {
     if ($script:SpecialSlots -contains $Slot) { return (Test-SpecialSlotEnabled $Slot) }
-    if ($script:RouteSlots -contains $Slot) { return (Test-AnyDungeonRoutineEnabled) }
+    $baseSlot = Resolve-RouteSlotFromStorageKey $Slot
+    if ($script:RouteSlots -contains $baseSlot) { return (Test-AnyDungeonRoutineEnabled) }
     if ($script:CombatSlots -contains $Slot) { return (Test-CombatSlotEnabled $Slot) }
     return $true
 }
@@ -3225,7 +3244,14 @@ $slotPreviewTable.Controls.Add($specialPreviewGroup, 0, 1)
 $slotPreviewTable.Controls.Add($routePreviewGroup, 0, 2)
 $slotPreviewTable.Controls.Add($cavePreviewGroup, 0, 3)
 $slotPreviewTable.Controls.Add($combatPreviewGroup, 0, 4)
-$slotPreviewGroup.Controls.Add($slotPreviewTable); $gameTable.Controls.Add($slotPreviewGroup, 0, 2)
+$slotPreviewTable.Dock = 'Top'
+$slotPreviewTable.AutoSize = $true
+$slotPreviewTable.AutoSizeMode = 'GrowAndShrink'
+$slotPreviewScrollPanel = New-Object System.Windows.Forms.Panel
+$slotPreviewScrollPanel.Dock = 'Fill'
+$slotPreviewScrollPanel.AutoScroll = $true
+$slotPreviewScrollPanel.Controls.Add($slotPreviewTable)
+$slotPreviewGroup.Controls.Add($slotPreviewScrollPanel); $gameTable.Controls.Add($slotPreviewGroup, 0, 2)
 
 $buttonPanel = New-Object System.Windows.Forms.TableLayoutPanel; $buttonPanel.Dock = 'Fill'; $buttonPanel.ColumnCount = 4; $buttonPanel.RowCount = 4
 $buttonPanel.Padding = New-Object System.Windows.Forms.Padding(0,2,0,2)
@@ -3547,7 +3573,7 @@ function Set-DungeonRoutineToggle([string]$Name, [bool]$Enabled) {
     }
     Refresh-Slots
 }
-function Select-Slot([string]$Slot) { $script:SelectedSlot = $Slot; if ($slotBox.SelectedItem -ne $Slot) { $slotBox.SelectedItem = $Slot }; Refresh-Slots }
+function Select-Slot([string]$Slot) { $script:SelectedSlot = $Slot; $baseSlot = Resolve-RouteSlotFromStorageKey $Slot; if ($slotBox.Items.Contains($baseSlot) -and $slotBox.SelectedItem -ne $baseSlot) { $slotBox.SelectedItem = $baseSlot }; Refresh-Slots }
 function Mark-ActiveSlot([string]$Slot) { $script:ActiveSlot = $Slot; switch ($Slot) { '메뉴' { Set-ProgressStep 1 } '어비스' { Set-ProgressStep 2 } '던전' { Set-ProgressStep 3 } '입장' { Set-ProgressStep 4 } '상태 기준' { Set-ProgressStep 5 } '완료 확인' { Set-ProgressStep 8 } '나가기' { Set-ProgressStep 9 } default { } } }
 function Handle-FileDrop([string]$Slot, $Data) { $paths = $Data.GetData([System.Windows.Forms.DataFormats]::FileDrop); if ($paths -and $paths.Length -gt 0) { Select-Slot $Slot; Assign-ImageFileToSlot $Slot $paths[0]; Refresh-Slots; $statusLabel.Text = (Get-SlotStatusName $Slot) + ' 슬롯에 이미지 파일을 연결했습니다.' } }
 function Add-DropHandlers($Control, [string]$Slot) { $Control.AllowDrop = $true; $Control.Add_DragEnter({ if ($_.Data.GetDataPresent([System.Windows.Forms.DataFormats]::FileDrop)) { $_.Effect = [System.Windows.Forms.DragDropEffects]::Copy } }.GetNewClosure()); $Control.Add_DragDrop({ Handle-FileDrop $Slot $_.Data }.GetNewClosure()) }
@@ -3584,7 +3610,7 @@ function New-SlotPreviewCard([string]$CardSlot) {
     }
 
     $label = New-Object System.Windows.Forms.Label
-    $label.Text = $CardSlot
+    $label.Text = (Get-SlotDisplayName $CardSlot)
     $label.TextAlign = 'MiddleCenter'
     $label.Width = 62
     $label.Height = 18
@@ -3636,16 +3662,16 @@ function Refresh-Slots {
         }
         $panel.Controls.Clear()
     }
-    foreach ($slot in $script:SpecialSlots + $script:RouteSlots + $script:CombatSlots) {
-        $cardSlot = [string]$slot
-        $card = New-SlotPreviewCard $cardSlot
-        if ($script:SpecialSlots -contains $cardSlot) {
-            $specialSlotPanel.Controls.Add($card, ([array]::IndexOf($script:SpecialSlots, $cardSlot)), 0)
-        } elseif ($script:RouteSlots -contains $cardSlot) {
-            $routeSlotPanel.Controls.Add($card, ([array]::IndexOf($script:RouteSlots, $cardSlot)), 0)
-        } else {
-            $combatSlotPanel.Controls.Add($card, ([array]::IndexOf($script:CombatSlots, $cardSlot)), 0)
-        }
+    foreach ($slot in $script:SpecialSlots) {
+        $specialSlotPanel.Controls.Add((New-SlotPreviewCard $slot), ([array]::IndexOf($script:SpecialSlots, $slot)), 0)
+    }
+    foreach ($slot in $script:RouteSlots) {
+        $idx = [array]::IndexOf($script:RouteSlots, $slot)
+        $routeSlotPanel.Controls.Add((New-SlotPreviewCard $slot), $idx, 0)
+        $caveSlotPanel.Controls.Add((New-SlotPreviewCard (Get-DungeonRouteSlotKey '광기의 동굴' $slot)), $idx, 0)
+    }
+    foreach ($slot in $script:CombatSlots) {
+        $combatSlotPanel.Controls.Add((New-SlotPreviewCard $slot), ([array]::IndexOf($script:CombatSlots, $slot)), 0)
     }
 }
 function Add-SlotRegionOnly { $screen = $screens[$monitorBox.SelectedIndex]; $script:LastCaptureMessage = ''; Save-SlotRegionOnly $script:SelectedSlot $screen; Refresh-Slots; if (-not [string]::IsNullOrWhiteSpace($script:LastCaptureMessage)) { $statusLabel.Text = $script:LastCaptureMessage } else { $statusLabel.Text = $script:SelectedSlot + ' 영역 지정이 취소되었습니다.' } }
