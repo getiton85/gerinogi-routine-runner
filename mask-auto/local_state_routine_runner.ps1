@@ -222,7 +222,7 @@ $script:RoutineTracePath = Join-Path $script:UserDataRoot 'routine_trace_log.csv
 $script:CrashLogPath = Join-Path $script:UserDataRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $script:UserDataRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $script:UserDataRoot 'reports'
-$script:AppVersion = '1.0.57'
+$script:AppVersion = '1.0.58'
 $script:PendingCompleteSeen = 0
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
@@ -1880,11 +1880,7 @@ function Test-CompleteAllowed {
     return $true
 }
 function Test-CompleteVisualCandidateAllowed {
-    if (Test-CompleteAllowed) { return $true }
-    if (-not (Test-CompleteWaitElapsed)) { return $false }
-    if ($script:CombatMarkerSeen) { return $true }
-    if ($script:BossSkipSeen) { return $true }
-    return $false
+    return (Test-CompleteAllowed)
 }
 function Test-CompleteRecoveryScanAllowed([string]$Stage) {
     if (Test-CompleteAllowed) { return $true }
@@ -2112,7 +2108,14 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
         } else {
             Write-RoutineTrace $script:CurrentCycle 'stage-scan' '스킵' 'missing-sample-inside' ([System.Drawing.Rectangle]::Empty) $stateNote
         }
-        if ($stateRect.IsEmpty -and (Test-SpecialSlotEnabled '협동') -and (Get-SlotSamplePaths '협동').Count -gt 0) {
+        if ($stateRect.IsEmpty) {
+            $insideBusyRect = Find-EntryBusyGuard $Screen
+            if (-not $insideBusyRect.IsEmpty) {
+                $script:PendingCompleteSeen = 0
+                Write-RoutineTrace $script:CurrentCycle 'stage-scan' '입장_전투중' 'internal-entry-busy-recovery' $insideBusyRect 'inside stage lost state marker on entry combat screen; restore with ESC'
+                return [pscustomobject]@{ Slot = '입장_전투중'; Rect = $insideBusyRect; Stage = $Stage }
+            }
+        }        if ($stateRect.IsEmpty -and (Test-SpecialSlotEnabled '협동') -and (Get-SlotSamplePaths '협동').Count -gt 0) {
             $coopInsideRect = Find-ValidSlotOnce '협동' $Screen $true
             if (-not $coopInsideRect.IsEmpty) {
                 Write-RoutineTrace $script:CurrentCycle 'stage-scan' '협동' 'candidate-inside-recovery' $coopInsideRect 'state marker not visible; coop prompt visible during inside stage'
@@ -2158,7 +2161,7 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
                     return $null
                 }
                 $script:PendingCompleteSeen = 0
-                Write-RoutineTrace $script:CurrentCycle 'stage-scan' '완료 확인' 'candidate-blocked-by-gate' $completeRect ($stateNote + '; visual-confirmed; ' + (Get-CompleteGateDetail))
+                Write-RoutineTrace $script:CurrentCycle 'stage-scan' '완료 확인' 'candidate-blocked-by-strict-gate' $completeRect ($stateNote + '; visual-confirmed; ' + (Get-CompleteGateDetail))
             } elseif (-not (Test-CompleteRecoveryScanAllowed $Stage)) {
                 Write-RoutineTrace $script:CurrentCycle 'stage-scan' '완료 확인' 'blocked-by-gate' ([System.Drawing.Rectangle]::Empty) (Get-CompleteGateDetail)
             }
@@ -2213,7 +2216,7 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
                     return $null
                 }
                 $script:PendingCompleteSeen = 0
-                Write-RoutineTrace $script:CurrentCycle 'stage-scan' '완료 확인' 'recovery-candidate-blocked-by-gate' $recoveryCompleteRect ('expected=' + $expectedSlot + '; stage=' + $Stage + '; visual-confirmed; ' + (Get-CompleteGateDetail))
+                Write-RoutineTrace $script:CurrentCycle 'stage-scan' '완료 확인' 'recovery-candidate-blocked-by-strict-gate' $recoveryCompleteRect ('expected=' + $expectedSlot + '; stage=' + $Stage + '; visual-confirmed; ' + (Get-CompleteGateDetail))
             } elseif (-not (Test-CompleteRecoveryScanAllowed $Stage)) {
                 Write-RoutineTrace $script:CurrentCycle 'stage-scan' '완료 확인' 'recovery-blocked-by-gate' ([System.Drawing.Rectangle]::Empty) ('expected=' + $expectedSlot + '; stage=' + $Stage + '; ' + (Get-CompleteGateDetail))
             }

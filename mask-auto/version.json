@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "1.0.57",
+    "version":  "1.0.58",
     "update_mode":  "package",
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.57_entry_busy_escape_complete_gate.zip",
-                    "sha256":  "7d9baf53337282084ed9eeb92f89e60ce51b4c6122e1077ef034aab1e00ef509",
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.58_internal_flow_guard.zip",
+                    "sha256":  "6b32771a679faee44b0945a3ada1fe5429293b1e2fc1bffa3811bc8eed6878f7",
                     "files":  [
                                   "local_state_routine_runner.ps1",
                                   "state_samples",
@@ -15,11 +15,11 @@
     "installer":  {
                       "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/installers/%EB%A7%88%EC%8A%A4%ED%81%AC%ED%85%8C%EC%8A%A4%ED%8A%B8%20%EC%84%A4%EC%B9%98_1.0.48.exe",
                       "sha256":  "63938056a1dec9d38e8ad3fbf0c5db791dd8ba412bd7cd9cc84dfebde1135636",
-                      "file":  "留덉뒪?ы뀒?ㅽ듃 ?ㅼ튂_1.0.48.exe"
+                      "file":  "마스크테스트 설치_1.0.48.exe"
                   },
     "notes":  [
-                  "?낆옣 ?붾㈃?먯꽌 ?꾪닾 以?媛먯? ??ESC ??踰덉쑝濡??꾪닾 ?붾㈃ 蹂듦뎄",
-                  "?꾨즺 ?뺤씤? 2???곗냽 ?덉젙 媛먯? ?꾩뿉留??대┃",
-                  "?곹깭 湲곗? 媛먯? 以묒뿉???꾨즺/?섍?湲??몃? 猷⑦떞 李⑤떒 ?좎?"
+                  "자동1 내부 단계 완료 판정을 Test-CompleteAllowed로 통일",
+                  "스킵 후 상태 기준 재확인 전 완료 확인 진입 차단",
+                  "내부 단계에서 전투 중 입장 화면 재감지 시 ESC 복구"
               ]
 }
