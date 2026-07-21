@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "1.0.62",
+    "version":  "1.0.64",
     "update_mode":  "package",
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.62_dungeon_toggle_split.zip",
-                    "sha256":  "f2ff78d50194657cd3a7df976613a58877dc375eae9c823f69f833a3494ad33b",
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.64_special_toggle_persist.zip",
+                    "sha256":  "36d7d065e73e0538400a53e4b4622240d060b4bba2474c278cc8231528ea1e32",
                     "files":  [
                                   "local_state_routine_runner.ps1",
                                   "state_samples",
@@ -16,9 +16,10 @@
                       "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/mask install 1.0.48.exe",
                       "version":  "1.0.48"
                   },
+    "required_reinstall":  false,
     "notes":  [
-                  "자동1 던전 루틴 ON 상태를 허상의 정박지와 광기의 동굴로 분리",
-                  "광기의 동굴 ON 체크 버튼 추가",
-                  "두 던전 루틴이 동시에 자동 활성화되지 않도록 토글 상태 분리"
+                  "Auto1 persists cooperation ON/OFF setting.",
+                  "Auto1 blocks cooperation global-priority clicks when cooperation is disabled.",
+                  "Existing mask routine and samples are preserved."
               ]
 }

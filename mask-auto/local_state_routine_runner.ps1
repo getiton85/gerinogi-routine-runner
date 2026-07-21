@@ -227,7 +227,7 @@ $script:RoutineTracePath = Join-Path $script:UserDataRoot 'routine_trace_log.csv
 $script:CrashLogPath = Join-Path $script:UserDataRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $script:UserDataRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $script:UserDataRoot 'reports'
-$script:AppVersion = '1.0.62'
+$script:AppVersion = '1.0.64'
 $script:PendingCompleteSeen = 0
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
@@ -2647,6 +2647,9 @@ function Save-UserSettings {
                 harbor = [bool](Test-DungeonRoutineEnabled '허상의 정박지')
                 cave = [bool](Test-DungeonRoutineEnabled '광기의 동굴')
             }
+            special_enabled = [ordered]@{
+                coop = [bool](Test-SpecialSlotEnabled '협동')
+            }
             combat_enabled = $combatEnabled
             ultimate_profile_index = [int]$script:SelectedUltimateProfileIndex
             ultimate_profiles = $ultimateProfiles
@@ -2706,7 +2709,22 @@ function Load-UserSettings {
             $script:DungeonRoutineEnabled['허상의 정박지'] = [bool]$script:HarborEnabled
             $script:DungeonRoutineEnabled['광기의 동굴'] = $false
         }
+        if ($settings.special_enabled) {
+
+            $coopProp = $settings.special_enabled.PSObject.Properties['coop']
+
+            if ($null -ne $coopProp) {
+
+                $script:SpecialSlotEnabled['협동'] = [bool]$coopProp.Value
+
+                if ($script:SpecialSlotChecks.ContainsKey('협동')) { $script:SpecialSlotChecks['협동'].Checked = [bool]$coopProp.Value }
+
+            }
+
+        }
+
         if ($settings.combat_enabled) {
+
             foreach ($slot in $script:CombatSlots) {
                 $prop = $settings.combat_enabled.PSObject.Properties[$slot]
                 if ($null -ne $prop) { $script:CombatSlotEnabled[$slot] = [bool]$prop.Value }
@@ -2763,7 +2781,8 @@ function Get-UpdateManifestUrl {
 }
 function Ensure-UpdateManifestUrlFile {
     if (-not [System.IO.File]::Exists($script:UpdateManifestPath)) {
-        [System.IO.File]::WriteAllText($script:UpdateManifestPath, "GitHub version.json raw URL을 여기에 붙여넣으세요.`r`n", [System.Text.Encoding]::UTF8)
+        [System.IO.File]::WriteAllText($script:UpdateManifestPath, "GitHub version.json raw URL을 여기에 붙여넣으세요.
+", [System.Text.Encoding]::UTF8)
     }
 }
 function Get-RemoteText([string]$Url) {
@@ -3112,11 +3131,12 @@ $questProfileBox = New-Object System.Windows.Forms.ComboBox; $questProfileBox.Dr
 $slotSelectGroup.Controls.Add($questProfileBox); $slotSelectGroup.Visible = $false; $gameTable.Controls.Add($slotSelectGroup, 0, 1)
 
 $slotPreviewGroup = New-Object System.Windows.Forms.GroupBox; $slotPreviewGroup.Text = '슬롯 분류'; $slotPreviewGroup.Dock = 'Fill'; $slotPreviewGroup.Padding = New-Object System.Windows.Forms.Padding(6)
-$slotPreviewTable = New-Object System.Windows.Forms.TableLayoutPanel; $slotPreviewTable.Dock = 'Fill'; $slotPreviewTable.ColumnCount = 1; $slotPreviewTable.RowCount = 4
+$slotPreviewTable = New-Object System.Windows.Forms.TableLayoutPanel; $slotPreviewTable.Dock = 'Fill'; $slotPreviewTable.ColumnCount = 1; $slotPreviewTable.RowCount = 5
 $slotPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 26))) | Out-Null
-$slotPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 96))) | Out-Null
-$slotPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 52))) | Out-Null
-$slotPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 48))) | Out-Null
+$slotPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 78))) | Out-Null
+$slotPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 118))) | Out-Null
+$slotPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 118))) | Out-Null
+$slotPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 150))) | Out-Null
 $slotPreviewToggleButton = New-Object System.Windows.Forms.Button; $slotPreviewToggleButton.Text = '접기'; $slotPreviewToggleButton.Dock = 'Right'; $slotPreviewToggleButton.Width = 66
 
 $specialPreviewGroup = New-Object System.Windows.Forms.GroupBox; $specialPreviewGroup.Text = [string](Get-UiValue 'labels.specialSlotPreview' '특수 카테고리'); $specialPreviewGroup.Dock = 'Fill'; $specialPreviewGroup.Padding = New-Object System.Windows.Forms.Padding(5)
@@ -3149,6 +3169,22 @@ $routeSlotPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.
 $routePreviewTable.Controls.Add($routeTogglePanel, 0, 0)
 $routePreviewTable.Controls.Add($routeSlotPanel, 0, 1)
 $routePreviewGroup.Controls.Add($routePreviewTable)
+$cavePreviewGroup = New-Object System.Windows.Forms.GroupBox; $cavePreviewGroup.Text = '광기의 동굴'; $cavePreviewGroup.Dock = 'Fill'; $cavePreviewGroup.Padding = New-Object System.Windows.Forms.Padding(5)
+$cavePreviewTable = New-Object System.Windows.Forms.TableLayoutPanel; $cavePreviewTable.Dock = 'Fill'; $cavePreviewTable.ColumnCount = 1; $cavePreviewTable.RowCount = 2
+$cavePreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 22))) | Out-Null
+$cavePreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
+$caveTogglePanel = New-Object System.Windows.Forms.TableLayoutPanel; $caveTogglePanel.Dock = 'Fill'; $caveTogglePanel.ColumnCount = 2; $caveTogglePanel.RowCount = 1
+$caveTogglePanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 50))) | Out-Null
+$caveTogglePanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 50))) | Out-Null
+$caveToggleSpacer = New-Object System.Windows.Forms.Label; $caveToggleSpacer.Text = ''; $caveToggleSpacer.Dock = 'Fill'
+$caveTogglePanel.Controls.Add($caveEnabledCheck, 0, 0)
+$caveTogglePanel.Controls.Add($caveToggleSpacer, 1, 0)
+$caveSlotPanel = New-Object System.Windows.Forms.TableLayoutPanel; $caveSlotPanel.Dock = 'Fill'; $caveSlotPanel.ColumnCount = 7; $caveSlotPanel.RowCount = 1; $caveSlotPanel.AutoScroll = $false; $caveSlotPanel.Padding = New-Object System.Windows.Forms.Padding(0)
+for ($si = 0; $si -lt 7; $si++) { $caveSlotPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 14.28))) | Out-Null }
+$caveSlotPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
+$cavePreviewTable.Controls.Add($caveTogglePanel, 0, 0)
+$cavePreviewTable.Controls.Add($caveSlotPanel, 0, 1)
+$cavePreviewGroup.Controls.Add($cavePreviewTable)
 
 $combatPreviewGroup = New-Object System.Windows.Forms.GroupBox; $combatPreviewGroup.Text = [string](Get-UiValue 'labels.combatSlotPreview' '전투관련 슬롯 미리보기'); $combatPreviewGroup.Dock = 'Fill'; $combatPreviewGroup.Padding = New-Object System.Windows.Forms.Padding(5)
 $combatPreviewTable = New-Object System.Windows.Forms.TableLayoutPanel; $combatPreviewTable.Dock = 'Fill'; $combatPreviewTable.ColumnCount = 1; $combatPreviewTable.RowCount = 3
@@ -3187,7 +3223,8 @@ $combatPreviewGroup.Controls.Add($combatPreviewTable)
 $slotPreviewTable.Controls.Add($slotPreviewToggleButton, 0, 0)
 $slotPreviewTable.Controls.Add($specialPreviewGroup, 0, 1)
 $slotPreviewTable.Controls.Add($routePreviewGroup, 0, 2)
-$slotPreviewTable.Controls.Add($combatPreviewGroup, 0, 3)
+$slotPreviewTable.Controls.Add($cavePreviewGroup, 0, 3)
+$slotPreviewTable.Controls.Add($combatPreviewGroup, 0, 4)
 $slotPreviewGroup.Controls.Add($slotPreviewTable); $gameTable.Controls.Add($slotPreviewGroup, 0, 2)
 
 $buttonPanel = New-Object System.Windows.Forms.TableLayoutPanel; $buttonPanel.Dock = 'Fill'; $buttonPanel.ColumnCount = 4; $buttonPanel.RowCount = 4
@@ -3592,7 +3629,7 @@ function New-SlotPreviewCard([string]$CardSlot) {
 }
 
 function Refresh-Slots {
-    foreach ($panel in @($specialSlotPanel, $routeSlotPanel, $combatSlotPanel)) {
+    foreach ($panel in @($specialSlotPanel, $routeSlotPanel, $caveSlotPanel, $combatSlotPanel)) {
         foreach ($control in @($panel.Controls)) {
             if ($control.Tag -is [System.Drawing.Image]) { $control.Tag.Dispose() }
             $control.Dispose()
@@ -3722,7 +3759,7 @@ $advancedToggleButton.Add_Click({ Toggle-AdvancedTools })
 $topMostCheck.Add_CheckedChanged({ $form.TopMost = $topMostCheck.Checked })
 $harborEnabledCheck.Add_CheckedChanged({ Set-DungeonRoutineToggle '허상의 정박지' ([bool]$harborEnabledCheck.Checked) })
 $caveEnabledCheck.Add_CheckedChanged({ Set-DungeonRoutineToggle '광기의 동굴' ([bool]$caveEnabledCheck.Checked) })
-$specialEnabledCheck.Add_CheckedChanged({ $script:SpecialSlotEnabled['협동'] = [bool]$specialEnabledCheck.Checked; Refresh-Slots })
+$specialEnabledCheck.Add_CheckedChanged({ $script:SpecialSlotEnabled['협동'] = [bool]$specialEnabledCheck.Checked; Save-UserSettings; Refresh-Slots })
 $ultimateProfileBox.Add_SelectedIndexChanged({
     if ($script:SuppressUltimateProfileEvents) { return }
     $previousUltimateProfileIndex = [int]$script:SelectedUltimateProfileIndex

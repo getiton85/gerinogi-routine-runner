@@ -1,16 +1,17 @@
 ﻿{
-    "version":  "1.0.92",
+    "version":  "1.0.93",
     "update_mode":  "package",
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/gerinogi_update_package_1.0.92_coop_ui_groups.zip",
-                    "sha256":  "5ce5923ca2f8e83ae3e77a751313f1c3e0933a9b48ed3783d48cfcdbd0550e2a",
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/gerinogi_update_package_1.0.93_dungeon_toggle_split.zip",
+                    "sha256":  "f387d69b97f16d679ee849c09e31bfd74ac01b6c06b08f193096e93f0f8cf672",
                     "files":  [
                                   "local_state_routine_runner.ps1"
                               ]
                 },
     "required_reinstall":  false,
     "notes":  [
-                  "Auto0 blocks coop coordinate fallback unless the coop image is actually matched.",
-                  "Auto0 adds the 광기의 동굴 slot preview group and separate fold controls for route/combat groups."
+                  "Auto0 separates Harbor and Cave routine ON states.",
+                  "Auto0 Cave routine checkbox no longer shares Harbor state.",
+                  "Only one dungeon routine can be enabled at a time."
               ]
 }

@@ -189,6 +189,11 @@ $script:CavePreviewCollapsed = $false
 $script:CombatPreviewCollapsed = $false
 $script:AdvancedToolsCollapsed = $true
 $script:HarborEnabled = $true
+$script:DungeonRoutineEnabled = @{
+    '허상의 정박지' = $true
+    '광기의 동굴' = $false
+}
+$script:SuppressDungeonRoutineToggleEvents = $false
 $script:CombatSlotEnabled = @{}
 foreach ($slot in $script:CombatSlots) { $script:CombatSlotEnabled[$slot] = $true }
 $script:Running = $false
@@ -225,7 +230,7 @@ $script:RoutineTracePath = Join-Path $script:UserDataRoot 'routine_trace_log.csv
 $script:CrashLogPath = Join-Path $script:UserDataRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $script:UserDataRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $script:UserDataRoot 'reports'
-$script:AppVersion = '1.0.92'
+$script:AppVersion = '1.0.93'
 $script:PendingCompleteSeen = 0
 $script:DiagnosticFailureCount = 0
 $script:DiagnosticDisabledUntil = [DateTime]::MinValue
@@ -2023,6 +2028,18 @@ function Test-HarborEnabled {
     try { if ($harborEnabledCheck) { return [bool]$harborEnabledCheck.Checked } } catch { }
     return [bool]$script:HarborEnabled
 }
+function Test-DungeonRoutineEnabled([string]$Name) {
+    try {
+        if ($Name -eq '허상의 정박지' -and $harborEnabledCheck) { return [bool]$harborEnabledCheck.Checked }
+        if ($Name -eq '광기의 동굴' -and $caveEnabledCheck) { return [bool]$caveEnabledCheck.Checked }
+    } catch { }
+    if ($script:DungeonRoutineEnabled.ContainsKey($Name)) { return [bool]$script:DungeonRoutineEnabled[$Name] }
+    return $false
+}
+
+function Test-AnyDungeonRoutineEnabled {
+    return ((Test-DungeonRoutineEnabled '허상의 정박지') -or (Test-DungeonRoutineEnabled '광기의 동굴'))
+}
 
 function Test-CombatSlotEnabled([string]$Slot) {
     if (-not ($script:CombatSlots -contains $Slot)) { return $true }
@@ -2048,7 +2065,7 @@ function Test-SpecialSlotEnabled([string]$Slot) {
 
 function Test-SlotEnabled([string]$Slot) {
     if ($script:SpecialSlots -contains $Slot) { return (Test-SpecialSlotEnabled $Slot) }
-    if ($script:RouteSlots -contains $Slot) { return (Test-HarborEnabled) }
+    if ($script:RouteSlots -contains $Slot) { return (Test-AnyDungeonRoutineEnabled) }
     if ($script:CombatSlots -contains $Slot) { return (Test-CombatSlotEnabled $Slot) }
     return $true
 }
@@ -2126,7 +2143,11 @@ function Save-UserSettings {
             target_title = $titleBox.Text
             monitor_index = [int]$monitorBox.SelectedIndex
             selected_slot = [string]$script:SelectedSlot
-            harbor_enabled = [bool](Test-HarborEnabled)
+            harbor_enabled = [bool](Test-DungeonRoutineEnabled '허상의 정박지')
+            dungeon_routine_enabled = [ordered]@{
+                harbor = [bool](Test-DungeonRoutineEnabled '허상의 정박지')
+                cave = [bool](Test-DungeonRoutineEnabled '광기의 동굴')
+            }
             special_enabled = $specialEnabled
             combat_enabled = $combatEnabled
             ultimate_profile_index = [int]$script:SelectedUltimateProfileIndex
@@ -2176,7 +2197,17 @@ function Load-UserSettings {
         $settings = Get-Content -LiteralPath $script:UserSettingsPath -Raw -Encoding UTF8 | ConvertFrom-Json
         if ($settings.target_title) { $titleBox.Text = [string]$settings.target_title }
         Set-ComboIndexSafe $monitorBox $settings.monitor_index
-        if ($null -ne $settings.harbor_enabled) { $script:HarborEnabled = [bool]$settings.harbor_enabled }
+        if ($settings.dungeon_routine_enabled) {
+            $harborProp = $settings.dungeon_routine_enabled.PSObject.Properties['harbor']
+            $caveProp = $settings.dungeon_routine_enabled.PSObject.Properties['cave']
+            if ($null -ne $harborProp) { $script:DungeonRoutineEnabled['허상의 정박지'] = [bool]$harborProp.Value }
+            if ($null -ne $caveProp) { $script:DungeonRoutineEnabled['광기의 동굴'] = [bool]$caveProp.Value }
+            $script:HarborEnabled = [bool]$script:DungeonRoutineEnabled['허상의 정박지']
+        } elseif ($null -ne $settings.harbor_enabled) {
+            $script:HarborEnabled = [bool]$settings.harbor_enabled
+            $script:DungeonRoutineEnabled['허상의 정박지'] = [bool]$script:HarborEnabled
+            $script:DungeonRoutineEnabled['광기의 동굴'] = $false
+        }
         if ($settings.special_enabled) {
             foreach ($slot in $script:SpecialSlots) {
                 $prop = $settings.special_enabled.PSObject.Properties[$slot]
@@ -2640,9 +2671,9 @@ $cavePreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([Syste
 $caveHeaderPanel = New-Object System.Windows.Forms.TableLayoutPanel; $caveHeaderPanel.Dock = 'Fill'; $caveHeaderPanel.ColumnCount = 2; $caveHeaderPanel.RowCount = 1
 $caveHeaderPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
 $caveHeaderPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Absolute, 66))) | Out-Null
-$caveInfoLabel = New-Object System.Windows.Forms.Label; $caveInfoLabel.Text = '같은 슬롯 구조'; $caveInfoLabel.Dock = 'Fill'; $caveInfoLabel.TextAlign = 'MiddleLeft'; $caveInfoLabel.Font = New-Object System.Drawing.Font($uiFontName, 7)
+$caveEnabledCheck = New-Object System.Windows.Forms.CheckBox; $caveEnabledCheck.Text = 'ON'; $caveEnabledCheck.Checked = $false; $caveEnabledCheck.Dock = 'Left'
 $cavePreviewFoldButton = New-Object System.Windows.Forms.Button; $cavePreviewFoldButton.Text = '접기'; $cavePreviewFoldButton.Dock = 'Fill'
-$caveHeaderPanel.Controls.Add($caveInfoLabel, 0, 0)
+$caveHeaderPanel.Controls.Add($caveEnabledCheck, 0, 0)
 $caveHeaderPanel.Controls.Add($cavePreviewFoldButton, 1, 0)
 $caveSlotPanel = New-Object System.Windows.Forms.TableLayoutPanel; $caveSlotPanel.Dock = 'Fill'; $caveSlotPanel.ColumnCount = 7; $caveSlotPanel.RowCount = 1; $caveSlotPanel.AutoScroll = $false; $caveSlotPanel.Padding = New-Object System.Windows.Forms.Padding(0)
 for ($si = 0; $si -lt 7; $si++) { $caveSlotPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 14.28))) | Out-Null }
@@ -3011,7 +3042,11 @@ function Bring-MainWindowToFront {
     } catch { }
 }
 function Apply-RoutineToggleStates {
-    try { if ($harborEnabledCheck) { $harborEnabledCheck.Checked = [bool]$script:HarborEnabled } } catch { }
+    try {
+        $script:SuppressDungeonRoutineToggleEvents = $true
+        if ($harborEnabledCheck) { $harborEnabledCheck.Checked = [bool]$script:DungeonRoutineEnabled['허상의 정박지'] }
+        if ($caveEnabledCheck) { $caveEnabledCheck.Checked = [bool]$script:DungeonRoutineEnabled['광기의 동굴'] }
+    } catch { } finally { $script:SuppressDungeonRoutineToggleEvents = $false }
     try {
         foreach ($slot in $script:SpecialSlots) {
             if ($script:SpecialSlotChecks.ContainsKey($slot)) {
@@ -3026,6 +3061,22 @@ function Apply-RoutineToggleStates {
             }
         }
     } catch { }
+}
+function Set-DungeonRoutineToggle([string]$Name, [bool]$Enabled) {
+    if ($script:SuppressDungeonRoutineToggleEvents) { return }
+    $script:DungeonRoutineEnabled[$Name] = $Enabled
+    if ($Name -eq '허상의 정박지') { $script:HarborEnabled = $Enabled }
+    if ($Enabled) {
+        $other = if ($Name -eq '허상의 정박지') { '광기의 동굴' } else { '허상의 정박지' }
+        $script:DungeonRoutineEnabled[$other] = $false
+        if ($other -eq '허상의 정박지') { $script:HarborEnabled = $false }
+        try {
+            $script:SuppressDungeonRoutineToggleEvents = $true
+            if ($other -eq '허상의 정박지' -and $harborEnabledCheck) { $harborEnabledCheck.Checked = $false }
+            if ($other -eq '광기의 동굴' -and $caveEnabledCheck) { $caveEnabledCheck.Checked = $false }
+        } finally { $script:SuppressDungeonRoutineToggleEvents = $false }
+    }
+    Refresh-Slots
 }
 function Select-Slot([string]$Slot) { $script:SelectedSlot = $Slot; if ($slotBox.SelectedItem -ne $Slot) { $slotBox.SelectedItem = $Slot }; Refresh-Slots }
 function Mark-ActiveSlot([string]$Slot) { $script:ActiveSlot = $Slot; switch ($Slot) { '메뉴' { Set-ProgressStep 1 } '어비스' { Set-ProgressStep 2 } '던전' { Set-ProgressStep 3 } '입장' { Set-ProgressStep 4 } '상태 기준' { Set-ProgressStep 5 } '완료 확인' { Set-ProgressStep 8 } '나가기' { Set-ProgressStep 9 } default { } } }
@@ -3168,7 +3219,8 @@ $updateButton.Add_Click({ Invoke-AppUpdateCheck $false })
 $exitButton.Add_Click({ $script:StopRequested = $true; $form.Close() })
 $advancedToggleButton.Add_Click({ Toggle-AdvancedTools })
 $topMostCheck.Add_CheckedChanged({ $form.TopMost = $topMostCheck.Checked })
-$harborEnabledCheck.Add_CheckedChanged({ $script:HarborEnabled = [bool]$harborEnabledCheck.Checked; Refresh-Slots })
+$harborEnabledCheck.Add_CheckedChanged({ Set-DungeonRoutineToggle '허상의 정박지' ([bool]$harborEnabledCheck.Checked) })
+$caveEnabledCheck.Add_CheckedChanged({ Set-DungeonRoutineToggle '광기의 동굴' ([bool]$caveEnabledCheck.Checked) })
 $specialEnabledCheck.Add_CheckedChanged({ $script:SpecialSlotEnabled['협동'] = [bool]$specialEnabledCheck.Checked; Refresh-Slots })
 $ultimateProfileBox.Add_SelectionChangeCommitted({
     Save-SelectedUltimateProfileFromControls
