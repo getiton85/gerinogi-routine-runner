@@ -222,7 +222,7 @@ $script:RoutineTracePath = Join-Path $script:UserDataRoot 'routine_trace_log.csv
 $script:CrashLogPath = Join-Path $script:UserDataRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $script:UserDataRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $script:UserDataRoot 'reports'
-$script:AppVersion = '1.0.59'
+$script:AppVersion = '1.0.60'
 $script:PendingCompleteSeen = 0
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
@@ -1786,6 +1786,67 @@ function Get-SlotSearchBounds([string]$Slot, [System.Windows.Forms.Screen]$Scree
     }
     return $bounds
 }
+function Get-RectangleLightProbe([System.Drawing.Rectangle]$Rect) {
+    if ($Rect.IsEmpty -or $Rect.Width -le 0 -or $Rect.Height -le 0) {
+        return [pscustomobject]@{ Avg = 0.0; BrightRatio = 0.0; Samples = 0; IsDark = $true }
+    }
+    $bmp = $null
+    $g = $null
+    try {
+        $bmp = New-Object System.Drawing.Bitmap($Rect.Width, $Rect.Height)
+        $g = [System.Drawing.Graphics]::FromImage($bmp)
+        $g.CopyFromScreen($Rect.Left, $Rect.Top, 0, 0, $Rect.Size)
+        $stepX = [Math]::Max(1, [int]($Rect.Width / 24))
+        $stepY = [Math]::Max(1, [int]($Rect.Height / 12))
+        $sum = 0.0
+        $bright = 0
+        $count = 0
+        for ($y = 0; $y -lt $Rect.Height; $y += $stepY) {
+            for ($x = 0; $x -lt $Rect.Width; $x += $stepX) {
+                $c = $bmp.GetPixel($x, $y)
+                $luma = (0.2126 * $c.R) + (0.7152 * $c.G) + (0.0722 * $c.B)
+                $sum += $luma
+                if ($luma -ge 70) { $bright++ }
+                $count++
+            }
+        }
+        if ($count -le 0) {
+            return [pscustomobject]@{ Avg = 0.0; BrightRatio = 0.0; Samples = 0; IsDark = $true }
+        }
+        $avg = $sum / $count
+        $ratio = $bright / $count
+        return [pscustomobject]@{
+            Avg = [Math]::Round($avg, 2)
+            BrightRatio = [Math]::Round($ratio, 4)
+            Samples = $count
+            IsDark = (($avg -lt 42) -and ($ratio -lt 0.015))
+        }
+    } catch {
+        return [pscustomobject]@{ Avg = 255.0; BrightRatio = 1.0; Samples = 0; IsDark = $false }
+    } finally {
+        if ($null -ne $g) { $g.Dispose() }
+        if ($null -ne $bmp) { $bmp.Dispose() }
+    }
+}
+function Test-InternalTransitionFrame([System.Windows.Forms.Screen]$Screen) {
+    $slots = @('상태 기준','협동','완료 확인')
+    $probes = New-Object System.Collections.Generic.List[string]
+    $checked = 0
+    $dark = 0
+    foreach ($slot in $slots) {
+        $bounds = Get-SlotSearchBounds $slot $Screen
+        if ($bounds.IsEmpty) { continue }
+        $probe = Get-RectangleLightProbe $bounds
+        $checked++
+        if ($probe.IsDark) { $dark++ }
+        $probes.Add(('{0}:avg={1},bright={2},dark={3}' -f $slot, $probe.Avg, $probe.BrightRatio, $probe.IsDark))
+    }
+    if ($checked -eq 3 -and $dark -eq $checked) {
+        Write-RoutineTrace $script:CurrentCycle 'stage-scan' '__전환대기' 'dark-transition-wait' ([System.Drawing.Rectangle]::Empty) ($probes -join '; ')
+        return $true
+    }
+    return $false
+}
 function Find-Slot([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
     if (-not (Test-SlotEnabled $Slot)) {
         Write-RoutineTrace $script:CurrentCycle 'vision' $Slot 'disabled' ([System.Drawing.Rectangle]::Empty) 'slot disabled'
@@ -1934,7 +1995,7 @@ function Find-ValidSlotOnce([string]$Slot, [System.Windows.Forms.Screen]$Screen,
             return $fallbackRect
         }
         if ($null -ne $point) {
-            Write-RoutineTrace $script:CurrentCycle 'single-find' $Slot 'image-miss-no-fallback' ([System.Drawing.Rectangle]::Empty) 'saved point missing, disallowed, or outside slot region'
+            Write-RoutineTrace $script:CurrentCycle 'single-find' $Slot 'image-miss-no-fallback' ([System.Drawing.Rectangle]::Empty) 'image miss; coordinate fallback disabled for this slot or point unavailable'
         }
         return [System.Drawing.Rectangle]::Empty
     }
@@ -2038,6 +2099,7 @@ function Invoke-FoodButtonIfVisible([System.Windows.Forms.Screen]$Screen, [Syste
 }
 function Get-NextRoutineStage([string]$Slot) {
     switch ($Slot) {
+        '__전환대기' { return '내부' }
         '협동' { return '메뉴확인' }
         '메뉴' { return '어비스' }
         '어비스' { return '던전' }
@@ -2060,7 +2122,7 @@ function Get-NextRoutineStage([string]$Slot) {
 }
 function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$Stage) {
     if ([string]::IsNullOrWhiteSpace($Stage)) { $Stage = '메뉴' }
-    if ($Stage -ne '협동' -and (Test-SpecialSlotEnabled '협동') -and (Get-SlotSamplePaths '협동').Count -gt 0) {
+    if ($Stage -ne '협동' -and $Stage -ne '내부' -and (Test-SpecialSlotEnabled '협동') -and (Get-SlotSamplePaths '협동').Count -gt 0) {
         $globalCoopRect = Find-ValidSlotOnce '협동' $Screen $true
         if (-not $globalCoopRect.IsEmpty) {
             Write-RoutineTrace $script:CurrentCycle 'stage-scan' '협동' 'candidate-global-priority' $globalCoopRect ('stage=' + $Stage + '; special prompt blocks current route')
@@ -2123,6 +2185,9 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
                 return [pscustomobject]@{ Slot = '협동'; Rect = $coopInsideRect; Stage = $Stage }
             }
             Write-RoutineTrace $script:CurrentCycle 'stage-scan' '협동' 'miss-inside-recovery' ([System.Drawing.Rectangle]::Empty) 'state marker not visible; coop prompt not visible'
+        }
+        if ($stateRect.IsEmpty -and (Test-InternalTransitionFrame $Screen)) {
+            return [pscustomobject]@{ Slot = '__전환대기'; Rect = [System.Drawing.Rectangle]::Empty; Stage = $Stage }
         }
         if ($stateRect.IsEmpty) {
             Write-RoutineTrace $script:CurrentCycle 'stage-scan' '전투슬롯' 'blocked-state-missing' ([System.Drawing.Rectangle]::Empty) 'state marker not visible; skip food/ultimate/paladin'
@@ -2228,7 +2293,8 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
 }
 function Get-StateActionSettleMs([string]$Slot) {
     switch ($Slot) {
-        '협동' { return 120 }
+        '__전환대기' { return 800 }
+        '협동' { return 600 }
         '메뉴' { return 900 }
         '어비스' { return 900 }
         '던전' { return 900 }
@@ -2254,6 +2320,13 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
     $nextStage = Get-NextRoutineStage $slot
     Mark-ActiveSlot $slot
     switch ($slot) {
+        '__전환대기' {
+            $StatusLabel.Text = '전환 화면 대기: 클릭하지 않고 재감시'
+            [System.Windows.Forms.Application]::DoEvents()
+            Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'wait-no-click' $rect 'dark transition frame; keep inside stage'
+            Wait-StateActionSettle $slot
+            return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = '전환 대기'; NextStage = $nextStage }
+        }
         '__협동없음' {
             $StatusLabel.Text = '협동 없음: 메뉴 단계로 이동'
             [System.Windows.Forms.Application]::DoEvents()

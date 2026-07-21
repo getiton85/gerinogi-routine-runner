@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "1.0.59",
+    "version":  "1.0.60",
     "update_mode":  "package",
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.59_complete_gate_fix.zip",
-                    "sha256":  "1aa112de6881d74109657d8080bbd55a34de22711986fa66cc7c3b4a28e1bcd1",
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.60_transition_wait_guard.zip",
+                    "sha256":  "fd518e51efa6ec7c2ffa05c45c1de51cb6705c6c6467f8b578d18bdb787362b1",
                     "files":  [
                                   "local_state_routine_runner.ps1",
                                   "state_samples",
@@ -17,8 +17,8 @@
                       "version":  "1.0.48"
                   },
     "notes":  [
-                  "자동1 완료 확인 시각 후보가 2회 안정 매칭되면 30초 이후 완료대기로 진입",
-                  "상태 기준 미감지 시 대체 완료 게이트를 90초에서 60초로 단축",
-                  "이미지 매칭 실패 시 무작정 클릭하지 않는 기존 제한 유지"
+                  "자동1 내부 진행 중 어두운 전환 화면은 클릭하지 않고 재감시",
+                  "내부 단계에서 협동 전역 중복 검사를 막아 전환 중 상태 흔들림 감소",
+                  "협동 클릭 후 안정 대기 시간을 늘려 확인 화면 전환을 기다림"
               ]
 }

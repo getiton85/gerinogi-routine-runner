@@ -184,6 +184,9 @@ foreach ($slot in $script:Slots) { $script:Samples[$slot] = $null; $script:SlotP
 $script:SelectedSlot = '상태 기준'
 $script:ActiveSlot = ''
 $script:SlotPreviewCollapsed = $false
+$script:HarborPreviewCollapsed = $false
+$script:CavePreviewCollapsed = $false
+$script:CombatPreviewCollapsed = $false
 $script:AdvancedToolsCollapsed = $true
 $script:HarborEnabled = $true
 $script:CombatSlotEnabled = @{}
@@ -222,7 +225,7 @@ $script:RoutineTracePath = Join-Path $script:UserDataRoot 'routine_trace_log.csv
 $script:CrashLogPath = Join-Path $script:UserDataRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $script:UserDataRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $script:UserDataRoot 'reports'
-$script:AppVersion = '1.0.91'
+$script:AppVersion = '1.0.92'
 $script:PendingCompleteSeen = 0
 $script:DiagnosticFailureCount = 0
 $script:DiagnosticDisabledUntil = [DateTime]::MinValue
@@ -1387,7 +1390,8 @@ function Test-SlotRequiresRegion([string]$Slot) {
     return @('협동','메뉴','어비스','던전','입장','완료 확인','나가기','식사 버튼','궁극기','스킵','팔라딘') -contains $Slot
 }
 function Test-SlotAllowsCoordinateFallback([string]$Slot) {
-    return @('협동','메뉴','어비스','던전','입장') -contains $Slot
+    if ($script:SpecialSlots -contains $Slot) { return $false }
+    return (@($script:RouteSlots) | Select-Object -First 4) -contains $Slot
 }
 function Get-SlotRegionScreenRect([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
     $slotKey = Get-EffectiveSlotKey $Slot
