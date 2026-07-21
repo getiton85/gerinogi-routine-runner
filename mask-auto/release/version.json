@@ -1,17 +1,24 @@
 ﻿{
-    "version":  "1.0.38",
+    "version":  "1.0.62",
     "update_mode":  "package",
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.38_cleanup_fallback_guard.zip",
-                    "sha256":  "073cb28525cb9277c73a4463afc3cc4bf91e0dc814414fee8fabf0bbbb1c21f2",
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.62_dungeon_toggle_split.zip",
+                    "sha256":  "f2ff78d50194657cd3a7df976613a58877dc375eae9c823f69f833a3494ad33b",
                     "files":  [
                                   "local_state_routine_runner.ps1",
+                                  "state_samples",
+                                  "slot_points.csv",
+                                  "slot_regions.csv",
                                   "ui_config.json"
                               ]
                 },
+    "installer":  {
+                      "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/mask install 1.0.48.exe",
+                      "version":  "1.0.48"
+                  },
     "notes":  [
-                  "완료 확인/나가기 좌표 단독 보조 클릭 차단",
-                  "진단 이미지/보고서/백업 자동 정리 추가",
-                  "사용자별 좌표/영역/샘플 설정 파일은 업데이트 패키지에서 제외"
+                  "자동1 던전 루틴 ON 상태를 허상의 정박지와 광기의 동굴로 분리",
+                  "광기의 동굴 ON 체크 버튼 추가",
+                  "두 던전 루틴이 동시에 자동 활성화되지 않도록 토글 상태 분리"
               ]
 }

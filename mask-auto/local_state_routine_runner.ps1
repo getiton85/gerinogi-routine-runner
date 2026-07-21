@@ -186,6 +186,11 @@ $script:ActiveSlot = ''
 $script:SlotPreviewCollapsed = $false
 $script:AdvancedToolsCollapsed = $true
 $script:HarborEnabled = $true
+$script:DungeonRoutineEnabled = @{
+    '허상의 정박지' = $true
+    '광기의 동굴' = $false
+}
+$script:SuppressDungeonRoutineToggleEvents = $false
 $script:CombatSlotEnabled = @{}
 foreach ($slot in $script:CombatSlots) { $script:CombatSlotEnabled[$slot] = $true }
 $script:Running = $false
@@ -222,7 +227,7 @@ $script:RoutineTracePath = Join-Path $script:UserDataRoot 'routine_trace_log.csv
 $script:CrashLogPath = Join-Path $script:UserDataRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $script:UserDataRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $script:UserDataRoot 'reports'
-$script:AppVersion = '1.0.60'
+$script:AppVersion = '1.0.62'
 $script:PendingCompleteSeen = 0
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
@@ -2100,7 +2105,7 @@ function Invoke-FoodButtonIfVisible([System.Windows.Forms.Screen]$Screen, [Syste
 function Get-NextRoutineStage([string]$Slot) {
     switch ($Slot) {
         '__전환대기' { return '내부' }
-        '협동' { return '메뉴확인' }
+        '협동' { return '메뉴' }
         '메뉴' { return '어비스' }
         '어비스' { return '던전' }
         '던전' { return '입장' }
@@ -2122,13 +2127,6 @@ function Get-NextRoutineStage([string]$Slot) {
 }
 function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$Stage) {
     if ([string]::IsNullOrWhiteSpace($Stage)) { $Stage = '메뉴' }
-    if ($Stage -ne '협동' -and $Stage -ne '내부' -and (Test-SpecialSlotEnabled '협동') -and (Get-SlotSamplePaths '협동').Count -gt 0) {
-        $globalCoopRect = Find-ValidSlotOnce '협동' $Screen $true
-        if (-not $globalCoopRect.IsEmpty) {
-            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '협동' 'candidate-global-priority' $globalCoopRect ('stage=' + $Stage + '; special prompt blocks current route')
-            return [pscustomobject]@{ Slot = '협동'; Rect = $globalCoopRect; Stage = $Stage }
-        }
-    }
     if ($Stage -eq '협동') {
         if (-not (Test-SpecialSlotEnabled '협동') -or (Get-SlotSamplePaths '협동').Count -eq 0) {
             Write-RoutineTrace $script:CurrentCycle 'stage-scan' '협동' 'skip-special-after-loop' ([System.Drawing.Rectangle]::Empty) 'special disabled or missing sample; continue to menu'
@@ -2178,13 +2176,6 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
                 Write-RoutineTrace $script:CurrentCycle 'stage-scan' '입장_전투중' 'internal-entry-busy-recovery' $insideBusyRect 'inside stage lost state marker on entry combat screen; restore with ESC'
                 return [pscustomobject]@{ Slot = '입장_전투중'; Rect = $insideBusyRect; Stage = $Stage }
             }
-        }        if ($stateRect.IsEmpty -and (Test-SpecialSlotEnabled '협동') -and (Get-SlotSamplePaths '협동').Count -gt 0) {
-            $coopInsideRect = Find-ValidSlotOnce '협동' $Screen $true
-            if (-not $coopInsideRect.IsEmpty) {
-                Write-RoutineTrace $script:CurrentCycle 'stage-scan' '협동' 'candidate-inside-recovery' $coopInsideRect 'state marker not visible; coop prompt visible during inside stage'
-                return [pscustomobject]@{ Slot = '협동'; Rect = $coopInsideRect; Stage = $Stage }
-            }
-            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '협동' 'miss-inside-recovery' ([System.Drawing.Rectangle]::Empty) 'state marker not visible; coop prompt not visible'
         }
         if ($stateRect.IsEmpty -and (Test-InternalTransitionFrame $Screen)) {
             return [pscustomobject]@{ Slot = '__전환대기'; Rect = [System.Drawing.Rectangle]::Empty; Stage = $Stage }
@@ -2239,13 +2230,6 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
     if ($Stage -eq '메뉴확인') { $expectedSlot = '메뉴' }
     if ($Stage -eq '완료') { $expectedSlot = '완료 확인' }
     if ($Stage -eq '종료') { $expectedSlot = '나가기' }
-    if ($Stage -eq '메뉴확인' -and (Test-SpecialSlotEnabled '협동') -and (Get-SlotSamplePaths '협동').Count -gt 0) {
-        $stillCoopRect = Find-ValidSlotOnce '협동' $Screen $true
-        if (-not $stillCoopRect.IsEmpty) {
-            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '협동' 'still-visible-before-menu' $stillCoopRect 'stage=메뉴확인; coop prompt still visible; retry coop click'
-            return [pscustomobject]@{ Slot = '협동'; Rect = $stillCoopRect; Stage = $Stage }
-        }
-    }
     if ((Get-SlotSamplePaths $expectedSlot).Count -eq 0) {
         Write-RoutineTrace $script:CurrentCycle 'stage-scan' $expectedSlot 'missing-sample' ([System.Drawing.Rectangle]::Empty) ('stage=' + $Stage)
         return $null
@@ -2334,11 +2318,11 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
             return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = '협동 없음'; NextStage = $nextStage }
         }
         '협동' {
-            $StatusLabel.Text = '협동 감지: 클릭 후 메뉴 확인'
+            $StatusLabel.Text = '협동 감지: 클릭 후 메뉴 단계로 이동'
             [System.Windows.Forms.Application]::DoEvents()
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'click-before' $rect 'special pre-menu'
             [void](Click-SlotTarget $slot $rect 80 100)
-            Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'click-after' $rect 'next=메뉴확인'
+            Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'click-after' $rect 'next=메뉴'
             Wait-StateActionSettle $slot
             return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = '협동 클릭'; NextStage = $nextStage }
         }
@@ -2547,6 +2531,19 @@ function Test-HarborEnabled {
     return [bool]$script:HarborEnabled
 }
 
+function Test-DungeonRoutineEnabled([string]$Name) {
+    try {
+        if ($Name -eq '허상의 정박지' -and $harborEnabledCheck) { return [bool]$harborEnabledCheck.Checked }
+        if ($Name -eq '광기의 동굴' -and $caveEnabledCheck) { return [bool]$caveEnabledCheck.Checked }
+    } catch { }
+    if ($script:DungeonRoutineEnabled.ContainsKey($Name)) { return [bool]$script:DungeonRoutineEnabled[$Name] }
+    return $false
+}
+
+function Test-AnyDungeonRoutineEnabled {
+    return ((Test-DungeonRoutineEnabled '허상의 정박지') -or (Test-DungeonRoutineEnabled '광기의 동굴'))
+}
+
 function Test-CombatSlotEnabled([string]$Slot) {
     if (-not ($script:CombatSlots -contains $Slot)) { return $true }
     try {
@@ -2571,7 +2568,7 @@ function Test-SpecialSlotEnabled([string]$Slot) {
 
 function Test-SlotEnabled([string]$Slot) {
     if ($script:SpecialSlots -contains $Slot) { return (Test-SpecialSlotEnabled $Slot) }
-    if ($script:RouteSlots -contains $Slot) { return (Test-HarborEnabled) }
+    if ($script:RouteSlots -contains $Slot) { return (Test-AnyDungeonRoutineEnabled) }
     if ($script:CombatSlots -contains $Slot) { return (Test-CombatSlotEnabled $Slot) }
     return $true
 }
@@ -2646,6 +2643,10 @@ function Save-UserSettings {
             monitor_index = [int]$monitorBox.SelectedIndex
             selected_slot = [string]$script:SelectedSlot
             harbor_enabled = [bool](Test-HarborEnabled)
+            dungeon_routine_enabled = [ordered]@{
+                harbor = [bool](Test-DungeonRoutineEnabled '허상의 정박지')
+                cave = [bool](Test-DungeonRoutineEnabled '광기의 동굴')
+            }
             combat_enabled = $combatEnabled
             ultimate_profile_index = [int]$script:SelectedUltimateProfileIndex
             ultimate_profiles = $ultimateProfiles
@@ -2695,6 +2696,16 @@ function Load-UserSettings {
         if ($settings.target_title) { $titleBox.Text = [string]$settings.target_title }
         Set-ComboIndexSafe $monitorBox $settings.monitor_index
         if ($null -ne $settings.harbor_enabled) { $script:HarborEnabled = [bool]$settings.harbor_enabled }
+        if ($settings.dungeon_routine_enabled) {
+            $harborProp = $settings.dungeon_routine_enabled.PSObject.Properties['harbor']
+            $caveProp = $settings.dungeon_routine_enabled.PSObject.Properties['cave']
+            if ($null -ne $harborProp) { $script:DungeonRoutineEnabled['허상의 정박지'] = [bool]$harborProp.Value }
+            if ($null -ne $caveProp) { $script:DungeonRoutineEnabled['광기의 동굴'] = [bool]$caveProp.Value }
+            $script:HarborEnabled = [bool]$script:DungeonRoutineEnabled['허상의 정박지']
+        } else {
+            $script:DungeonRoutineEnabled['허상의 정박지'] = [bool]$script:HarborEnabled
+            $script:DungeonRoutineEnabled['광기의 동굴'] = $false
+        }
         if ($settings.combat_enabled) {
             foreach ($slot in $script:CombatSlots) {
                 $prop = $settings.combat_enabled.PSObject.Properties[$slot]
@@ -3125,11 +3136,17 @@ $routePreviewGroup = New-Object System.Windows.Forms.GroupBox; $routePreviewGrou
 $routePreviewTable = New-Object System.Windows.Forms.TableLayoutPanel; $routePreviewTable.Dock = 'Fill'; $routePreviewTable.ColumnCount = 1; $routePreviewTable.RowCount = 2
 $routePreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 22))) | Out-Null
 $routePreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
-$harborEnabledCheck = New-Object System.Windows.Forms.CheckBox; $harborEnabledCheck.Text = 'ON'; $harborEnabledCheck.Checked = $true; $harborEnabledCheck.Dock = 'Left'
+$routeTogglePanel = New-Object System.Windows.Forms.TableLayoutPanel; $routeTogglePanel.Dock = 'Fill'; $routeTogglePanel.ColumnCount = 2; $routeTogglePanel.RowCount = 1
+$routeTogglePanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 50))) | Out-Null
+$routeTogglePanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 50))) | Out-Null
+$harborEnabledCheck = New-Object System.Windows.Forms.CheckBox; $harborEnabledCheck.Text = '허상의 정박지 ON'; $harborEnabledCheck.Checked = $true; $harborEnabledCheck.Dock = 'Fill'; $harborEnabledCheck.Font = New-Object System.Drawing.Font($uiFontName, 7)
+$caveEnabledCheck = New-Object System.Windows.Forms.CheckBox; $caveEnabledCheck.Text = '광기의 동굴 ON'; $caveEnabledCheck.Checked = $false; $caveEnabledCheck.Dock = 'Fill'; $caveEnabledCheck.Font = New-Object System.Drawing.Font($uiFontName, 7)
+$routeTogglePanel.Controls.Add($harborEnabledCheck, 0, 0)
+$routeTogglePanel.Controls.Add($caveEnabledCheck, 1, 0)
 $routeSlotPanel = New-Object System.Windows.Forms.TableLayoutPanel; $routeSlotPanel.Dock = 'Fill'; $routeSlotPanel.ColumnCount = 7; $routeSlotPanel.RowCount = 1; $routeSlotPanel.AutoScroll = $false; $routeSlotPanel.Padding = New-Object System.Windows.Forms.Padding(0)
 for ($si = 0; $si -lt 7; $si++) { $routeSlotPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 14.28))) | Out-Null }
 $routeSlotPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
-$routePreviewTable.Controls.Add($harborEnabledCheck, 0, 0)
+$routePreviewTable.Controls.Add($routeTogglePanel, 0, 0)
 $routePreviewTable.Controls.Add($routeSlotPanel, 0, 1)
 $routePreviewGroup.Controls.Add($routePreviewTable)
 
@@ -3461,7 +3478,12 @@ function Bring-MainWindowToFront {
     } catch { }
 }
 function Apply-RoutineToggleStates {
-    try { if ($harborEnabledCheck) { $harborEnabledCheck.Checked = [bool]$script:HarborEnabled } } catch { }
+    try {
+        $script:SuppressDungeonRoutineToggleEvents = $true
+        if ($harborEnabledCheck) { $harborEnabledCheck.Checked = [bool]$script:DungeonRoutineEnabled['허상의 정박지'] }
+        if ($caveEnabledCheck) { $caveEnabledCheck.Checked = [bool]$script:DungeonRoutineEnabled['광기의 동굴'] }
+    } catch { }
+    finally { $script:SuppressDungeonRoutineToggleEvents = $false }
     try {
         foreach ($slot in $script:CombatSlots) {
             if ($script:CombatSlotChecks.ContainsKey($slot)) {
@@ -3469,6 +3491,24 @@ function Apply-RoutineToggleStates {
             }
         }
     } catch { }
+}
+
+function Set-DungeonRoutineToggle([string]$Name, [bool]$Enabled) {
+    if ($script:SuppressDungeonRoutineToggleEvents) { return }
+    $script:DungeonRoutineEnabled[$Name] = $Enabled
+    if ($Name -eq '허상의 정박지') { $script:HarborEnabled = $Enabled }
+    if ($Enabled) {
+        $other = if ($Name -eq '허상의 정박지') { '광기의 동굴' } else { '허상의 정박지' }
+        $script:DungeonRoutineEnabled[$other] = $false
+        if ($other -eq '허상의 정박지') { $script:HarborEnabled = $false }
+        try {
+            $script:SuppressDungeonRoutineToggleEvents = $true
+            if ($other -eq '허상의 정박지' -and $harborEnabledCheck) { $harborEnabledCheck.Checked = $false }
+            if ($other -eq '광기의 동굴' -and $caveEnabledCheck) { $caveEnabledCheck.Checked = $false }
+        } catch { }
+        finally { $script:SuppressDungeonRoutineToggleEvents = $false }
+    }
+    Refresh-Slots
 }
 function Select-Slot([string]$Slot) { $script:SelectedSlot = $Slot; if ($slotBox.SelectedItem -ne $Slot) { $slotBox.SelectedItem = $Slot }; Refresh-Slots }
 function Mark-ActiveSlot([string]$Slot) { $script:ActiveSlot = $Slot; switch ($Slot) { '메뉴' { Set-ProgressStep 1 } '어비스' { Set-ProgressStep 2 } '던전' { Set-ProgressStep 3 } '입장' { Set-ProgressStep 4 } '상태 기준' { Set-ProgressStep 5 } '완료 확인' { Set-ProgressStep 8 } '나가기' { Set-ProgressStep 9 } default { } } }
@@ -3680,7 +3720,8 @@ $updateButton.Add_Click({ Invoke-AppUpdateCheck $false })
 $exitButton.Add_Click({ $script:StopRequested = $true; $form.Close() })
 $advancedToggleButton.Add_Click({ Toggle-AdvancedTools })
 $topMostCheck.Add_CheckedChanged({ $form.TopMost = $topMostCheck.Checked })
-$harborEnabledCheck.Add_CheckedChanged({ $script:HarborEnabled = [bool]$harborEnabledCheck.Checked; Refresh-Slots })
+$harborEnabledCheck.Add_CheckedChanged({ Set-DungeonRoutineToggle '허상의 정박지' ([bool]$harborEnabledCheck.Checked) })
+$caveEnabledCheck.Add_CheckedChanged({ Set-DungeonRoutineToggle '광기의 동굴' ([bool]$caveEnabledCheck.Checked) })
 $specialEnabledCheck.Add_CheckedChanged({ $script:SpecialSlotEnabled['협동'] = [bool]$specialEnabledCheck.Checked; Refresh-Slots })
 $ultimateProfileBox.Add_SelectedIndexChanged({
     if ($script:SuppressUltimateProfileEvents) { return }
@@ -3723,7 +3764,7 @@ Update-AdvancedToolsCollapsed
 $statusLabel.Text = '저장 폴더에서 ' + $loadedOnStart + '개 슬롯, 좌표 ' + $loadedPointsOnStart + '개, 슬롯구역 ' + $loadedRegionsOnStart + '개, 제외구역 ' + $loadedIgnoreZonesOnStart + '개를 불러왔습니다.'
 function Start-StateRoutine {
     if ($script:Running) { [System.Windows.Forms.MessageBox]::Show('이미 실행 중입니다.', '실행') | Out-Null; return }
-    if (-not (Test-HarborEnabled)) { [System.Windows.Forms.MessageBox]::Show('던전 루틴이 OFF 상태입니다. 실행하려면 던전 루틴 ON을 체크하세요.', '실행') | Out-Null; return }
+    if (-not (Test-AnyDungeonRoutineEnabled)) { [System.Windows.Forms.MessageBox]::Show('사용할 던전 루틴이 OFF 상태입니다. 허상의 정박지 또는 광기의 동굴 ON을 체크하세요.', '실행') | Out-Null; return }
     $optionalSlots = @('식사 버튼','궁극기','스킵','팔라딘')
     foreach ($slot in $script:RouteSlots + @('상태 기준')) { if ($optionalSlots -contains $slot) { continue }; if (-not (Test-SlotEnabled $slot)) { continue }; if ((Get-SlotSamplePaths $slot).Count -eq 0) { [System.Windows.Forms.MessageBox]::Show((Get-SlotStatusName $slot) + ' 슬롯 이미지가 필요합니다.', '실행') | Out-Null; return } }
     $titlePart = $titleBox.Text.Trim(); if ([string]::IsNullOrWhiteSpace($titlePart)) { [System.Windows.Forms.MessageBox]::Show('대상 창 제목을 반드시 입력해야 합니다.', '실행') | Out-Null; return }

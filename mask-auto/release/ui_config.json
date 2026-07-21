@@ -19,52 +19,82 @@
     "actionTertiary": "238,139,48",
     "actionBorder": "110,72,18",
     "actionText": "25,20,12",
-    "updateButton": "80,54,28",
+    "updateButton": "54,91,109",
     "versionText": "255,248,224",
-    "progressActive": "35,95,160",
-    "progressInactive": "255,246,210",
+    "progressActive": "0,122,204",
+    "progressInactive": "245,247,250",
     "progressActiveText": "255,255,255",
-    "progressInactiveText": "35,25,15",
-    "brandText": "255,248,224",
-    "brandOutline": "80,54,28",
-    "brandLink": "255,255,255"
+    "progressInactiveText": "0,0,0",
+    "brandText": "24,42,38",
+    "brandOutline": "255,255,255",
+    "brandLink": "0,82,155"
   },
   "tabs": {
-    "main": "자동 인식",
-    "options": "설정"
+    "main": "Auto Mask",
+    "options": "Options"
   },
   "labels": {
-    "targetGroup": "대상",
-    "targetWindow": "대상 창",
-    "monitor": "모니터",
-    "slotSelect": "퀘스트 설정",
-    "slotPreview": "슬롯 분류",
-    "specialSlotPreview": "특수 카테고리",
-    "combatSlotPreview": "전투관련 슬롯 미리보기",
-    "progress": "진행 상황",
-    "settings": "설정"
+    "targetGroup": "\ub300\uc0c1",
+    "targetWindow": "\ub300\uc0c1 \ucc3d",
+    "monitor": "\ubaa8\ub2c8\ud130",
+    "slotSelect": "\uc2ac\ub86f \uc120\ud0dd",
+    "slotPreview": "\uc2ac\ub86f \ubd84\ub958",
+    "specialSlotPreview": "\ud2b9\uc218\uce74\ud14c\uace0\ub9ac",
+    "combatSlotPreview": "\uc804\ud22c\uad00\ub828 \uc2ac\ub86f \ubbf8\ub9ac\ubcf4\uae30",
+    "progress": "\uc9c4\ud589 \uc0c1\ud669",
+    "settings": "\uc14b\ud305"
   },
   "buttons": {
-    "searchWindows": "검색",
-    "capture": "영역(Shift+F8)",
-    "point": "촬영(Shift+F7)",
-    "start": "시작(Shift+F5)",
-    "stop": "중단(Shift+F6)",
-    "report": "문제보고",
-    "showIgnore": "자동제외 확인",
-    "log": "로그",
-    "exit": "종료",
-    "advanced": "고급 도구",
-    "update": "업데이트 확인"
+    "searchWindows": "\uac80\uc0c9",
+    "capture": "Region(Shift+F8)",
+    "point": "Shot(Shift+F7)",
+    "start": "Start(Shift+F5)",
+    "stop": "Stop(Shift+F6)",
+    "file": "\ud30c\uc77c",
+    "folder": "\ud3f4\ub354",
+    "delete": "\uc0ad\uc81c",
+    "locate": "\uc704\uce58",
+    "probe": "\ud074\ub9ad\ud655\uc778",
+    "diagnostic": "\uc9c4\ub2e8",
+    "report": "\ubb38\uc81c\ubcf4\uace0",
+    "log": "\ub85c\uadf8",
+    "exit": "\uc885\ub8cc",
+    "showIgnore": "\uc790\ub3d9\uc81c\uc678 \ud655\uc778",
+    "advanced": "\uace0\uae09 \ub3c4\uad6c \uc5f4\uae30",
+    "update": "Check Update"
   },
   "progress": {
-    "labels": ["메뉴", "어비", "던전", "입장", "상태", "퀘", "대기", "완료", "종료", "순환"]
+    "labels": [
+      "\uba54\ub274",
+      "\uc5b4\ube44",
+      "\ub358\uc804",
+      "\uc785\uc7a5",
+      "\uc0c1\ud0dc",
+      "\uc804\ud22c",
+      "\ub300\uae30",
+      "\uc644\ub8cc",
+      "\uc885\ub8cc",
+      "\uc21c\ud658"
+    ]
   },
-  "slots": ["협동", "상태 기준", "식사 버튼", "메뉴", "어비스", "던전", "입장", "퀘스트", "완료 확인", "나가기", "궁극기", "스킵", "팔라딘"],
+  "slots": [
+    "\ud611\ub3d9",
+    "\uc0c1\ud0dc \uae30\uc900",
+    "\uc2dd\uc0ac \ubc84\ud2bc",
+    "\uba54\ub274",
+    "\uc5b4\ube44\uc2a4",
+    "\ub358\uc804",
+    "\uc785\uc7a5",
+    "\uc644\ub8cc \ud655\uc778",
+    "\ub098\uac00\uae30",
+    "\uad81\uadf9\uae30",
+    "\uc2a4\ud0b5",
+    "\ud314\ub77c\ub518"
+  ],
   "brand": {
-    "title": "자동 인식",
+    "title": "\uc790\ub3d9 \uc778\uc2dd",
     "linkText": "getiton85.github.io/gerinogi-pob",
     "url": "https://getiton85.github.io/gerinogi-pob/",
-    "imagePath": ""
+    "imagePath": "C:\\Users\\freem\\Pictures\\Mabinogi Mobile\\screenshots\\MabinogiMobile_2026070318471243.png"
   }
 }

@@ -1,9 +1,9 @@
 ﻿{
-    "version":  "1.0.60",
+    "version":  "1.0.62",
     "update_mode":  "package",
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.60_transition_wait_guard.zip",
-                    "sha256":  "fd518e51efa6ec7c2ffa05c45c1de51cb6705c6c6467f8b578d18bdb787362b1",
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.62_dungeon_toggle_split.zip",
+                    "sha256":  "f2ff78d50194657cd3a7df976613a58877dc375eae9c823f69f833a3494ad33b",
                     "files":  [
                                   "local_state_routine_runner.ps1",
                                   "state_samples",
@@ -17,8 +17,8 @@
                       "version":  "1.0.48"
                   },
     "notes":  [
-                  "자동1 내부 진행 중 어두운 전환 화면은 클릭하지 않고 재감시",
-                  "내부 단계에서 협동 전역 중복 검사를 막아 전환 중 상태 흔들림 감소",
-                  "협동 클릭 후 안정 대기 시간을 늘려 확인 화면 전환을 기다림"
+                  "자동1 던전 루틴 ON 상태를 허상의 정박지와 광기의 동굴로 분리",
+                  "광기의 동굴 ON 체크 버튼 추가",
+                  "두 던전 루틴이 동시에 자동 활성화되지 않도록 토글 상태 분리"
               ]
 }
