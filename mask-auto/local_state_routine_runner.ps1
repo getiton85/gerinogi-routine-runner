@@ -222,7 +222,7 @@ $script:RoutineTracePath = Join-Path $script:UserDataRoot 'routine_trace_log.csv
 $script:CrashLogPath = Join-Path $script:UserDataRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $script:UserDataRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $script:UserDataRoot 'reports'
-$script:AppVersion = '1.0.53'
+$script:AppVersion = '1.0.55'
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
 $script:LongCompleteFallbackMs = 90000
@@ -2037,6 +2037,13 @@ function Get-NextRoutineStage([string]$Slot) {
 }
 function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$Stage) {
     if ([string]::IsNullOrWhiteSpace($Stage)) { $Stage = '메뉴' }
+    if ($Stage -ne '협동' -and (Test-SpecialSlotEnabled '협동') -and (Get-SlotSamplePaths '협동').Count -gt 0) {
+        $globalCoopRect = Find-ValidSlotOnce '협동' $Screen $true
+        if (-not $globalCoopRect.IsEmpty) {
+            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '협동' 'candidate-global-priority' $globalCoopRect ('stage=' + $Stage + '; special prompt blocks current route')
+            return [pscustomobject]@{ Slot = '협동'; Rect = $globalCoopRect; Stage = $Stage }
+        }
+    }
     if ($Stage -eq '협동') {
         if (-not (Test-SpecialSlotEnabled '협동') -or (Get-SlotSamplePaths '협동').Count -eq 0) {
             Write-RoutineTrace $script:CurrentCycle 'stage-scan' '협동' 'skip-special-after-loop' ([System.Drawing.Rectangle]::Empty) 'special disabled or missing sample; continue to menu'
@@ -2079,12 +2086,20 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
         } else {
             Write-RoutineTrace $script:CurrentCycle 'stage-scan' '스킵' 'missing-sample-inside' ([System.Drawing.Rectangle]::Empty) $stateNote
         }
+        if ($stateRect.IsEmpty -and (Test-SpecialSlotEnabled '협동') -and (Get-SlotSamplePaths '협동').Count -gt 0) {
+            $coopInsideRect = Find-ValidSlotOnce '협동' $Screen $true
+            if (-not $coopInsideRect.IsEmpty) {
+                Write-RoutineTrace $script:CurrentCycle 'stage-scan' '협동' 'candidate-inside-recovery' $coopInsideRect 'state marker not visible; coop prompt visible during inside stage'
+                return [pscustomobject]@{ Slot = '협동'; Rect = $coopInsideRect; Stage = $Stage }
+            }
+            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '협동' 'miss-inside-recovery' ([System.Drawing.Rectangle]::Empty) 'state marker not visible; coop prompt not visible'
+        }
         if ($stateRect.IsEmpty) {
             Write-RoutineTrace $script:CurrentCycle 'stage-scan' '전투슬롯' 'blocked-state-missing' ([System.Drawing.Rectangle]::Empty) 'state marker not visible; skip food/ultimate/paladin'
         }
         foreach ($slot in @('식사 버튼','궁극기','팔라딘')) {
             if (Test-StopRequested) { return $null }
-            $allowCombatScan = (-not $stateRect.IsEmpty) -or ($slot -eq '식사 버튼')
+            $allowCombatScan = (-not $stateRect.IsEmpty)
             if (-not $allowCombatScan) {
                 Write-RoutineTrace $script:CurrentCycle 'stage-scan' $slot 'blocked-state-missing' ([System.Drawing.Rectangle]::Empty) 'state marker not visible; active combat slot skipped'
                 continue
