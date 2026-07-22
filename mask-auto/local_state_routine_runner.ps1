@@ -232,7 +232,7 @@ $script:RoutineTracePath = Join-Path $script:UserDataRoot 'routine_trace_log.csv
 $script:CrashLogPath = Join-Path $script:UserDataRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $script:UserDataRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $script:UserDataRoot 'reports'
-$script:AppVersion = '1.0.74'
+$script:AppVersion = '1.0.76'
 $script:PendingCompleteSeen = 0
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
@@ -240,6 +240,8 @@ $script:LongCompleteFallbackMs = 60000
 $script:CombatMarkerSeen = $false
 $script:BossSkipSeen = $false
 $script:CombatMarkerSeenAfterSkip = $false
+$script:LastCombatActionAt = @{} 
+$script:CombatActionCooldownMs = @{ '½Ä»ç ¹öÆ°' = 8000; '±Ã±Ø±â' = 1500; 'ÆÈ¶óµò' = 1500 }
 $script:CoopClickAttempts = 0
 $script:MaxCoopClickAttempts = 2
 $script:DiagnosticFailureCount = 0
@@ -1002,6 +1004,10 @@ function Get-SlotDisplayName([string]$Slot) {
     if ($Slot -like '±¤±âÀÇ µ¿±¼_*') { return $Slot.Substring('±¤±âÀÇ µ¿±¼_'.Length) }
     return $Slot
 }
+function Get-SlotOverlayName([string]$Slot) {
+    if ($Slot -like '±¤±âÀÇ µ¿±¼_*') { return '±¤±âÀÇ µ¿±¼ ' + $Slot.Substring('±¤±âÀÇ µ¿±¼_'.Length) }
+    return (Get-SlotDisplayName $Slot)
+}
 function Resolve-RouteSlotFromStorageKey([string]$Slot) {
     if ($Slot -like '±¤±âÀÇ µ¿±¼_*') {
         $base = $Slot.Substring('±¤±âÀÇ µ¿±¼_'.Length)
@@ -1231,10 +1237,12 @@ function Show-IgnoreZones {
     $screen = $screens[$monitorBox.SelectedIndex]
     $allowed = New-Object System.Collections.Generic.List[object]
     foreach ($slot in $script:Slots) {
-        if (-not (Test-SlotEnabled $slot)) { continue }
-        $rect = Get-SlotRegionScreenRect $slot $screen
+        $visualSlot = $slot
+        if ($script:RouteSlots -contains $slot) { $visualSlot = Get-ActiveRouteSlotKey $slot }
+        if (-not (Test-SlotEnabled $visualSlot)) { continue }
+        $rect = Get-SlotRegionScreenRect $visualSlot $screen
         if (-not $rect.IsEmpty -and $rect.Width -ge 5 -and $rect.Height -ge 5) {
-            [void]$allowed.Add([pscustomobject]@{ Slot = $slot; Rect = $rect })
+            [void]$allowed.Add([pscustomobject]@{ Slot = (Get-SlotOverlayName $visualSlot); Rect = $rect })
         }
     }
     if ($allowed.Count -le 0) {
@@ -2269,6 +2277,10 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
                     Write-RoutineTrace $script:CurrentCycle 'stage-scan' $slot 'missing-sample-inside' ([System.Drawing.Rectangle]::Empty) $stateNote
                     continue
                 }
+                if (-not (Test-CombatActionReady $slot)) {
+                    Write-RoutineTrace $script:CurrentCycle 'stage-scan' $slot 'cooldown-skip-inside' ([System.Drawing.Rectangle]::Empty) $stateNote
+                    continue
+                }
                 $rect = Find-ValidSlotOnce $slot $Screen $true
                 if (-not $rect.IsEmpty) {
                     Write-RoutineTrace $script:CurrentCycle 'stage-scan' $slot 'candidate-inside-only' $rect $stateNote
@@ -2291,21 +2303,7 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
         if (Test-InternalTransitionFrame $Screen) {
             return [pscustomobject]@{ Slot = '__ÀüÈ¯´ë±â'; Rect = [System.Drawing.Rectangle]::Empty; Stage = $Stage }
         }
-        Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'ÀüÅõ½½·Ô' 'state-missing-combat-probe' ([System.Drawing.Rectangle]::Empty) 'state marker not visible; probe food/ultimate/paladin before skip/complete'
-        foreach ($slot in @('½Ä»ç ¹öÆ°','±Ã±Ø±â','ÆÈ¶óµò')) {
-            if (Test-StopRequested) { return $null }
-            if ((Get-SlotSamplePaths $slot).Count -eq 0) {
-                Write-RoutineTrace $script:CurrentCycle 'stage-scan' $slot 'missing-sample-state-missing' ([System.Drawing.Rectangle]::Empty) $stateNote
-                continue
-            }
-            $rect = Find-ValidSlotOnce $slot $Screen $true
-            if (-not $rect.IsEmpty) {
-                $script:CombatMarkerSeen = $true
-                Write-RoutineTrace $script:CurrentCycle 'stage-scan' $slot 'candidate-state-missing-combat-first' $rect $stateNote
-                return [pscustomobject]@{ Slot = $slot; Rect = $rect; Stage = $Stage }
-            }
-            Write-RoutineTrace $script:CurrentCycle 'stage-scan' $slot 'miss-state-missing-combat-first' ([System.Drawing.Rectangle]::Empty) $stateNote
-        }
+        Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'ÀüÅõ½½·Ô' 'state-missing-combat-blocked' ([System.Drawing.Rectangle]::Empty) 'state marker not visible; combat helpers are blocked so skip/complete can be checked first'
 
         if ((Get-SlotSamplePaths '½ºÅµ').Count -gt 0) {
             $skipRect = Find-ValidSlotOnce '½ºÅµ' $Screen $true
@@ -2335,7 +2333,7 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
                 Write-RoutineTrace $script:CurrentCycle 'stage-scan' '¿Ï·á È®ÀÎ' 'blocked-by-gate' ([System.Drawing.Rectangle]::Empty) (Get-CompleteGateDetail)
             }
         }
-        Write-RoutineTrace $script:CurrentCycle 'stage-scan' '' 'none' ([System.Drawing.Rectangle]::Empty) 'stage=³»ºÎ; checked=»óÅÂ ±âÁØ|½Ä»ç ¹öÆ°|±Ã±Ø±â|ÆÈ¶óµò or »óÅÂ¹Ì°ËÃâ½Ã ½ºÅµ|¿Ï·á È®ÀÎ'
+        Write-RoutineTrace $script:CurrentCycle 'stage-scan' '' 'none' ([System.Drawing.Rectangle]::Empty) 'stage=³»ºÎ; checked=»óÅÂ ±âÁØ; state-visible combat helpers only; state-missing skip|¿Ï·á È®ÀÎ'
         return $null
     }
     $expectedSlot = $Stage
@@ -2500,6 +2498,7 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
             [System.Windows.Forms.Application]::DoEvents()
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'send-b-direct' $rect 'candidate already verified'
             Invoke-BKey 'food image matched'
+            Mark-CombatAction $slot
             Wait-StateActionSettle $slot
             return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = '½Ä»ç B ÀÔ·Â'; NextStage = $nextStage }
         }
@@ -2511,6 +2510,7 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
             [System.Windows.Forms.Application]::DoEvents()
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'send-6-direct' $rect ('profile=' + [string]$ultimateProfile.Name)
             Invoke-UltimateKey ([string]$ultimateProfile.Name)
+            Mark-CombatAction $slot
             Wait-StateActionSettle $slot
             return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = '±Ã±Ø±â 6 ÀÔ·Â'; NextStage = $nextStage }
         }
@@ -2532,6 +2532,7 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
             [System.Windows.Forms.Application]::DoEvents()
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'send-f5-direct' $rect 'inside-only'
             Invoke-PaladinKey 'paladin image matched'
+            Mark-CombatAction $slot
             Wait-StateActionSettle $slot
             return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = 'ÆÈ¶óµò F5 ÀÔ·Â'; NextStage = $nextStage }
         }
@@ -2659,10 +2660,22 @@ function Test-AnyDungeonRoutineEnabled {
 }
 
 function Get-ActiveRouteSlotKey([string]$Slot) {
-    if ($Slot -eq '´øÀü' -and (Test-DungeonRoutineEnabled '±¤±âÀÇ µ¿±¼') -and -not (Test-DungeonRoutineEnabled 'Çã»óÀÇ Á¤¹ÚÁö')) {
-        return (Get-DungeonRouteSlotKey '±¤±âÀÇ µ¿±¼' $Slot)
+    if ($Slot -eq '´øÀü') {
+        $selectedCaveSlot = ($script:SelectedSlot -eq (Get-DungeonRouteSlotKey '±¤±âÀÇ µ¿±¼' '´øÀü'))
+        if ((Test-DungeonRoutineEnabled '±¤±âÀÇ µ¿±¼') -or ($selectedCaveSlot -and -not (Test-DungeonRoutineEnabled 'Çã»óÀÇ Á¤¹ÚÁö'))) {
+            return (Get-DungeonRouteSlotKey '±¤±âÀÇ µ¿±¼' $Slot)
+        }
     }
     return $Slot
+}
+function Test-CombatActionReady([string]$Slot) {
+    if (-not ($script:CombatActionCooldownMs.ContainsKey($Slot))) { return $true }
+    if (-not ($script:LastCombatActionAt.ContainsKey($Slot))) { return $true }
+    $elapsed = ((Get-Date) - [datetime]$script:LastCombatActionAt[$Slot]).TotalMilliseconds
+    return ($elapsed -ge [int]$script:CombatActionCooldownMs[$Slot])
+}
+function Mark-CombatAction([string]$Slot) {
+    $script:LastCombatActionAt[$Slot] = Get-Date
 }
 function Test-CombatSlotEnabled([string]$Slot) {
     if (-not ($script:CombatSlots -contains $Slot)) { return $true }
@@ -3702,6 +3715,8 @@ function Set-DungeonRoutineToggle([string]$Name, [bool]$Enabled) {
     if ($script:SuppressDungeonRoutineToggleEvents) { return }
     $script:DungeonRoutineEnabled[$Name] = $Enabled
     if ($Name -eq 'Çã»óÀÇ Á¤¹ÚÁö') { $script:HarborEnabled = $Enabled }
+    if ($Name -eq '±¤±âÀÇ µ¿±¼' -and $Enabled -and $script:SelectedSlot -eq '´øÀü') { $script:SelectedSlot = Get-DungeonRouteSlotKey '±¤±âÀÇ µ¿±¼' '´øÀü' }
+    if ($Name -eq 'Çã»óÀÇ Á¤¹ÚÁö' -and $Enabled -and $script:SelectedSlot -eq (Get-DungeonRouteSlotKey '±¤±âÀÇ µ¿±¼' '´øÀü')) { $script:SelectedSlot = '´øÀü' }
     if ($Enabled) {
         $other = if ($Name -eq 'Çã»óÀÇ Á¤¹ÚÁö') { '±¤±âÀÇ µ¿±¼' } else { 'Çã»óÀÇ Á¤¹ÚÁö' }
         $script:DungeonRoutineEnabled[$other] = $false
@@ -3713,9 +3728,21 @@ function Set-DungeonRoutineToggle([string]$Name, [bool]$Enabled) {
         } catch { }
         finally { $script:SuppressDungeonRoutineToggleEvents = $false }
     }
+    try { Save-UserSettings } catch { }
     Refresh-Slots
 }
 function Select-Slot([string]$Slot) {
+    if ($Slot -eq (Get-DungeonRouteSlotKey '±¤±âÀÇ µ¿±¼' '´øÀü')) {
+        $script:DungeonRoutineEnabled['±¤±âÀÇ µ¿±¼'] = $true
+        $script:DungeonRoutineEnabled['Çã»óÀÇ Á¤¹ÚÁö'] = $false
+        $script:HarborEnabled = $false
+        try { if ($caveEnabledCheck) { $caveEnabledCheck.Checked = $true }; if ($harborEnabledCheck) { $harborEnabledCheck.Checked = $false } } catch { }
+    } elseif ($Slot -eq '´øÀü') {
+        $script:DungeonRoutineEnabled['Çã»óÀÇ Á¤¹ÚÁö'] = $true
+        $script:DungeonRoutineEnabled['±¤±âÀÇ µ¿±¼'] = $false
+        $script:HarborEnabled = $true
+        try { if ($harborEnabledCheck) { $harborEnabledCheck.Checked = $true }; if ($caveEnabledCheck) { $caveEnabledCheck.Checked = $false } } catch { }
+    }
     $script:SelectedSlot = $Slot
     $baseSlot = Resolve-RouteSlotFromStorageKey $Slot
     if ($slotBox.Items.Contains($baseSlot) -and $slotBox.SelectedItem -ne $baseSlot) {

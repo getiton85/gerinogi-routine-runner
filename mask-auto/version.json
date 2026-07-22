@@ -1,10 +1,11 @@
 ﻿{
-    "version":  "1.0.74",
+    "version":  "1.0.76",
     "update_mode":  "package",
     "required_reinstall":  false,
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.74_combat_probe_without_state.zip",
-                    "sha256":  "413fbef9e5acad34a6cebee370d35c8c4e9a4c4512da7087ac05da8582a1b324",
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.76_state_missing_complete_fix.zip",
+                    "sha256":  "39457B73B08442AFC403077A6284E022EEDDDF84F7EA9BFEAA903245EE021850",
+                    "size":  564443,
                     "files":  [
                                   "local_state_routine_runner.ps1",
                                   "state_samples",
@@ -14,8 +15,8 @@
                               ]
                 },
     "notes":  [
-                  "When internal state marker is missing, probe food, ultimate, and paladin before skip/complete.",
-                  "Combat helper slots remain blocked from external route stages.",
-                  "No route slot data or user settings are reset."
+                  "Block food/ultimate/paladin scans when the state marker is missing so skip and completion checks can run.",
+                  "Keep combat helpers limited to state-marker-visible internal phase.",
+                  "Preserve the cave dungeon region and refreshed skip sample from 1.0.75."
               ]
 }
