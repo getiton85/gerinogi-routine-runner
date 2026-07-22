@@ -1,12 +1,12 @@
 ﻿{
-    "version":  "1.0.80",
+    "version":  "1.0.81",
     "update_mode":  "package",
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/state_routine_update_package_1.0.80.zip",
-                    "sha256":  "32b8227e5f1cb76807204856d1a413b15437de345b05165b1012c0af3137b60c",
-                    "size":  844428
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/state_routine_update_package_1.0.81.zip",
+                    "sha256":  "b0d71febb5626f4554610d6ab34564a488fcdb2786519d1275bab343064c70f3",
+                    "size":  844752
                 },
     "required_reinstall":  false,
-    "notes":  "Limit per-image search time and pump UI events between scans so Start and Stop remain responsive.",
-    "updated_at":  "2026-07-22T20:28:09+09:00"
+    "notes":  "Reduce image-search UI blocking and rotate large runtime logs to archived_logs.",
+    "updated_at":  "2026-07-22T21:10:11+09:00"
 }

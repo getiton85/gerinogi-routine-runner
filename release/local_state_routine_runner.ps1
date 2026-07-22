@@ -231,7 +231,7 @@ $script:RoutineTracePath = Join-Path $script:UserDataRoot 'routine_trace_log.csv
 $script:CrashLogPath = Join-Path $script:UserDataRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $script:UserDataRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $script:UserDataRoot 'reports'
-$script:AppVersion = '1.0.101'
+$script:AppVersion = '1.0.102'
 $script:PendingCompleteSeen = 0
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
@@ -241,8 +241,32 @@ $script:BossSkipSeen = $false
 $script:CombatMarkerSeenAfterSkip = $false
 $script:CoopClickAttempts = 0
 $script:MaxCoopClickAttempts = 2
+$script:EntryBusyGuardEnabled = $false
 $script:DiagnosticFailureCount = 0
 $script:DiagnosticDisabledUntil = [DateTime]::MinValue
+function Rotate-LogFileIfNeeded([string]$Path, [int64]$MaxBytes) {
+    try {
+        if ([string]::IsNullOrWhiteSpace($Path)) { return }
+        if (-not [System.IO.File]::Exists($Path)) { return }
+        $file = Get-Item -LiteralPath $Path -ErrorAction Stop
+        if ($file.Length -lt $MaxBytes) { return }
+        $archiveDir = Join-Path ([System.IO.Path]::GetDirectoryName($Path)) 'archived_logs'
+        if (-not [System.IO.Directory]::Exists($archiveDir)) { [System.IO.Directory]::CreateDirectory($archiveDir) | Out-Null }
+        $stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
+        $name = [System.IO.Path]::GetFileNameWithoutExtension($Path)
+        $ext = [System.IO.Path]::GetExtension($Path)
+        $dest = Join-Path $archiveDir ($name + '_' + $stamp + $ext)
+        Move-Item -LiteralPath $Path -Destination $dest -Force
+    } catch {
+        try { Add-Content -LiteralPath $script:CrashLogPath -Value ((Get-Date -Format s) + ' log-rotate-failed: ' + $_.Exception.Message) -Encoding UTF8 } catch {}
+    }
+}
+function Invoke-LogMaintenance {
+    $maxBytes = 25MB
+    Rotate-LogFileIfNeeded $script:RoutineTracePath $maxBytes
+    Rotate-LogFileIfNeeded $script:ClickTracePath $maxBytes
+    Rotate-LogFileIfNeeded $script:LogPath $maxBytes
+}
 $script:IgnoreZones = New-Object System.Collections.Generic.List[object]
 $script:MaxIgnoreZones = 4
 $script:SelectedUltimateProfileIndex = 0
@@ -1764,6 +1788,7 @@ function Find-CoopPromptStrict([System.Windows.Forms.Screen]$Screen) {
     return [System.Drawing.Rectangle]::Empty
 }
 function Find-EntryBusyGuard([System.Windows.Forms.Screen]$Screen) {
+    if (-not $script:EntryBusyGuardEnabled) { return [System.Drawing.Rectangle]::Empty }
     $guardPath = Join-Path $script:SampleDir '입장_전투중_가드.png'
     if (-not [System.IO.File]::Exists($guardPath)) { return [System.Drawing.Rectangle]::Empty }
     $bounds = Get-SlotSearchBounds '입장' $Screen
@@ -2174,6 +2199,7 @@ function Ensure-LogHeader { if (-not [System.IO.File]::Exists($script:LogPath)) 
 function Csv([string]$Value) { if ($null -eq $Value) { $Value = '' }; return '"' + $Value.Replace('"', '""') + '"' }
 function Ensure-RoutineTraceHeader { if (-not [System.IO.File]::Exists($script:RoutineTracePath)) { 'time,cycle,phase,slot,event,x,y,detail' | Set-Content -LiteralPath $script:RoutineTracePath -Encoding UTF8 } }
 function Write-RoutineTrace([int]$Cycle, [string]$Phase, [string]$Slot, [string]$Event, [System.Drawing.Rectangle]$Rect, [string]$Detail) {
+    Invoke-LogMaintenance
     Ensure-RoutineTraceHeader
     $x = ''
     $y = ''
@@ -3352,6 +3378,7 @@ function Import-SelectedSlotFile { $dialog = New-Object System.Windows.Forms.Ope
 function Reload-SavedSamplesToSlots { $count = Load-SavedSamples; Refresh-Slots; $statusLabel.Text = '저장 폴더에서 ' + $count + '개 슬롯을 불러왔습니다.' }
 function Run-ClickDiagnostic {
     if (-not [System.IO.File]::Exists($script:ClickTracePath)) { 'time,x,y,mode,down_sent,up_sent,error_code,note' | Set-Content -LiteralPath $script:ClickTracePath -Encoding UTF8 }
+    Invoke-LogMaintenance
     Ensure-RoutineTraceHeader
     New-Item -ItemType Directory -Force -Path $script:DiagnosticDir | Out-Null
     Start-Process -FilePath $script:RoutineTracePath
@@ -3366,6 +3393,7 @@ function Copy-ReportFile([string]$Source, [string]$DestinationDir) {
 function New-ProblemReportPackage {
     Save-UserSettings
     Ensure-LogHeader
+    Invoke-LogMaintenance
     Ensure-RoutineTraceHeader
     if (-not [System.IO.File]::Exists($script:ClickTracePath)) { 'time,x,y,mode,down_sent,up_sent,error_code,note' | Set-Content -LiteralPath $script:ClickTracePath -Encoding UTF8 }
     New-Item -ItemType Directory -Force -Path $script:ReportDir | Out-Null
@@ -3518,6 +3546,7 @@ function Start-StateRoutine {
         [System.Windows.Forms.Application]::DoEvents()
         Start-Sleep -Milliseconds 800
     }
+    Invoke-LogMaintenance
     Ensure-RoutineTraceHeader
     Write-RoutineTrace 0 'run' '' 'start' ([System.Drawing.Rectangle]::Empty) ('target=' + $titlePart + '; matched=' + (Get-WindowTitle $target.Handle) + '; monitor=' + $monitorBox.SelectedItem)
     $script:Running=$true; $script:StopRequested=$false; $startButton.Enabled=$false; $started=Get-Date; $timer=[System.Diagnostics.Stopwatch]::StartNew(); $completedCycles=0; $completedClicks=0; $status='completed'; $message=''

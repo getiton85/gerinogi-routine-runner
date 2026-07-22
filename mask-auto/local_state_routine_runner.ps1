@@ -233,7 +233,7 @@ $script:RoutineTracePath = Join-Path $script:UserDataRoot 'routine_trace_log.csv
 $script:CrashLogPath = Join-Path $script:UserDataRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $script:UserDataRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $script:UserDataRoot 'reports'
-$script:AppVersion = '1.0.80'
+$script:AppVersion = '1.0.81'
 $script:PendingCompleteSeen = 0
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
@@ -302,6 +302,30 @@ function Add-TextLinesSafe([string]$Path, [System.Collections.Generic.IEnumerabl
     return (Add-TextLineSafe $Path ([string]::Join([Environment]::NewLine, $Lines)))
 }
 
+function Rotate-LogFileIfNeeded([string]$Path, [int64]$MaxBytes) {
+    try {
+        if ([string]::IsNullOrWhiteSpace($Path) -or -not [System.IO.File]::Exists($Path)) { return $false }
+        $file = Get-Item -LiteralPath $Path -ErrorAction Stop
+        if ($file.Length -lt $MaxBytes) { return $false }
+        $archiveDir = Join-Path (Split-Path -Parent $Path) 'archived_logs'
+        New-Item -ItemType Directory -Force -Path $archiveDir | Out-Null
+        $baseName = [System.IO.Path]::GetFileNameWithoutExtension($Path)
+        $ext = [System.IO.Path]::GetExtension($Path)
+        $archivePath = Join-Path $archiveDir ('{0}_{1}{2}' -f $baseName, (Get-Date -Format 'yyyyMMdd_HHmmss'), $ext)
+        Move-Item -LiteralPath $Path -Destination $archivePath -Force
+        return $true
+    } catch {
+        try { Write-CrashLog ('log-rotate failed: ' + $Path) $_ } catch { }
+        return $false
+    }
+}
+
+function Invoke-LogMaintenance {
+    [void](Rotate-LogFileIfNeeded $script:RoutineTracePath 26214400)
+    [void](Rotate-LogFileIfNeeded $script:ClickTracePath 10485760)
+    [void](Rotate-LogFileIfNeeded $script:LogPath 10485760)
+    [void](Rotate-LogFileIfNeeded $script:CrashLogPath 5242880)
+}
 function Write-CrashLog([string]$Context, [object]$ErrorObject) {
     try {
         $lines = New-Object System.Collections.Generic.List[string]
@@ -377,6 +401,7 @@ function Invoke-MaintenanceCleanup {
 New-Item -ItemType Directory -Force -Path $script:SampleDir | Out-Null
 New-Item -ItemType Directory -Force -Path $script:BackupDir | Out-Null
 New-Item -ItemType Directory -Force -Path $script:DiagnosticDir | Out-Null
+Invoke-LogMaintenance
 Write-CrashLog 'app-launch' $null
 Invoke-MaintenanceCleanup
 
@@ -426,7 +451,7 @@ public static class VisionFinder {
     public static double LastSecondScore = 0.0;
     public static double LastScoreGap = 0.0;
     public static bool LastAmbiguous = false;
-    private const int SearchTimeoutMs = 2500;
+    private const int SearchTimeoutMs = 900;
 
     private static void ResetLastMatch() {
         LastMode = "";
@@ -2615,7 +2640,7 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
 }
 function Ensure-LogHeader { if (-not [System.IO.File]::Exists($script:LogPath)) { [void](Write-TextFileSafe $script:LogPath 'started_at,ended_at,target_title,matched_window,monitor,requested_cycles,completed_cycles,completed_clicks,interval_ms,elapsed_seconds,average_cycle_seconds,status,message') } }
 function Csv([string]$Value) { if ($null -eq $Value) { $Value = '' }; return '"' + $Value.Replace('"', '""') + '"' }
-function Ensure-RoutineTraceHeader { if (-not [System.IO.File]::Exists($script:RoutineTracePath)) { [void](Write-TextFileSafe $script:RoutineTracePath 'time,cycle,phase,slot,event,x,y,detail') } }
+function Ensure-RoutineTraceHeader { [void](Rotate-LogFileIfNeeded $script:RoutineTracePath 26214400); if (-not [System.IO.File]::Exists($script:RoutineTracePath)) { [void](Write-TextFileSafe $script:RoutineTracePath 'time,cycle,phase,slot,event,x,y,detail') } }
 function Write-RoutineTrace([int]$Cycle, [string]$Phase, [string]$Slot, [string]$Event, [System.Drawing.Rectangle]$Rect, [string]$Detail) {
     Ensure-RoutineTraceHeader
     $x = ''
