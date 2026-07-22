@@ -1,10 +1,10 @@
-﻿{
-    "version":  "1.0.72",
+{
+    "version":  "1.0.73",
     "update_mode":  "package",
     "required_reinstall":  false,
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.72_ui_launch_fix.zip",
-                    "sha256":  "2866f4f87284c7e119249e43e5a72e38959ccd8609305f7a9449e137b9dfb3c6",
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.73_internal_combat_order.zip",
+                    "sha256":  "d8e866ae46ba04b361b342c1a67519a90a0b2d5c5345863f041b67b1f582b385",
                     "files":  [
                                   "local_state_routine_runner.ps1",
                                   "state_samples",
@@ -14,8 +14,8 @@
                               ]
                 },
     "notes":  [
-                  "특수 카테고리 접기 버튼 초기화 누락 수정",
-                  "마스크테스트루틴 창 실행 실패 원인 수정",
-                  "기존 입장 전투중 ESC 복구 흐름 유지"
+                  "Internal state visible: scan food, ultimate, paladin before state keep",
+                  "Skip is scanned only when internal state marker is missing",
+                  "Entry busy ESC recovery and complete gate remain enabled"
               ]
 }

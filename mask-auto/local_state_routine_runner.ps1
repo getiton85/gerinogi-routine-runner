@@ -232,7 +232,7 @@ $script:RoutineTracePath = Join-Path $script:UserDataRoot 'routine_trace_log.csv
 $script:CrashLogPath = Join-Path $script:UserDataRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $script:UserDataRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $script:UserDataRoot 'reports'
-$script:AppVersion = '1.0.72'
+$script:AppVersion = '1.0.73'
 $script:PendingCompleteSeen = 0
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
@@ -2262,55 +2262,49 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
             $stateNote = 'state marker visible'
             $script:CombatMarkerSeen = $true
             if ($script:BossSkipSeen) { $script:CombatMarkerSeenAfterSkip = $true }
-            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '상태 기준' 'inside-lock' $stateRect 'stage=내부; allowed=스킵|식사 버튼|궁극기|팔라딘|상태 기준'
+            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '상태 기준' 'inside-lock' $stateRect 'stage=내부; allowed=식사 버튼|궁극기|팔라딘|상태 기준; skip deferred until state missing'
+            foreach ($slot in @('식사 버튼','궁극기','팔라딘')) {
+                if (Test-StopRequested) { return $null }
+                if ((Get-SlotSamplePaths $slot).Count -eq 0) {
+                    Write-RoutineTrace $script:CurrentCycle 'stage-scan' $slot 'missing-sample-inside' ([System.Drawing.Rectangle]::Empty) $stateNote
+                    continue
+                }
+                $rect = Find-ValidSlotOnce $slot $Screen $true
+                if (-not $rect.IsEmpty) {
+                    Write-RoutineTrace $script:CurrentCycle 'stage-scan' $slot 'candidate-inside-only' $rect $stateNote
+                    return [pscustomobject]@{ Slot = $slot; Rect = $rect; Stage = $Stage }
+                }
+                Write-RoutineTrace $script:CurrentCycle 'stage-scan' $slot 'miss-inside' ([System.Drawing.Rectangle]::Empty) $stateNote
+            }
+            $script:PendingCompleteSeen = 0
+            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '상태 기준' 'inside-keep-block-route' $stateRect 'state marker visible; combat checked; skip/complete/exit scan blocked'
+            return [pscustomobject]@{ Slot = '상태 기준'; Rect = $stateRect; Stage = $Stage }
         }
+
+        $insideBusyRect = Find-EntryBusyGuard $Screen
+        if (-not $insideBusyRect.IsEmpty) {
+            $script:PendingCompleteSeen = 0
+            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '입장_전투중' 'internal-entry-busy-recovery' $insideBusyRect 'inside stage lost state marker on entry combat screen; restore with ESC before other route checks'
+            return [pscustomobject]@{ Slot = '입장_전투중'; Rect = $insideBusyRect; Stage = $Stage }
+        }
+
+        if (Test-InternalTransitionFrame $Screen) {
+            return [pscustomobject]@{ Slot = '__전환대기'; Rect = [System.Drawing.Rectangle]::Empty; Stage = $Stage }
+        }
+
+        Write-RoutineTrace $script:CurrentCycle 'stage-scan' '전투슬롯' 'blocked-state-missing' ([System.Drawing.Rectangle]::Empty) 'state marker not visible; food/ultimate/paladin deferred; check skip then complete'
+
         if ((Get-SlotSamplePaths '스킵').Count -gt 0) {
             $skipRect = Find-ValidSlotOnce '스킵' $Screen $true
             if (-not $skipRect.IsEmpty) {
-                Write-RoutineTrace $script:CurrentCycle 'stage-scan' '스킵' 'candidate-inside-only' $skipRect $stateNote
+                Write-RoutineTrace $script:CurrentCycle 'stage-scan' '스킵' 'candidate-state-missing-only' $skipRect $stateNote
                 return [pscustomobject]@{ Slot = '스킵'; Rect = $skipRect; Stage = $Stage }
             }
-            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '스킵' 'miss-inside' ([System.Drawing.Rectangle]::Empty) $stateNote
+            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '스킵' 'miss-state-missing' ([System.Drawing.Rectangle]::Empty) $stateNote
         } else {
-            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '스킵' 'missing-sample-inside' ([System.Drawing.Rectangle]::Empty) $stateNote
+            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '스킵' 'missing-sample-state-missing' ([System.Drawing.Rectangle]::Empty) $stateNote
         }
-        if ($stateRect.IsEmpty) {
-            $insideBusyRect = Find-EntryBusyGuard $Screen
-            if (-not $insideBusyRect.IsEmpty) {
-                $script:PendingCompleteSeen = 0
-                Write-RoutineTrace $script:CurrentCycle 'stage-scan' '입장_전투중' 'internal-entry-busy-recovery' $insideBusyRect 'inside stage lost state marker on entry combat screen; restore with ESC'
-                return [pscustomobject]@{ Slot = '입장_전투중'; Rect = $insideBusyRect; Stage = $Stage }
-            }
-        }
-        if ($stateRect.IsEmpty -and (Test-InternalTransitionFrame $Screen)) {
-            return [pscustomobject]@{ Slot = '__전환대기'; Rect = [System.Drawing.Rectangle]::Empty; Stage = $Stage }
-        }
-        if ($stateRect.IsEmpty) {
-            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '전투슬롯' 'blocked-state-missing' ([System.Drawing.Rectangle]::Empty) 'state marker not visible; skip food/ultimate/paladin'
-        }
-        foreach ($slot in @('식사 버튼','궁극기','팔라딘')) {
-            if (Test-StopRequested) { return $null }
-            $allowCombatScan = (-not $stateRect.IsEmpty)
-            if (-not $allowCombatScan) {
-                Write-RoutineTrace $script:CurrentCycle 'stage-scan' $slot 'blocked-state-missing' ([System.Drawing.Rectangle]::Empty) 'state marker not visible; active combat slot skipped'
-                continue
-            }
-            if ((Get-SlotSamplePaths $slot).Count -eq 0) {
-                Write-RoutineTrace $script:CurrentCycle 'stage-scan' $slot 'missing-sample-inside' ([System.Drawing.Rectangle]::Empty) $stateNote
-                continue
-            }
-            $rect = Find-ValidSlotOnce $slot $Screen $true
-            if (-not $rect.IsEmpty) {
-                Write-RoutineTrace $script:CurrentCycle 'stage-scan' $slot 'candidate-inside-only' $rect $stateNote
-                return [pscustomobject]@{ Slot = $slot; Rect = $rect; Stage = $Stage }
-            }
-            Write-RoutineTrace $script:CurrentCycle 'stage-scan' $slot 'miss-inside' ([System.Drawing.Rectangle]::Empty) $stateNote
-        }
-        if (-not $stateRect.IsEmpty) {
-            $script:PendingCompleteSeen = 0
-            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '상태 기준' 'inside-keep-block-route' $stateRect 'state marker visible; skip complete/exit scan'
-            return [pscustomobject]@{ Slot = '상태 기준'; Rect = $stateRect; Stage = $Stage }
-        }
+
         if ($null -ne $script:Samples['완료 확인']) {
             $completeRect = Find-ValidSlotOnce '완료 확인' $Screen $true
             if (-not $completeRect.IsEmpty) {
@@ -2328,7 +2322,7 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
                 Write-RoutineTrace $script:CurrentCycle 'stage-scan' '완료 확인' 'blocked-by-gate' ([System.Drawing.Rectangle]::Empty) (Get-CompleteGateDetail)
             }
         }
-        Write-RoutineTrace $script:CurrentCycle 'stage-scan' '' 'none' ([System.Drawing.Rectangle]::Empty) 'stage=내부; checked=상태 기준|스킵|식사 버튼|궁극기|팔라딘|완료 확인'
+        Write-RoutineTrace $script:CurrentCycle 'stage-scan' '' 'none' ([System.Drawing.Rectangle]::Empty) 'stage=내부; checked=상태 기준|식사 버튼|궁극기|팔라딘 or 상태미검출시 스킵|완료 확인'
         return $null
     }
     $expectedSlot = $Stage
