@@ -191,6 +191,7 @@ $script:DungeonRoutineEnabled = @{
     '광기의 동굴' = $false
 }
 $script:SuppressDungeonRoutineToggleEvents = $false
+$script:SuppressSlotBoxSelectionEvents = $false
 $script:CombatSlotEnabled = @{}
 foreach ($slot in $script:CombatSlots) { $script:CombatSlotEnabled[$slot] = $true }
 $script:Running = $false
@@ -227,7 +228,7 @@ $script:RoutineTracePath = Join-Path $script:UserDataRoot 'routine_trace_log.csv
 $script:CrashLogPath = Join-Path $script:UserDataRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $script:UserDataRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $script:UserDataRoot 'reports'
-$script:AppVersion = '1.0.68'
+$script:AppVersion = '1.0.69'
 $script:PendingCompleteSeen = 0
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
@@ -3664,7 +3665,15 @@ function Set-DungeonRoutineToggle([string]$Name, [bool]$Enabled) {
     }
     Refresh-Slots
 }
-function Select-Slot([string]$Slot) { $script:SelectedSlot = $Slot; $baseSlot = Resolve-RouteSlotFromStorageKey $Slot; if ($slotBox.Items.Contains($baseSlot) -and $slotBox.SelectedItem -ne $baseSlot) { $slotBox.SelectedItem = $baseSlot }; Refresh-Slots }
+function Select-Slot([string]$Slot) {
+    $script:SelectedSlot = $Slot
+    $baseSlot = Resolve-RouteSlotFromStorageKey $Slot
+    if ($slotBox.Items.Contains($baseSlot) -and $slotBox.SelectedItem -ne $baseSlot) {
+        $script:SuppressSlotBoxSelectionEvents = $true
+        try { $slotBox.SelectedItem = $baseSlot } finally { $script:SuppressSlotBoxSelectionEvents = $false }
+    }
+    Refresh-Slots
+}
 function Mark-ActiveSlot([string]$Slot) { $script:ActiveSlot = $Slot; switch ($Slot) { '메뉴' { Set-ProgressStep 1 } '어비스' { Set-ProgressStep 2 } '던전' { Set-ProgressStep 3 } '입장' { Set-ProgressStep 4 } '상태 기준' { Set-ProgressStep 5 } '완료 확인' { Set-ProgressStep 8 } '나가기' { Set-ProgressStep 9 } default { } } }
 function Handle-FileDrop([string]$Slot, $Data) { $paths = $Data.GetData([System.Windows.Forms.DataFormats]::FileDrop); if ($paths -and $paths.Length -gt 0) { Select-Slot $Slot; Assign-ImageFileToSlot $Slot $paths[0]; Refresh-Slots; $statusLabel.Text = (Get-SlotStatusName $Slot) + ' 슬롯에 이미지 파일을 연결했습니다.' } }
 function Add-DropHandlers($Control, [string]$Slot) { $Control.AllowDrop = $true; $Control.Add_DragEnter({ if ($_.Data.GetDataPresent([System.Windows.Forms.DataFormats]::FileDrop)) { $_.Effect = [System.Windows.Forms.DragDropEffects]::Copy } }.GetNewClosure()); $Control.Add_DragDrop({ Handle-FileDrop $Slot $_.Data }.GetNewClosure()) }
@@ -3857,7 +3866,7 @@ function Run-LocateSelectedSlot {
 function Run-ActualClickProbe { $slot=$script:SelectedSlot; $titlePart=$titleBox.Text.Trim(); if([string]::IsNullOrWhiteSpace($titlePart)){[System.Windows.Forms.MessageBox]::Show('대상 창 제목을 먼저 입력하세요.','실제 클릭 확인')|Out-Null;return}; $target=Find-WindowByTitlePart $titlePart; if($null -eq $target){[System.Windows.Forms.MessageBox]::Show('대상 창을 찾지 못했습니다.','실제 클릭 확인')|Out-Null;return}; $script:TargetHandle=$target.Handle; $screen=$screens[$monitorBox.SelectedIndex]; if((Get-SlotSamplePaths $slot).Count -eq 0){[System.Windows.Forms.MessageBox]::Show('현재 선택 슬롯에 이미지가 없습니다.','실제 클릭 확인')|Out-Null;return}; $rect=Find-Slot $slot $screen; if($rect.IsEmpty){[System.Windows.Forms.MessageBox]::Show('현재 선택 슬롯 이미지를 화면에서 찾지 못했습니다.','실제 클릭 확인')|Out-Null;return}; if([System.Windows.Forms.MessageBox]::Show('선택 슬롯을 한 번 클릭합니다. 반응 여부를 눈으로 확인하세요.','실제 클릭 확인',[System.Windows.Forms.MessageBoxButtons]::OKCancel) -eq [System.Windows.Forms.DialogResult]::OK){[void][NativeInput]::SetForegroundWindow($target.Handle); Start-Sleep -Milliseconds 200; [void](Click-SlotTarget $slot $rect ([int]$stepDelayBox.Value))} }
 $refreshWindowsButton.Add_Click({ Refresh-WindowList })
 $windowBox.Add_SelectedIndexChanged({ if ($windowBox.SelectedItem) { $titleBox.Text = [string]$windowBox.SelectedItem } })
-$slotBox.Add_SelectedIndexChanged({ if ($slotBox.SelectedItem) { $script:SelectedSlot = [string]$slotBox.SelectedItem; Refresh-Slots } })
+$slotBox.Add_SelectedIndexChanged({ if ($script:SuppressSlotBoxSelectionEvents) { return }; if ($slotBox.SelectedItem) { $script:SelectedSlot = [string]$slotBox.SelectedItem; Refresh-Slots } })
 $addButton.Add_Click({ Add-SlotRegionOnly })
 $pointButton.Add_Click({ Add-SlotSample })
 $fileButton.Add_Click({ Import-SelectedSlotFile })

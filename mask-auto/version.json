@@ -1,10 +1,10 @@
 ﻿{
-    "version":  "1.0.68",
+    "version":  "1.0.69",
     "update_mode":  "package",
     "required_reinstall":  false,
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.68_coop_title_guard.zip",
-                    "sha256":  "2ae831cf6d662fe9c6a0368f59f8d918a6842ff2d14886a5404274eb26d31e98",
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.69_coop_confirm_slot_select.zip",
+                    "sha256":  "5def0acb9b1107977eb0b0b275be44f0fb92cc2a30b354c6975a1b6db867c8d9",
                     "files":  [
                                   "local_state_routine_runner.ps1",
                                   "state_samples",
@@ -14,8 +14,8 @@
                               ]
                 },
     "notes":  [
-                  "협동은 중앙 협동 미션 완료 표식이 확인될 때만 처리",
-                  "협동 단계 self-loop 제거",
-                  "협동 하단 버튼 단독 오인 클릭 방지"
+                  "협동 화면 하단 확인 버튼 샘플 추가",
+                  "협동은 중앙 표식 확인 후 하단 확인 버튼을 처리",
+                  "중슬롯 카드 선택 시 드롭다운 이벤트가 저장 키를 되돌리는 문제 수정"
               ]
 }

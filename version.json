@@ -1,18 +1,18 @@
 ﻿{
-    "version":  "1.0.97",
+    "version":  "1.0.98",
     "update_mode":  "package",
     "required_reinstall":  false,
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/gerinogi_update_package_1.0.97_coop_title_guard.zip",
-                    "sha256":  "de955a34381927887d1d9aa6e4690f92d0aac273f4b298dc877e7eb470c58fd8",
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/gerinogi_update_package_1.0.98_coop_confirm_slot_select.zip",
+                    "sha256":  "8b4f15e2ad1819e67cd909395e234862e4ee8ad48c459e3a423c04b18beec330",
                     "files":  [
                                   "local_state_routine_runner.ps1",
                                   "state_samples"
                               ]
                 },
     "notes":  [
-                  "협동은 중앙 협동 미션 완료 표식이 확인될 때만 처리",
-                  "협동 하단 버튼 단독 오인 클릭 방지",
-                  "협동 표식이 없으면 즉시 메뉴 단계로 진행"
+                  "협동 화면 하단 확인 버튼 샘플 추가",
+                  "협동은 중앙 표식 확인 후 하단 확인 버튼을 처리",
+                  "광기의 동굴 슬롯 카드 선택 시 기본 던전 슬롯으로 되돌아가는 문제 수정"
               ]
 }
