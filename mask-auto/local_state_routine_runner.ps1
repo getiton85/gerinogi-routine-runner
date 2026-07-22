@@ -233,7 +233,7 @@ $script:RoutineTracePath = Join-Path $script:UserDataRoot 'routine_trace_log.csv
 $script:CrashLogPath = Join-Path $script:UserDataRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $script:UserDataRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $script:UserDataRoot 'reports'
-$script:AppVersion = '1.0.78'
+$script:AppVersion = '1.0.79'
 $script:PendingCompleteSeen = 0
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
@@ -2308,11 +2308,15 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
             return [pscustomobject]@{ Slot = $stateSlot; Rect = $stateRect; Stage = $Stage }
         }
 
-        $insideBusyRect = Find-EntryBusyGuard $Screen
-        if (-not $insideBusyRect.IsEmpty) {
-            $script:PendingCompleteSeen = 0
-            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '입장_전투중' 'internal-entry-busy-recovery' $insideBusyRect 'inside stage lost state marker on entry combat screen; restore with ESC before other route checks'
-            return [pscustomobject]@{ Slot = '입장_전투중'; Rect = $insideBusyRect; Stage = $Stage }
+        if (-not $script:CombatMarkerSeen) {
+            $insideBusyRect = Find-EntryBusyGuard $Screen
+            if (-not $insideBusyRect.IsEmpty) {
+                $script:PendingCompleteSeen = 0
+                Write-RoutineTrace $script:CurrentCycle 'stage-scan' '입장_전투중' 'internal-entry-busy-recovery' $insideBusyRect 'inside stage has not confirmed combat marker yet; restore with ESC before route checks'
+                return [pscustomobject]@{ Slot = '입장_전투중'; Rect = $insideBusyRect; Stage = $Stage }
+            }
+        } else {
+            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '입장_전투중' 'skip-internal-guard-after-combat' ([System.Drawing.Rectangle]::Empty) 'combat marker was already seen; check skip/complete instead of entry busy recovery'
         }
 
         if (Test-InternalTransitionFrame $Screen) {
@@ -2491,7 +2495,7 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
             if ($null -eq $script:InsideStartedAt) { $script:InsideStartedAt = Get-Date }
             if (-not $script:CombatMarkerSeen) { $script:CombatMarkerSeen = $true }
             $script:PendingCompleteSeen = 0
-            Set-ProgressStep 6
+            Set-ProgressStep 7
             Wait-StateActionSettle '상태 기준'
             return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = '전투중 화면 ESC 복구'; NextStage = $nextStage }
         }
@@ -2560,7 +2564,7 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
             $script:CombatMarkerSeen = $true
             if ($script:BossSkipSeen) { $script:CombatMarkerSeenAfterSkip = $true }
             if ($null -eq $script:InsideStartedAt) { $script:InsideStartedAt = Get-Date }
-            Set-ProgressStep 6
+            Set-ProgressStep 7
             Wait-StateActionSettle $slot
             return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = '상태 기준 확인'; NextStage = $nextStage }
         }
@@ -3767,7 +3771,7 @@ function Select-Slot([string]$Slot) {
     }
     Refresh-Slots
 }
-function Mark-ActiveSlot([string]$Slot) { $script:ActiveSlot = $Slot; switch ($Slot) { '메뉴' { Set-ProgressStep 1 } '어비스' { Set-ProgressStep 2 } '던전' { Set-ProgressStep 3 } '입장' { Set-ProgressStep 4 } '상태 기준' { Set-ProgressStep 6 } '상태 기준2' { Set-ProgressStep 6 } '식사 버튼' { Set-ProgressStep 6 } '궁극기' { Set-ProgressStep 6 } '팔라딘' { Set-ProgressStep 6 } '스킵' { Set-ProgressStep 7 } '완료 확인' { Set-ProgressStep 8 } '나가기' { Set-ProgressStep 9 } default { } } }
+function Mark-ActiveSlot([string]$Slot) { $script:ActiveSlot = $Slot; switch ($Slot) { '메뉴' { Set-ProgressStep 1 } '어비스' { Set-ProgressStep 2 } '던전' { Set-ProgressStep 3 } '입장' { Set-ProgressStep 4 } '상태 기준' { Set-ProgressStep 7 } '상태 기준2' { Set-ProgressStep 7 } '식사 버튼' { Set-ProgressStep 7 } '궁극기' { Set-ProgressStep 7 } '팔라딘' { Set-ProgressStep 7 } '스킵' { Set-ProgressStep 7 } '완료 확인' { Set-ProgressStep 8 } '나가기' { Set-ProgressStep 9 } default { } } }
 function Handle-FileDrop([string]$Slot, $Data) { $paths = $Data.GetData([System.Windows.Forms.DataFormats]::FileDrop); if ($paths -and $paths.Length -gt 0) { Select-Slot $Slot; Assign-ImageFileToSlot $Slot $paths[0]; Refresh-Slots; $statusLabel.Text = (Get-SlotStatusName $Slot) + ' 슬롯에 이미지 파일을 연결했습니다.' } }
 function Add-DropHandlers($Control, [string]$Slot) { $Control.AllowDrop = $true; $Control.Add_DragEnter({ if ($_.Data.GetDataPresent([System.Windows.Forms.DataFormats]::FileDrop)) { $_.Effect = [System.Windows.Forms.DragDropEffects]::Copy } }.GetNewClosure()); $Control.Add_DragDrop({ Handle-FileDrop $Slot $_.Data }.GetNewClosure()) }
 function New-SlotPreviewCard([string]$CardSlot) {
