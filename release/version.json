@@ -1,19 +1,22 @@
-{
-    "version":  "1.0.103",
+﻿{
+    "version":  "1.0.105",
     "update_mode":  "package",
     "required_reinstall":  false,
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/gerinogi_update_package_1.0.103_any_dungeon_start_guard.zip",
-                    "sha256":  "db2d2fc6ac9e49e31e680ee838228e3f2612df01246e48d06b0dca951550795e",
-                    "size":  1422349,
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/gerinogi_update_package_1.0.105_cave_route_data.zip",
+                    "sha256":  "40b15c13bf6b058364659a796f5b7f3084e80ad185628a6b0a6d071e4c2f7915",
+                    "size":  1668679,
                     "files":  [
                                   "local_state_routine_runner.ps1",
+                                  "slot_points.csv",
+                                  "slot_regions.csv",
+                                  "ui_config.json",
                                   "state_samples"
                               ]
                 },
     "notes":  [
-                  "Allow start when any dungeon routine is ON",
-                  "Use all selected dungeon routines instead of Harbor-only start guard",
-                  "Keep existing combat, coop, skip, and click routines unchanged"
+                  "Enable separate cave dungeon sample, region, and coordinate for auto0",
+                  "Normalize cave dungeon storage slot before routine stage transition",
+                  "Keep harbor route and combat route behavior unchanged"
               ]
 }

@@ -1,19 +1,22 @@
 ﻿{
-    "version":  "1.0.104",
+    "version":  "1.0.105",
     "update_mode":  "package",
     "required_reinstall":  false,
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/gerinogi_update_package_1.0.104_inside_coop_guard.zip",
-                    "sha256":  "385ff4cd29eb3574dedad7f7a4b3ebb321ed81d08070fbc92c4f017242258cd2",
-                    "size":  1422971,
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/gerinogi_update_package_1.0.105_cave_route_data.zip",
+                    "sha256":  "40b15c13bf6b058364659a796f5b7f3084e80ad185628a6b0a6d071e4c2f7915",
+                    "size":  1668679,
                     "files":  [
                                   "local_state_routine_runner.ps1",
+                                  "slot_points.csv",
+                                  "slot_regions.csv",
+                                  "ui_config.json",
                                   "state_samples"
                               ]
                 },
     "notes":  [
-                  "Prevent inside-stage coop detection from advancing to menu",
-                  "Keep inside flow active when state marker is temporarily missing",
-                  "Preserve existing samples, coordinates, UI, combat, skip, and click routines"
+                  "Enable separate cave dungeon sample, region, and coordinate for auto0",
+                  "Normalize cave dungeon storage slot before routine stage transition",
+                  "Keep harbor route and combat route behavior unchanged"
               ]
 }
