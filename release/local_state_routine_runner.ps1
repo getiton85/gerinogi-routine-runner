@@ -230,8 +230,10 @@ $script:RoutineTracePath = Join-Path $script:UserDataRoot 'routine_trace_log.csv
 $script:CrashLogPath = Join-Path $script:UserDataRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $script:UserDataRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $script:UserDataRoot 'reports'
-$script:AppVersion = '1.0.94'
+$script:AppVersion = '1.0.95'
 $script:PendingCompleteSeen = 0
+$script:CoopClickAttempts = 0
+$script:MaxCoopClickAttempts = 2
 $script:DiagnosticFailureCount = 0
 $script:DiagnosticDisabledUntil = [DateTime]::MinValue
 $script:IgnoreZones = New-Object System.Collections.Generic.List[object]
@@ -1680,6 +1682,16 @@ function Invoke-FoodButtonIfVisible([System.Windows.Forms.Screen]$Screen, [Syste
     }
     return $true
 }
+function Test-CoopAttemptAllowed {
+    return ([int]$script:CoopClickAttempts -lt [int]$script:MaxCoopClickAttempts)
+}
+function Reset-CoopAttempts {
+    $script:CoopClickAttempts = 0
+}
+function Find-StateMarkerForRouting([System.Windows.Forms.Screen]$Screen) {
+    if ((Get-SlotSamplePaths '상태 기준').Count -eq 0) { return [System.Drawing.Rectangle]::Empty }
+    return Find-ValidSlotOnce '상태 기준' $Screen $true
+}
 function Get-NextRoutineStage([string]$Slot) {
     switch ($Slot) {
         '협동' { return '메뉴확인' }
@@ -1703,8 +1715,16 @@ function Get-NextRoutineStage([string]$Slot) {
 }
 function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$Stage) {
     if ([string]::IsNullOrWhiteSpace($Stage)) { $Stage = '메뉴' }
-    if ($Stage -in @('메뉴','내부','메뉴확인')) {
-        if ((Test-SpecialSlotEnabled '협동') -and (Get-SlotSamplePaths '협동').Count -gt 0) {
+    if ($Stage -ne '내부') {
+        $globalStateRect = Find-StateMarkerForRouting $Screen
+        if (-not $globalStateRect.IsEmpty) {
+            $script:PendingCompleteSeen = 0
+            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '상태 기준' 'global-inside-guard' $globalStateRect ('stage=' + $Stage + '; route/special blocked')
+            return [pscustomobject]@{ Slot = '상태 기준'; Rect = $globalStateRect; Stage = $Stage }
+        }
+    }
+    if ($Stage -in @('메뉴','메뉴확인')) {
+        if ((Test-SpecialSlotEnabled '협동') -and (Get-SlotSamplePaths '협동').Count -gt 0 -and (Test-CoopAttemptAllowed)) {
             $priorityCoopRect = Find-ValidSlotOnce '협동' $Screen $true
             if (-not $priorityCoopRect.IsEmpty) {
                 $script:PendingCompleteSeen = 0
@@ -1713,13 +1733,18 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
             }
             Write-RoutineTrace $script:CurrentCycle 'stage-scan' '협동' 'miss-priority-special' ([System.Drawing.Rectangle]::Empty) ('stage=' + $Stage + '; coop prompt not visible')
         }
-    }    if ($Stage -eq '협동') {
+    }
+    if ($Stage -eq '협동') {
         if (-not (Test-SpecialSlotEnabled '협동')) {
             Write-RoutineTrace $script:CurrentCycle 'stage-scan' '협동' 'skip-special-disabled' ([System.Drawing.Rectangle]::Empty) 'special disabled; continue to menu'
             return [pscustomobject]@{ Slot = '__협동없음'; Rect = [System.Drawing.Rectangle]::Empty; Stage = $Stage }
         }
         if ((Get-SlotSamplePaths '협동').Count -eq 0) {
             Write-RoutineTrace $script:CurrentCycle 'stage-scan' '협동' 'skip-special-after-loop' ([System.Drawing.Rectangle]::Empty) 'missing sample; continue to menu'
+            return [pscustomobject]@{ Slot = '__협동없음'; Rect = [System.Drawing.Rectangle]::Empty; Stage = $Stage }
+        }
+        if (-not (Test-CoopAttemptAllowed)) {
+            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '협동' 'attempt-limit-skip' ([System.Drawing.Rectangle]::Empty) ('attempts=' + $script:CoopClickAttempts + '/' + $script:MaxCoopClickAttempts + '; continue to menu')
             return [pscustomobject]@{ Slot = '__협동없음'; Rect = [System.Drawing.Rectangle]::Empty; Stage = $Stage }
         }
         $coopRect = Find-ValidSlotOnce '협동' $Screen $true
@@ -1867,11 +1892,14 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
             [System.Windows.Forms.Application]::DoEvents()
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'click-before' $rect 'special pre-menu'
             [void](Click-SlotTarget $slot $rect 80 100)
-            Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'click-after' $rect 'next=메뉴확인'
+            $script:CoopClickAttempts = [int]$script:CoopClickAttempts + 1
+            $nextStage = if (Test-CoopAttemptAllowed) { $nextStage } else { '메뉴' }
+            Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'click-after' $rect ('next=' + $nextStage + '; attempts=' + $script:CoopClickAttempts + '/' + $script:MaxCoopClickAttempts)
             Wait-StateActionSettle $slot
             return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = '협동 클릭'; NextStage = $nextStage }
         }
         '입장' {
+            Reset-CoopAttempts
             $StatusLabel.Text = '입장 감지: 클릭 후 내부 진행 감시'
             [System.Windows.Forms.Application]::DoEvents()
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'click-before' $rect 'enter-to-inside; quest removed'
@@ -1892,6 +1920,7 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
             return [pscustomobject]@{ Clicks = [int]$exitResult.Clicks; Completed = $false; Message = '나가기 재탐색'; NextStage = '나가기' }
         }
         '완료 확인' {
+            Reset-CoopAttempts
             $StatusLabel.Text = '완료 확인 감지: 클릭'
             [System.Windows.Forms.Application]::DoEvents()
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'click-before' $rect ''
@@ -1965,6 +1994,7 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
             return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = '퀘스트 클릭'; NextStage = $nextStage }
         }
         default {
+            if ($script:RouteSlots -contains $slot) { Reset-CoopAttempts }
             $StatusLabel.Text = $slot + ' 감지: 클릭'
             [System.Windows.Forms.Application]::DoEvents()
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'click-before' $rect ''
@@ -3315,6 +3345,7 @@ function Start-StateRoutine {
     try {
         $cycle=0
         $insidePhase = $false
+        Reset-CoopAttempts
         $routineStage = '메뉴'
         while(-not $script:StopRequested) {
             $cycle++

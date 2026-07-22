@@ -1,17 +1,17 @@
 ﻿{
-    "version":  "1.0.94",
+    "version":  "1.0.95",
     "update_mode":  "package",
+    "required_reinstall":  false,
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/gerinogi_update_package_1.0.94_slot_scroll_cave_split.zip",
-                    "sha256":  "78acc05ca916e1db1b5e674006eba1654848c0218724c240a0c7791fff33b091",
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/gerinogi_update_package_1.0.95_coop_guard.zip",
+                    "sha256":  "ede70defc4deb77ff92c531dfac44905ec7fa910fde9878a76db23932795a742",
                     "files":  [
                                   "local_state_routine_runner.ps1"
                               ]
                 },
-    "required_reinstall":  false,
     "notes":  [
-                  "Auto0 adds scroll support to the slot classification area.",
-                  "Auto0 separates Harbor and Cave route slot cards, samples, regions, and coordinates.",
-                  "Auto0 Cave route cards no longer share selection/storage with Harbor cards."
+                  "상태 기준 감지 시 외부 루틴/협동 차단",
+                  "협동 클릭 시도 2회 제한 후 메뉴 단계로 진행",
+                  "정상 루틴 진행 시 협동 시도 횟수 초기화"
               ]
 }

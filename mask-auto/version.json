@@ -1,9 +1,10 @@
 ﻿{
-    "version":  "1.0.65",
+    "version":  "1.0.66",
     "update_mode":  "package",
+    "required_reinstall":  false,
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.65_slot_scroll_cave_split.zip",
-                    "sha256":  "ececad6bda592709f8a1b1f88747d6783515254a0e021a04e7b45321ee8f2871",
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.66_coop_guard.zip",
+                    "sha256":  "1862f958fc162c5e7653551bdd8ad2db1871ba91d376e7c375d3e4d05070a679",
                     "files":  [
                                   "local_state_routine_runner.ps1",
                                   "state_samples",
@@ -12,14 +13,9 @@
                                   "ui_config.json"
                               ]
                 },
-    "installer":  {
-                      "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/mask install 1.0.48.exe",
-                      "version":  "1.0.48"
-                  },
-    "required_reinstall":  false,
     "notes":  [
-                  "Auto1 adds scroll support to the slot classification area.",
-                  "Auto1 displays independent Cave route slots for menu, abyss, dungeon, enter, complete, and exit.",
-                  "Auto1 Cave route cards use separate samples, regions, and coordinates from Harbor cards."
+                  "상태 기준 감지 시 외부 루틴/협동 차단",
+                  "협동 클릭 시도 2회 제한 후 메뉴 단계로 진행",
+                  "정상 루틴 진행 시 협동 시도 횟수 초기화"
               ]
 }
