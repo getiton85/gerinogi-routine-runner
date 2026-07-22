@@ -232,7 +232,7 @@ $script:RoutineTracePath = Join-Path $script:UserDataRoot 'routine_trace_log.csv
 $script:CrashLogPath = Join-Path $script:UserDataRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $script:UserDataRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $script:UserDataRoot 'reports'
-$script:AppVersion = '1.0.71'
+$script:AppVersion = '1.0.72'
 $script:PendingCompleteSeen = 0
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
@@ -3259,6 +3259,12 @@ $specialPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([Sy
 $specialPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
 $specialEnabledCheck = New-Object System.Windows.Forms.CheckBox; $specialEnabledCheck.Text = 'Çùµ¿ ON'; $specialEnabledCheck.Checked = $true; $specialEnabledCheck.Dock = 'Left'
 $script:SpecialSlotChecks['Çùµ¿'] = $specialEnabledCheck
+$specialHeaderPanel = New-Object System.Windows.Forms.TableLayoutPanel; $specialHeaderPanel.Dock = 'Fill'; $specialHeaderPanel.ColumnCount = 2; $specialHeaderPanel.RowCount = 1
+$specialHeaderPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
+$specialHeaderPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Absolute, 58))) | Out-Null
+$specialPreviewFoldButton = New-Object System.Windows.Forms.Button; $specialPreviewFoldButton.Text = $script:FoldCloseText; $specialPreviewFoldButton.Dock = 'Fill'; $specialPreviewFoldButton.Font = New-Object System.Drawing.Font($uiFontName, 7, [System.Drawing.FontStyle]::Bold)
+$specialHeaderPanel.Controls.Add($specialEnabledCheck, 0, 0)
+$specialHeaderPanel.Controls.Add($specialPreviewFoldButton, 1, 0)
 $specialSlotPanel = New-Object System.Windows.Forms.TableLayoutPanel; $specialSlotPanel.Dock = 'Fill'; $specialSlotPanel.ColumnCount = 1; $specialSlotPanel.RowCount = 1; $specialSlotPanel.AutoScroll = $false; $specialSlotPanel.Padding = New-Object System.Windows.Forms.Padding(0)
 $specialSlotPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
 $specialSlotPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null

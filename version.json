@@ -1,18 +1,18 @@
 ﻿{
-    "version":  "1.0.99",
+    "version":  "1.0.100",
     "update_mode":  "package",
     "required_reinstall":  false,
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/gerinogi_update_package_1.0.99_complete_gate_middle_fold_base.zip",
-                    "sha256":  "046fb077415266462f3f1418336b4364da799636fff269a8ee4533e6373dc067",
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/gerinogi_update_package_1.0.100_entry_busy_restore.zip",
+                    "sha256":  "f52cd9f16e01a674922dbc29f2a58c153d367743ac3d69238203c2d670cfa73b",
                     "files":  [
                                   "local_state_routine_runner.ps1",
                                   "state_samples"
                               ]
                 },
     "notes":  [
-                  "완료 확인 중앙 하단 오클릭 방지: 내부 진입 시간/전투 표식/스킵 이후 상태 재확인 게이트 추가",
-                  "협동이 꺼져도 완료 확인으로 중앙 하단을 누르던 경로 차단",
-                  "중슬롯 접기/열기 기존 구조 유지"
+                  "입장 화면이 이미 전투 중이면 ESC 두 번으로 복구 후 내부 상태 감시로 복귀",
+                  "상태 기준 감지 시 외부 루틴 차단 유지",
+                  "입장_전투중_가드 샘플 포함"
               ]
 }
