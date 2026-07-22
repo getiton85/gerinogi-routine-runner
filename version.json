@@ -1,17 +1,18 @@
 ﻿{
-    "version":  "1.0.95",
+    "version":  "1.0.97",
     "update_mode":  "package",
     "required_reinstall":  false,
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/gerinogi_update_package_1.0.95_coop_guard.zip",
-                    "sha256":  "ede70defc4deb77ff92c531dfac44905ec7fa910fde9878a76db23932795a742",
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/gerinogi_update_package_1.0.97_coop_title_guard.zip",
+                    "sha256":  "de955a34381927887d1d9aa6e4690f92d0aac273f4b298dc877e7eb470c58fd8",
                     "files":  [
-                                  "local_state_routine_runner.ps1"
+                                  "local_state_routine_runner.ps1",
+                                  "state_samples"
                               ]
                 },
     "notes":  [
-                  "상태 기준 감지 시 외부 루틴/협동 차단",
-                  "협동 클릭 시도 2회 제한 후 메뉴 단계로 진행",
-                  "정상 루틴 진행 시 협동 시도 횟수 초기화"
+                  "협동은 중앙 협동 미션 완료 표식이 확인될 때만 처리",
+                  "협동 하단 버튼 단독 오인 클릭 방지",
+                  "협동 표식이 없으면 즉시 메뉴 단계로 진행"
               ]
 }

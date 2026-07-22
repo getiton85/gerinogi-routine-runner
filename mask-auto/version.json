@@ -1,10 +1,10 @@
 ﻿{
-    "version":  "1.0.66",
+    "version":  "1.0.68",
     "update_mode":  "package",
     "required_reinstall":  false,
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.66_coop_guard.zip",
-                    "sha256":  "1862f958fc162c5e7653551bdd8ad2db1871ba91d376e7c375d3e4d05070a679",
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.68_coop_title_guard.zip",
+                    "sha256":  "2ae831cf6d662fe9c6a0368f59f8d918a6842ff2d14886a5404274eb26d31e98",
                     "files":  [
                                   "local_state_routine_runner.ps1",
                                   "state_samples",
@@ -14,8 +14,8 @@
                               ]
                 },
     "notes":  [
-                  "상태 기준 감지 시 외부 루틴/협동 차단",
-                  "협동 클릭 시도 2회 제한 후 메뉴 단계로 진행",
-                  "정상 루틴 진행 시 협동 시도 횟수 초기화"
+                  "협동은 중앙 협동 미션 완료 표식이 확인될 때만 처리",
+                  "협동 단계 self-loop 제거",
+                  "협동 하단 버튼 단독 오인 클릭 방지"
               ]
 }

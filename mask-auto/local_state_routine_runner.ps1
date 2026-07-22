@@ -227,7 +227,7 @@ $script:RoutineTracePath = Join-Path $script:UserDataRoot 'routine_trace_log.csv
 $script:CrashLogPath = Join-Path $script:UserDataRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $script:UserDataRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $script:UserDataRoot 'reports'
-$script:AppVersion = '1.0.66'
+$script:AppVersion = '1.0.68'
 $script:PendingCompleteSeen = 0
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
@@ -990,7 +990,7 @@ function Get-QuestSlotKey([int]$Index = -1) {
     return '퀘스트_' + ($Index + 1)
 }
 function Get-DungeonRouteSlotKey([string]$DungeonName, [string]$Slot) {
-    if (($DungeonName -eq '광기의 동굴') -and ($script:RouteSlots -contains $Slot)) { return '광기의 동굴_' + $Slot }
+    if (($DungeonName -eq '광기의 동굴') -and ($Slot -eq '던전')) { return '광기의 동굴_' + $Slot }
     return $Slot
 }
 function Get-SlotDisplayName([string]$Slot) {
@@ -1007,7 +1007,7 @@ function Resolve-RouteSlotFromStorageKey([string]$Slot) {
 function Get-EffectiveSlotKey([string]$Slot) {
     if ($Slot -eq '궁극기') { return Get-UltimateSlotKey }
     if ($Slot -eq '퀘스트') { return Get-QuestSlotKey }
-    if ($Slot -like '광기의 동굴_*') { return $Slot }
+    if ($Slot -like '광기의 동굴_*') { $base = $Slot.Substring('광기의 동굴_'.Length); if ($base -eq '던전') { return $Slot }; return $base }
     return $Slot
 }
 function Get-SlotStorageKeys {
@@ -1021,7 +1021,7 @@ function Get-SlotStorageKeys {
             [void]$keys.Add($slot)
         }
     }
-    foreach ($slot in $script:RouteSlots) { [void]$keys.Add((Get-DungeonRouteSlotKey '광기의 동굴' $slot)) }
+    [void]$keys.Add((Get-DungeonRouteSlotKey '광기의 동굴' '던전'))
     return @($keys | Select-Object -Unique)
 }
 function Get-SlotFileStem([string]$Slot) {
@@ -1067,7 +1067,7 @@ function Resolve-SlotStorageName([string]$Name) {
     if ([string]::IsNullOrWhiteSpace($Name)) { return $null }
     if ($Name -match '^궁극기_([1-5])$') { return $Name }
     if ($Name -match '^퀘스트_([1-4])$') { return $Name }
-    if ($Name -like '광기의 동굴_*') { return $Name }
+    if ($Name -like '광기의 동굴_*') { $base = $Name.Substring('광기의 동굴_'.Length); if ($base -eq '던전') { return $Name }; return Resolve-SlotName $base }
     if ($Name -eq '궁극기') { return '궁극기_1' }
     if ($Name -eq '퀘스트') { return '퀘스트_1' }
     return Resolve-SlotName $Name
@@ -2130,10 +2130,72 @@ function Reset-CoopAttempts {
     $script:CoopClickAttempts = 0
 }
 
+function Get-CoopGuardSamplePaths {
+    if (-not (Test-Path -LiteralPath $script:SampleDir)) { return @() }
+    return @(Get-ChildItem -LiteralPath $script:SampleDir -File -Filter '협동_표식*.png' | Sort-Object LastWriteTime -Descending | Select-Object -ExpandProperty FullName)
+}
+function Get-CoopGuardSearchBounds([System.Windows.Forms.Screen]$Screen) {
+    $b = $Screen.Bounds
+    $x = [int]($b.Left + ($b.Width * 0.32))
+    $y = [int]($b.Top + ($b.Height * 0.15))
+    $w = [int]($b.Width * 0.38)
+    $h = [int]($b.Height * 0.28)
+    return [System.Drawing.Rectangle]::new($x, $y, $w, $h)
+}
+function Find-CoopPromptStrict([System.Windows.Forms.Screen]$Screen) {
+    $guardPaths = @(Get-CoopGuardSamplePaths)
+    if ($guardPaths.Count -eq 0) {
+        Write-RoutineTrace $script:CurrentCycle 'stage-scan' '협동' 'missing-guard-sample' ([System.Drawing.Rectangle]::Empty) '협동_표식 sample is required; do not click generic confirm button'
+        return [System.Drawing.Rectangle]::Empty
+    }
+    $guardBounds = Get-CoopGuardSearchBounds $Screen
+    if ($guardBounds.IsEmpty) { return [System.Drawing.Rectangle]::Empty }
+    $guardRect = [System.Drawing.Rectangle]::Empty
+    $guardName = ''
+    foreach ($guardPath in $guardPaths) {
+        if (-not [System.IO.File]::Exists($guardPath)) { continue }
+        $candidate = [VisionFinder]::FindBrightTextSample($guardBounds, $guardPath, 3, 5, 0.72)
+        if ($candidate.IsEmpty) {
+            $candidate = [VisionFinder]::FindSample($guardBounds, $guardPath, 4, 8, [Math]::Max((Get-ColorTolerance), 45), 0.78)
+        }
+        if (-not $candidate.IsEmpty) {
+            $isAmbiguous = $false
+            try { $isAmbiguous = [VisionFinder]::LastAmbiguous } catch { $isAmbiguous = $false }
+            if ($isAmbiguous) {
+                Write-RoutineTrace $script:CurrentCycle 'stage-scan' '협동' 'guard-ambiguous-reject' $candidate (([System.IO.Path]::GetFileName($guardPath)) + '; ' + [VisionFinder]::LastMode + ' ' + ('{0:P1}' -f [VisionFinder]::LastScore))
+                continue
+            }
+            $guardRect = $candidate
+            $guardName = [System.IO.Path]::GetFileName($guardPath)
+            break
+        }
+    }
+    if ($guardRect.IsEmpty) {
+        Write-RoutineTrace $script:CurrentCycle 'stage-scan' '협동' 'guard-miss' $guardBounds '협동 title guard not visible; continue to menu without clicking'
+        return [System.Drawing.Rectangle]::Empty
+    }
+
+    $buttonRect = Find-Slot '협동' $Screen
+    if (-not $buttonRect.IsEmpty) {
+        Write-RoutineTrace $script:CurrentCycle 'stage-scan' '협동' 'guard-confirmed-button-found' $buttonRect ('guard=' + $guardName)
+        return $buttonRect
+    }
+
+    $point = Get-SlotPointScreenPoint '협동'
+    if ($null -ne $point -and (Test-PointInsideSlotRegion '협동' $point $Screen)) {
+        $fallbackRect = [System.Drawing.Rectangle]::new([int]($point.X - 12), [int]($point.Y - 12), 24, 24)
+        Write-RoutineTrace $script:CurrentCycle 'stage-scan' '협동' 'guard-confirmed-point-fallback' $fallbackRect ('guard=' + $guardName + '; button sample miss')
+        return $fallbackRect
+    }
+
+    Write-RoutineTrace $script:CurrentCycle 'stage-scan' '협동' 'guard-found-button-miss' $guardRect ('guard=' + $guardName + '; no valid button target')
+    return [System.Drawing.Rectangle]::Empty
+}
+
 function Get-NextRoutineStage([string]$Slot) {
     switch ($Slot) {
         '__전환대기' { return '내부' }
-        '협동' { if (Test-CoopAttemptAllowed) { return '협동' }; return '메뉴' }
+        '협동' { return '메뉴확인' }
         '메뉴' { return '어비스' }
         '어비스' { return '던전' }
         '던전' { return '입장' }
@@ -2171,7 +2233,7 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
             Write-RoutineTrace $script:CurrentCycle 'stage-scan' '협동' 'skip-special-after-loop' ([System.Drawing.Rectangle]::Empty) 'special disabled or missing sample; continue to menu'
             return [pscustomobject]@{ Slot = '__협동없음'; Rect = [System.Drawing.Rectangle]::Empty; Stage = $Stage }
         }
-        $coopRect = Find-ValidSlotOnce '협동' $Screen $true
+        $coopRect = Find-CoopPromptStrict $Screen
         if (-not $coopRect.IsEmpty) {
             Write-RoutineTrace $script:CurrentCycle 'stage-scan' '협동' 'candidate-after-loop' $coopRect ('stage=협동; special after loop; attempts=' + $script:CoopClickAttempts)
             return [pscustomobject]@{ Slot = '협동'; Rect = $coopRect; Stage = $Stage }
@@ -2269,6 +2331,7 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
     if ($Stage -eq '메뉴확인') { $expectedSlot = '메뉴' }
     if ($Stage -eq '완료') { $expectedSlot = '완료 확인' }
     if ($Stage -eq '종료') { $expectedSlot = '나가기' }
+    if ($script:RouteSlots -contains $expectedSlot) { $expectedSlot = Get-ActiveRouteSlotKey $expectedSlot }
     if ((Get-SlotSamplePaths $expectedSlot).Count -eq 0) {
         Write-RoutineTrace $script:CurrentCycle 'stage-scan' $expectedSlot 'missing-sample' ([System.Drawing.Rectangle]::Empty) ('stage=' + $Stage)
         return $null
@@ -2584,6 +2647,12 @@ function Test-AnyDungeonRoutineEnabled {
     return ((Test-DungeonRoutineEnabled '허상의 정박지') -or (Test-DungeonRoutineEnabled '광기의 동굴'))
 }
 
+function Get-ActiveRouteSlotKey([string]$Slot) {
+    if ($Slot -eq '던전' -and (Test-DungeonRoutineEnabled '광기의 동굴') -and -not (Test-DungeonRoutineEnabled '허상의 정박지')) {
+        return (Get-DungeonRouteSlotKey '광기의 동굴' $Slot)
+    }
+    return $Slot
+}
 function Test-CombatSlotEnabled([string]$Slot) {
     if (-not ($script:CombatSlots -contains $Slot)) { return $true }
     try {
@@ -3851,7 +3920,7 @@ function Start-StateRoutine {
     if ($script:Running) { [System.Windows.Forms.MessageBox]::Show('이미 실행 중입니다.', '실행') | Out-Null; return }
     if (-not (Test-AnyDungeonRoutineEnabled)) { [System.Windows.Forms.MessageBox]::Show('사용할 던전 루틴이 OFF 상태입니다. 허상의 정박지 또는 광기의 동굴 ON을 체크하세요.', '실행') | Out-Null; return }
     $optionalSlots = @('식사 버튼','궁극기','스킵','팔라딘')
-    foreach ($slot in $script:RouteSlots + @('상태 기준')) { if ($optionalSlots -contains $slot) { continue }; if (-not (Test-SlotEnabled $slot)) { continue }; if ((Get-SlotSamplePaths $slot).Count -eq 0) { [System.Windows.Forms.MessageBox]::Show((Get-SlotStatusName $slot) + ' 슬롯 이미지가 필요합니다.', '실행') | Out-Null; return } }
+    foreach ($slot in $script:RouteSlots + @('상태 기준')) { if ($optionalSlots -contains $slot) { continue }; $requiredSlot = if ($script:RouteSlots -contains $slot) { Get-ActiveRouteSlotKey $slot } else { $slot }; if (-not (Test-SlotEnabled $requiredSlot)) { continue }; if ((Get-SlotSamplePaths $requiredSlot).Count -eq 0) { [System.Windows.Forms.MessageBox]::Show((Get-SlotStatusName $requiredSlot) + ' 슬롯 이미지가 필요합니다.', '실행') | Out-Null; return } }
     $titlePart = $titleBox.Text.Trim(); if ([string]::IsNullOrWhiteSpace($titlePart)) { [System.Windows.Forms.MessageBox]::Show('대상 창 제목을 반드시 입력해야 합니다.', '실행') | Out-Null; return }
     $target = Get-SelectedTargetWindow $titlePart; if ($null -eq $target) { [System.Windows.Forms.MessageBox]::Show('대상 창을 찾지 못했습니다.', '실행') | Out-Null; return }
     $script:TargetHandle = $target.Handle; $screen = $screens[$monitorBox.SelectedIndex]
