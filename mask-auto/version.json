@@ -1,12 +1,12 @@
 ﻿{
-    "version":  "1.0.81",
+    "version":  "1.0.82",
     "update_mode":  "package",
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/state_routine_update_package_1.0.81.zip",
-                    "sha256":  "b0d71febb5626f4554610d6ab34564a488fcdb2786519d1275bab343064c70f3",
-                    "size":  844752
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/state_routine_update_package_1.0.82.zip",
+                    "sha256":  "af5d42c762ed2a992af4db8a393dc5234f763930bbcca93ad8f523f246222832",
+                    "size":  844294
                 },
     "required_reinstall":  false,
-    "notes":  "Reduce image-search UI blocking and rotate large runtime logs to archived_logs.",
-    "updated_at":  "2026-07-22T21:10:11+09:00"
+    "notes":  "Fix cave dungeon stage transition, keep collapsed slot sections reopenable, and reduce routine settle delay.",
+    "updated_at":  "2026-07-22T22:02:53+09:00"
 }

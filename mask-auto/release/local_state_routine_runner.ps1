@@ -233,7 +233,7 @@ $script:RoutineTracePath = Join-Path $script:UserDataRoot 'routine_trace_log.csv
 $script:CrashLogPath = Join-Path $script:UserDataRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $script:UserDataRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $script:UserDataRoot 'reports'
-$script:AppVersion = '1.0.81'
+$script:AppVersion = '1.0.82'
 $script:PendingCompleteSeen = 0
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
@@ -2255,6 +2255,7 @@ function Find-CoopPromptStrict([System.Windows.Forms.Screen]$Screen) {
 }
 
 function Get-NextRoutineStage([string]$Slot) {
+    $Slot = Resolve-RouteSlotFromStorageKey $Slot
     switch ($Slot) {
         '__전환대기' { return '내부' }
         '협동' { return '메뉴확인' }
@@ -2453,15 +2454,15 @@ function Get-StateActionSettleMs([string]$Slot) {
     switch ($Slot) {
         '__전환대기' { return 800 }
         '협동' { return 600 }
-        '메뉴' { return 900 }
-        '어비스' { return 900 }
-        '던전' { return 900 }
+        '메뉴' { return 650 }
+        '어비스' { return 650 }
+        '던전' { return 650 }
         '입장' { return 1800 }
-        '상태 기준' { return 450 }
+        '상태 기준' { return 250 }
         '완료 확인' { return 1800 }
         '식사 버튼' { return 900 }
         '궁극기' { return 600 }
-        '스킵' { return 700 }
+        '스킵' { return 450 }
         '팔라딘' { return 900 }
         default { return 900 }
     }
@@ -3695,25 +3696,25 @@ function Get-SelectedTargetWindow([string]$TitlePart) {
 }
 function Update-SlotPreviewCollapsed {
     $groupVisible = -not $script:SlotPreviewCollapsed
-    $specialPreviewGroup.Visible = $groupVisible
-    $routePreviewGroup.Visible = $groupVisible
-    $cavePreviewGroup.Visible = $groupVisible
-    $combatPreviewGroup.Visible = $groupVisible
+    $specialPreviewGroup.Visible = $true
+    $routePreviewGroup.Visible = $true
+    $cavePreviewGroup.Visible = $true
+    $combatPreviewGroup.Visible = $true
     $specialSlotPanel.Visible = $groupVisible -and (-not $script:SpecialPreviewCollapsed)
     $routeSlotPanel.Visible = $groupVisible -and (-not $script:RoutePreviewCollapsed)
     $caveSlotPanel.Visible = $groupVisible -and (-not $script:CavePreviewCollapsed)
     $combatSlotPanel.Visible = $groupVisible -and (-not $script:CombatPreviewCollapsed)
     $ultimateProfilePanel.Visible = $groupVisible -and (-not $script:CombatPreviewCollapsed)
-    $slotPreviewTable.RowStyles[1].Height = if (-not $groupVisible) { 0 } elseif ($script:SpecialPreviewCollapsed) { 30 } else { 96 }
-    $slotPreviewTable.RowStyles[2].Height = if (-not $groupVisible) { 0 } elseif ($script:RoutePreviewCollapsed) { 30 } else { 146 }
-    $slotPreviewTable.RowStyles[3].Height = if (-not $groupVisible) { 0 } elseif ($script:CavePreviewCollapsed) { 30 } else { 118 }
-    $slotPreviewTable.RowStyles[4].Height = if (-not $groupVisible) { 0 } elseif ($script:CombatPreviewCollapsed) { 34 } else { 150 }
+    $slotPreviewTable.RowStyles[1].Height = if (-not $groupVisible) { 42 } elseif ($script:SpecialPreviewCollapsed) { 42 } else { 96 }
+    $slotPreviewTable.RowStyles[2].Height = if (-not $groupVisible) { 42 } elseif ($script:RoutePreviewCollapsed) { 42 } else { 146 }
+    $slotPreviewTable.RowStyles[3].Height = if (-not $groupVisible) { 42 } elseif ($script:CavePreviewCollapsed) { 42 } else { 118 }
+    $slotPreviewTable.RowStyles[4].Height = if (-not $groupVisible) { 42 } elseif ($script:CombatPreviewCollapsed) { 42 } else { 150 }
     $slotPreviewToggleButton.Text = if ($script:SlotPreviewCollapsed) { $script:FoldOpenText } else { $script:FoldCloseText }
     $specialPreviewFoldButton.Text = if ($script:SpecialPreviewCollapsed) { $script:FoldOpenText } else { $script:FoldCloseText }
     $routePreviewFoldButton.Text = if ($script:RoutePreviewCollapsed) { $script:FoldOpenText } else { $script:FoldCloseText }
     $cavePreviewFoldButton.Text = if ($script:CavePreviewCollapsed) { $script:FoldOpenText } else { $script:FoldCloseText }
     $combatPreviewFoldButton.Text = if ($script:CombatPreviewCollapsed) { $script:FoldOpenText } else { $script:FoldCloseText }
-    $gameTable.RowStyles[2].Height = if ($script:SlotPreviewCollapsed) { 56 } else { 508 }
+    $gameTable.RowStyles[2].Height = if ($script:SlotPreviewCollapsed) { 236 } else { 508 }
 }
 function Toggle-SlotPreview {
     $script:SlotPreviewCollapsed = -not $script:SlotPreviewCollapsed
