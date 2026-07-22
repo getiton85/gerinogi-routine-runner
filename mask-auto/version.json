@@ -1,22 +1,9 @@
 ﻿{
-    "version":  "1.0.77",
-    "update_mode":  "package",
+    "version":  "1.0.78",
+    "package":  "packages/state_routine_update_package_1.0.78.zip",
+    "sha256":  "448354324df65f13616e3f776588ed99254d70d14e62e544184a1fb1b52918d1",
+    "size":  843749,
     "required_reinstall":  false,
-    "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.77_complete_outer_stability_fix.zip",
-                    "sha256":  "E26FCC196A2BABAD5171DE04DB0A1AAB9B306A671B02BBF39840597A6AE0A131",
-                    "size":  564500,
-                    "files":  [
-                                  "local_state_routine_runner.ps1",
-                                  "state_samples",
-                                  "slot_points.csv",
-                                  "slot_regions.csv",
-                                  "ui_config.json"
-                              ]
-                },
-    "notes":  [
-                  "Let completion candidates pass the inner instant recheck and rely on the outer two-cycle completion confirmation.",
-                  "Prevents confirmed clear screens from being discarded when the animated result screen flickers between checks.",
-                  "Keeps external route blocking and combat-state separation from 1.0.76 unchanged."
-              ]
+    "notes":  "Add combat state marker 2 from consumable slots and keep combat progress while internal combat is visible.",
+    "updated_at":  "2026-07-22T16:41:46+09:00"
 }
