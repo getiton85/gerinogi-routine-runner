@@ -232,7 +232,7 @@ $script:RoutineTracePath = Join-Path $script:UserDataRoot 'routine_trace_log.csv
 $script:CrashLogPath = Join-Path $script:UserDataRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $script:UserDataRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $script:UserDataRoot 'reports'
-$script:AppVersion = '1.0.76'
+$script:AppVersion = '1.0.77'
 $script:PendingCompleteSeen = 0
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
@@ -2042,6 +2042,11 @@ function Find-ValidSlotOnce([string]$Slot, [System.Windows.Forms.Screen]$Screen,
             Write-RoutineTrace $script:CurrentCycle 'single-find' $Slot 'found-invalid' $rect $pointResult.Message
             return [System.Drawing.Rectangle]::Empty
         }
+    }
+    if ($Slot -eq '완료 확인') {
+        Write-RoutineTrace $script:CurrentCycle 'single-find' $Slot 'outer-stability-required' $rect 'completion candidate accepted for outer two-cycle confirmation'
+        Write-RoutineTrace $script:CurrentCycle 'single-find' $Slot 'found-valid' $rect ''
+        return $rect
     }
     if (Test-SlotNeedsStableConfirm $Slot) {
         Start-Sleep -Milliseconds 120

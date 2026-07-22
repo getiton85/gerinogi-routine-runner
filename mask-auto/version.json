@@ -1,11 +1,11 @@
 ﻿{
-    "version":  "1.0.76",
+    "version":  "1.0.77",
     "update_mode":  "package",
     "required_reinstall":  false,
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.76_state_missing_complete_fix.zip",
-                    "sha256":  "39457B73B08442AFC403077A6284E022EEDDDF84F7EA9BFEAA903245EE021850",
-                    "size":  564443,
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.77_complete_outer_stability_fix.zip",
+                    "sha256":  "E26FCC196A2BABAD5171DE04DB0A1AAB9B306A671B02BBF39840597A6AE0A131",
+                    "size":  564500,
                     "files":  [
                                   "local_state_routine_runner.ps1",
                                   "state_samples",
@@ -15,8 +15,8 @@
                               ]
                 },
     "notes":  [
-                  "Block food/ultimate/paladin scans when the state marker is missing so skip and completion checks can run.",
-                  "Keep combat helpers limited to state-marker-visible internal phase.",
-                  "Preserve the cave dungeon region and refreshed skip sample from 1.0.75."
+                  "Let completion candidates pass the inner instant recheck and rely on the outer two-cycle completion confirmation.",
+                  "Prevents confirmed clear screens from being discarded when the animated result screen flickers between checks.",
+                  "Keeps external route blocking and combat-state separation from 1.0.76 unchanged."
               ]
 }
