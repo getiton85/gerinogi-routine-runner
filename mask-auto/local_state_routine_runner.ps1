@@ -232,7 +232,7 @@ $script:RoutineTracePath = Join-Path $script:UserDataRoot 'routine_trace_log.csv
 $script:CrashLogPath = Join-Path $script:UserDataRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $script:UserDataRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $script:UserDataRoot 'reports'
-$script:AppVersion = '1.0.73'
+$script:AppVersion = '1.0.74'
 $script:PendingCompleteSeen = 0
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
@@ -2291,8 +2291,21 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
         if (Test-InternalTransitionFrame $Screen) {
             return [pscustomobject]@{ Slot = '__ÀüÈ¯´ë±â'; Rect = [System.Drawing.Rectangle]::Empty; Stage = $Stage }
         }
-
-        Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'ÀüÅõ½½·Ô' 'blocked-state-missing' ([System.Drawing.Rectangle]::Empty) 'state marker not visible; food/ultimate/paladin deferred; check skip then complete'
+        Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'ÀüÅõ½½·Ô' 'state-missing-combat-probe' ([System.Drawing.Rectangle]::Empty) 'state marker not visible; probe food/ultimate/paladin before skip/complete'
+        foreach ($slot in @('½Ä»ç ¹öÆ°','±Ã±Ø±â','ÆÈ¶óµò')) {
+            if (Test-StopRequested) { return $null }
+            if ((Get-SlotSamplePaths $slot).Count -eq 0) {
+                Write-RoutineTrace $script:CurrentCycle 'stage-scan' $slot 'missing-sample-state-missing' ([System.Drawing.Rectangle]::Empty) $stateNote
+                continue
+            }
+            $rect = Find-ValidSlotOnce $slot $Screen $true
+            if (-not $rect.IsEmpty) {
+                $script:CombatMarkerSeen = $true
+                Write-RoutineTrace $script:CurrentCycle 'stage-scan' $slot 'candidate-state-missing-combat-first' $rect $stateNote
+                return [pscustomobject]@{ Slot = $slot; Rect = $rect; Stage = $Stage }
+            }
+            Write-RoutineTrace $script:CurrentCycle 'stage-scan' $slot 'miss-state-missing-combat-first' ([System.Drawing.Rectangle]::Empty) $stateNote
+        }
 
         if ((Get-SlotSamplePaths '½ºÅµ').Count -gt 0) {
             $skipRect = Find-ValidSlotOnce '½ºÅµ' $Screen $true
