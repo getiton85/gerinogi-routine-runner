@@ -231,8 +231,14 @@ $script:RoutineTracePath = Join-Path $script:UserDataRoot 'routine_trace_log.csv
 $script:CrashLogPath = Join-Path $script:UserDataRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $script:UserDataRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $script:UserDataRoot 'reports'
-$script:AppVersion = '1.0.98'
+$script:AppVersion = '1.0.99'
 $script:PendingCompleteSeen = 0
+$script:InsideStartedAt = $null
+$script:MinimumCompleteWaitMs = 30000
+$script:LongCompleteFallbackMs = 60000
+$script:CombatMarkerSeen = $false
+$script:BossSkipSeen = $false
+$script:CombatMarkerSeenAfterSkip = $false
 $script:CoopClickAttempts = 0
 $script:MaxCoopClickAttempts = 2
 $script:DiagnosticFailureCount = 0
@@ -1776,6 +1782,29 @@ function Get-NextRoutineStage([string]$Slot) {
         default { return '' }
     }
 }
+function Test-CompleteWaitElapsed {
+    if ($null -eq $script:InsideStartedAt) { return $false }
+    $elapsedMs = ((Get-Date) - $script:InsideStartedAt).TotalMilliseconds
+    return ($elapsedMs -ge [double]$script:MinimumCompleteWaitMs)
+}
+function Test-CompleteAllowed {
+    if (-not (Test-CompleteWaitElapsed)) { return $false }
+    if ($null -eq $script:InsideStartedAt) { return $false }
+    $elapsedMs = ((Get-Date) - $script:InsideStartedAt).TotalMilliseconds
+    $longFallbackReady = ($elapsedMs -ge [double]$script:LongCompleteFallbackMs)
+    if (-not $script:CombatMarkerSeen -and -not $longFallbackReady) { return $false }
+    if ($script:BossSkipSeen -and -not $script:CombatMarkerSeenAfterSkip -and -not $longFallbackReady) { return $false }
+    return $true
+}
+function Test-CompleteVisualCandidateAllowed {
+    return (Test-CompleteAllowed)
+}
+function Get-CompleteGateDetail {
+    if ($null -eq $script:InsideStartedAt) { return 'inside start time missing' }
+    $elapsedMs = [int](((Get-Date) - $script:InsideStartedAt).TotalMilliseconds)
+    return ('elapsedMs={0}; requiredMs={1}; fallbackMs={2}; fallbackReady={3}; combatSeen={4}; skipSeen={5}; combatAfterSkip={6}' -f $elapsedMs, $script:MinimumCompleteWaitMs, $script:LongCompleteFallbackMs, ($elapsedMs -ge [int]$script:LongCompleteFallbackMs), $script:CombatMarkerSeen, $script:BossSkipSeen, $script:CombatMarkerSeenAfterSkip)
+}
+
 function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$Stage) {
     if ([string]::IsNullOrWhiteSpace($Stage)) { $Stage = '메뉴' }
     if ($Stage -ne '내부') {
@@ -1874,12 +1903,18 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
         if ($null -ne $script:Samples['완료 확인']) {
             $completeRect = Find-ValidSlotOnce '완료 확인' $Screen $true
             if (-not $completeRect.IsEmpty) {
-                $script:PendingCompleteSeen = [int]$script:PendingCompleteSeen + 1
-                Write-RoutineTrace $script:CurrentCycle 'stage-scan' '완료 확인' 'candidate-after-inside-pending' $completeRect ('state marker not visible; stable=' + $script:PendingCompleteSeen + '/2')
-                if ($script:PendingCompleteSeen -lt 2) { return $null }
-                $script:PendingCompleteSeen = 0
-                Write-RoutineTrace $script:CurrentCycle 'stage-scan' '완료 확인' 'candidate-after-inside' $completeRect 'state marker not visible; stable confirmed'
-                return [pscustomobject]@{ Slot = '완료 확인'; Rect = $completeRect; Stage = $Stage }
+                if (Test-CompleteVisualCandidateAllowed) {
+                    $script:PendingCompleteSeen = [int]$script:PendingCompleteSeen + 1
+                    Write-RoutineTrace $script:CurrentCycle 'stage-scan' '완료 확인' 'candidate-after-inside-pending' $completeRect ('state marker not visible; stable=' + $script:PendingCompleteSeen + '/2')
+                    if ($script:PendingCompleteSeen -lt 2) { return $null }
+                    $script:PendingCompleteSeen = 0
+                    Write-RoutineTrace $script:CurrentCycle 'stage-scan' '완료 확인' 'candidate-after-inside' $completeRect 'state marker not visible; stable confirmed'
+                    return [pscustomobject]@{ Slot = '완료 확인'; Rect = $completeRect; Stage = $Stage }
+                }
+                else {
+                    $script:PendingCompleteSeen = 0
+                    Write-RoutineTrace $script:CurrentCycle 'stage-scan' '' 'candidate-blocked-by-strict-gate' $completeRect ('state marker not visible; ' + (Get-CompleteGateDetail))
+                }
             }
         }
         $script:PendingCompleteSeen = 0
@@ -1970,6 +2005,10 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
             [void](Click-SlotTarget $slot $rect ([int]$stepDelayBox.Value))
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'click-after' $rect 'inside phase enabled'
             $InsidePhase.Value = $true
+            $script:InsideStartedAt = Get-Date
+            $script:CombatMarkerSeen = $false
+            $script:BossSkipSeen = $false
+            $script:CombatMarkerSeenAfterSkip = $false
             Set-ProgressStep 5
             Wait-StateActionSettle $slot
             return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = '입장 클릭 후 내부 감시'; NextStage = $nextStage }
@@ -1978,6 +2017,10 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
             $exitResult = Invoke-ExitActionUntilClosed $Screen $StatusLabel $rect
             if ($exitResult.Closed) {
                 $InsidePhase.Value = $false
+                $script:InsideStartedAt = $null
+                $script:CombatMarkerSeen = $false
+                $script:BossSkipSeen = $false
+                $script:CombatMarkerSeenAfterSkip = $false
                 Set-ProgressStep 10
                 return [pscustomobject]@{ Clicks = [int]$exitResult.Clicks; Completed = $true; Message = '순환 완료'; NextStage = '메뉴' }
             }
@@ -2023,6 +2066,8 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'click-before' $rect 'inside-only'
             [void](Click-SlotTarget $slot $rect 250 120)
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'click-after' $rect ''
+            $script:BossSkipSeen = $true
+            $script:CombatMarkerSeenAfterSkip = $false
             Wait-StateActionSettle $slot
             return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = '스킵 클릭'; NextStage = $nextStage }
         }
@@ -2042,6 +2087,9 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
             [System.Windows.Forms.Application]::DoEvents()
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'inside-observe-only' $rect 'blocked route slots while visible'
             $InsidePhase.Value = $true
+            $script:CombatMarkerSeen = $true
+            if ($script:BossSkipSeen) { $script:CombatMarkerSeenAfterSkip = $true }
+            if ($null -eq $script:InsideStartedAt) { $script:InsideStartedAt = Get-Date }
             Set-ProgressStep 5
             Wait-StateActionSettle $slot
             return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = '상태 기준 확인'; NextStage = $nextStage }
@@ -2053,6 +2101,7 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
             [void](Click-SlotTarget $slot $rect ([int]$stepDelayBox.Value) 120)
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'click-after' $rect ''
             $InsidePhase.Value = $true
+            if ($null -eq $script:InsideStartedAt) { $script:InsideStartedAt = Get-Date }
             Set-ProgressStep 7
             Wait-StateActionSettle $slot
             return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = '퀘스트 클릭'; NextStage = $nextStage }
@@ -3479,7 +3528,6 @@ $script:HotKeyFilter = New-Object HotKeyWindowFilter
 $script:HotKeyFilter.OnHotKey = [Action[int]]{ param($id) if($id -eq 801 -and -not $script:Running){ Add-SlotSample }; if($id -eq 803 -and -not $script:Running){ Start-StateRoutine }; if($id -eq 804){ $script:StopRequested=$true; $statusLabel.Text='중단 요청됨.' }; if($id -eq 805 -and -not $script:Running){ Save-CurrentPointForSelectedSlot } }
 [System.Windows.Forms.Application]::AddMessageFilter($script:HotKeyFilter)
 [void]$form.ShowDialog()
-
 
 
 

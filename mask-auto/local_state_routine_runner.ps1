@@ -184,6 +184,10 @@ foreach ($slot in $script:Slots) { $script:Samples[$slot] = $null; $script:SlotP
 $script:SelectedSlot = '상태 기준'
 $script:ActiveSlot = ''
 $script:SlotPreviewCollapsed = $false
+$script:SpecialPreviewCollapsed = $false
+$script:RoutePreviewCollapsed = $false
+$script:CavePreviewCollapsed = $false
+$script:CombatPreviewCollapsed = $false
 $script:AdvancedToolsCollapsed = $true
 $script:HarborEnabled = $true
 $script:DungeonRoutineEnabled = @{
@@ -228,7 +232,7 @@ $script:RoutineTracePath = Join-Path $script:UserDataRoot 'routine_trace_log.csv
 $script:CrashLogPath = Join-Path $script:UserDataRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $script:UserDataRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $script:UserDataRoot 'reports'
-$script:AppVersion = '1.0.69'
+$script:AppVersion = '1.0.71'
 $script:PendingCompleteSeen = 0
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
@@ -1967,8 +1971,7 @@ function Test-CompleteAllowed {
     return $true
 }
 function Test-CompleteVisualCandidateAllowed {
-    if (-not (Test-CompleteWaitElapsed)) { return $false }
-    return $true
+    return (Test-CompleteAllowed)
 }
 function Test-CompleteRecoveryScanAllowed([string]$Stage) {
     if (Test-CompleteAllowed) { return $true }
@@ -3259,7 +3262,7 @@ $script:SpecialSlotChecks['협동'] = $specialEnabledCheck
 $specialSlotPanel = New-Object System.Windows.Forms.TableLayoutPanel; $specialSlotPanel.Dock = 'Fill'; $specialSlotPanel.ColumnCount = 1; $specialSlotPanel.RowCount = 1; $specialSlotPanel.AutoScroll = $false; $specialSlotPanel.Padding = New-Object System.Windows.Forms.Padding(0)
 $specialSlotPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
 $specialSlotPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
-$specialPreviewTable.Controls.Add($specialEnabledCheck, 0, 0)
+$specialPreviewTable.Controls.Add($specialHeaderPanel, 0, 0)
 $specialPreviewTable.Controls.Add($specialSlotPanel, 0, 1)
 $specialPreviewGroup.Controls.Add($specialPreviewTable)
 
@@ -3267,13 +3270,16 @@ $routePreviewGroup = New-Object System.Windows.Forms.GroupBox; $routePreviewGrou
 $routePreviewTable = New-Object System.Windows.Forms.TableLayoutPanel; $routePreviewTable.Dock = 'Fill'; $routePreviewTable.ColumnCount = 1; $routePreviewTable.RowCount = 2
 $routePreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 22))) | Out-Null
 $routePreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
-$routeTogglePanel = New-Object System.Windows.Forms.TableLayoutPanel; $routeTogglePanel.Dock = 'Fill'; $routeTogglePanel.ColumnCount = 2; $routeTogglePanel.RowCount = 1
+$routeTogglePanel = New-Object System.Windows.Forms.TableLayoutPanel; $routeTogglePanel.Dock = 'Fill'; $routeTogglePanel.ColumnCount = 3; $routeTogglePanel.RowCount = 1
 $routeTogglePanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 50))) | Out-Null
 $routeTogglePanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 50))) | Out-Null
+$routeTogglePanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Absolute, 62))) | Out-Null
 $harborEnabledCheck = New-Object System.Windows.Forms.CheckBox; $harborEnabledCheck.Text = '허상의 정박지 ON'; $harborEnabledCheck.Checked = $true; $harborEnabledCheck.Dock = 'Fill'; $harborEnabledCheck.Font = New-Object System.Drawing.Font($uiFontName, 7)
 $caveEnabledCheck = New-Object System.Windows.Forms.CheckBox; $caveEnabledCheck.Text = '광기의 동굴 ON'; $caveEnabledCheck.Checked = $false; $caveEnabledCheck.Dock = 'Fill'; $caveEnabledCheck.Font = New-Object System.Drawing.Font($uiFontName, 7)
 $routeTogglePanel.Controls.Add($harborEnabledCheck, 0, 0)
 $routeTogglePanel.Controls.Add($caveEnabledCheck, 1, 0)
+$routePreviewFoldButton = New-Object System.Windows.Forms.Button; $routePreviewFoldButton.Text = $script:FoldCloseText; $routePreviewFoldButton.Dock = 'Fill'
+$routeTogglePanel.Controls.Add($routePreviewFoldButton, 2, 0)
 $routeSlotPanel = New-Object System.Windows.Forms.TableLayoutPanel; $routeSlotPanel.Dock = 'Fill'; $routeSlotPanel.ColumnCount = 7; $routeSlotPanel.RowCount = 1; $routeSlotPanel.AutoScroll = $false; $routeSlotPanel.Padding = New-Object System.Windows.Forms.Padding(0)
 for ($si = 0; $si -lt 7; $si++) { $routeSlotPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 14.28))) | Out-Null }
 $routeSlotPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
@@ -3289,7 +3295,8 @@ $caveTogglePanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([
 $caveTogglePanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 50))) | Out-Null
 $caveToggleSpacer = New-Object System.Windows.Forms.Label; $caveToggleSpacer.Text = ''; $caveToggleSpacer.Dock = 'Fill'
 $caveTogglePanel.Controls.Add($caveEnabledCheck, 0, 0)
-$caveTogglePanel.Controls.Add($caveToggleSpacer, 1, 0)
+$cavePreviewFoldButton = New-Object System.Windows.Forms.Button; $cavePreviewFoldButton.Text = $script:FoldCloseText; $cavePreviewFoldButton.Dock = 'Fill'
+$caveTogglePanel.Controls.Add($cavePreviewFoldButton, 1, 0)
 $caveSlotPanel = New-Object System.Windows.Forms.TableLayoutPanel; $caveSlotPanel.Dock = 'Fill'; $caveSlotPanel.ColumnCount = 7; $caveSlotPanel.RowCount = 1; $caveSlotPanel.AutoScroll = $false; $caveSlotPanel.Padding = New-Object System.Windows.Forms.Padding(0)
 for ($si = 0; $si -lt 7; $si++) { $caveSlotPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 14.28))) | Out-Null }
 $caveSlotPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
@@ -3302,8 +3309,8 @@ $combatPreviewTable = New-Object System.Windows.Forms.TableLayoutPanel; $combatP
 $combatPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 24))) | Out-Null
 $combatPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 24))) | Out-Null
 $combatPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
-$combatTogglePanel = New-Object System.Windows.Forms.TableLayoutPanel; $combatTogglePanel.Dock = 'Fill'; $combatTogglePanel.ColumnCount = 5; $combatTogglePanel.RowCount = 1
-for ($si = 0; $si -lt 5; $si++) { $combatTogglePanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 20))) | Out-Null }
+$combatTogglePanel = New-Object System.Windows.Forms.TableLayoutPanel; $combatTogglePanel.Dock = 'Fill'; $combatTogglePanel.ColumnCount = 6; $combatTogglePanel.RowCount = 1
+for ($si = 0; $si -lt 5; $si++) { $combatTogglePanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 20))) | Out-Null }; $combatTogglePanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Absolute, 62))) | Out-Null
 $script:CombatSlotChecks = @{}
 $combatToggleIndex = 0
 foreach ($slot in $script:CombatSlots) {
@@ -3316,6 +3323,8 @@ foreach ($slot in $script:CombatSlots) {
     $combatTogglePanel.Controls.Add($check, $combatToggleIndex, 0)
     $combatToggleIndex++
 }
+$combatPreviewFoldButton = New-Object System.Windows.Forms.Button; $combatPreviewFoldButton.Text = $script:FoldCloseText; $combatPreviewFoldButton.Dock = 'Fill'
+$combatTogglePanel.Controls.Add($combatPreviewFoldButton, 5, 0)
 $combatSlotPanel = New-Object System.Windows.Forms.TableLayoutPanel; $combatSlotPanel.Dock = 'Fill'; $combatSlotPanel.ColumnCount = 5; $combatSlotPanel.RowCount = 1; $combatSlotPanel.AutoScroll = $false; $combatSlotPanel.Padding = New-Object System.Windows.Forms.Padding(0)
 for ($si = 0; $si -lt 5; $si++) { $combatSlotPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 20))) | Out-Null }
 $combatSlotPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
@@ -3595,17 +3604,45 @@ function Get-SelectedTargetWindow([string]$TitlePart) {
     return Find-WindowByTitlePart $TitlePart
 }
 function Update-SlotPreviewCollapsed {
-    $specialPreviewGroup.Visible = -not $script:SlotPreviewCollapsed
-    $routePreviewGroup.Visible = -not $script:SlotPreviewCollapsed
-    $combatPreviewGroup.Visible = -not $script:SlotPreviewCollapsed
-    $slotPreviewTable.RowStyles[1].Height = if ($script:SlotPreviewCollapsed) { 0 } else { 96 }
-    $slotPreviewTable.RowStyles[2].Height = if ($script:SlotPreviewCollapsed) { 0 } else { 146 }
-    $slotPreviewTable.RowStyles[3].Height = if ($script:SlotPreviewCollapsed) { 0 } else { 162 }
-    $slotPreviewToggleButton.Text = if ($script:SlotPreviewCollapsed) { '열기' } else { '접기' }
+    $groupVisible = -not $script:SlotPreviewCollapsed
+    $specialPreviewGroup.Visible = $groupVisible
+    $routePreviewGroup.Visible = $groupVisible
+    $cavePreviewGroup.Visible = $groupVisible
+    $combatPreviewGroup.Visible = $groupVisible
+    $specialSlotPanel.Visible = $groupVisible -and (-not $script:SpecialPreviewCollapsed)
+    $routeSlotPanel.Visible = $groupVisible -and (-not $script:RoutePreviewCollapsed)
+    $caveSlotPanel.Visible = $groupVisible -and (-not $script:CavePreviewCollapsed)
+    $combatSlotPanel.Visible = $groupVisible -and (-not $script:CombatPreviewCollapsed)
+    $ultimateProfilePanel.Visible = $groupVisible -and (-not $script:CombatPreviewCollapsed)
+    $slotPreviewTable.RowStyles[1].Height = if (-not $groupVisible) { 0 } elseif ($script:SpecialPreviewCollapsed) { 30 } else { 96 }
+    $slotPreviewTable.RowStyles[2].Height = if (-not $groupVisible) { 0 } elseif ($script:RoutePreviewCollapsed) { 30 } else { 146 }
+    $slotPreviewTable.RowStyles[3].Height = if (-not $groupVisible) { 0 } elseif ($script:CavePreviewCollapsed) { 30 } else { 118 }
+    $slotPreviewTable.RowStyles[4].Height = if (-not $groupVisible) { 0 } elseif ($script:CombatPreviewCollapsed) { 34 } else { 150 }
+    $slotPreviewToggleButton.Text = if ($script:SlotPreviewCollapsed) { $script:FoldOpenText } else { $script:FoldCloseText }
+    $specialPreviewFoldButton.Text = if ($script:SpecialPreviewCollapsed) { $script:FoldOpenText } else { $script:FoldCloseText }
+    $routePreviewFoldButton.Text = if ($script:RoutePreviewCollapsed) { $script:FoldOpenText } else { $script:FoldCloseText }
+    $cavePreviewFoldButton.Text = if ($script:CavePreviewCollapsed) { $script:FoldOpenText } else { $script:FoldCloseText }
+    $combatPreviewFoldButton.Text = if ($script:CombatPreviewCollapsed) { $script:FoldOpenText } else { $script:FoldCloseText }
     $gameTable.RowStyles[2].Height = if ($script:SlotPreviewCollapsed) { 56 } else { 508 }
 }
 function Toggle-SlotPreview {
     $script:SlotPreviewCollapsed = -not $script:SlotPreviewCollapsed
+    Update-SlotPreviewCollapsed
+}
+function Toggle-SpecialPreview {
+    $script:SpecialPreviewCollapsed = -not $script:SpecialPreviewCollapsed
+    Update-SlotPreviewCollapsed
+}
+function Toggle-RoutePreview {
+    $script:RoutePreviewCollapsed = -not $script:RoutePreviewCollapsed
+    Update-SlotPreviewCollapsed
+}
+function Toggle-CavePreview {
+    $script:CavePreviewCollapsed = -not $script:CavePreviewCollapsed
+    Update-SlotPreviewCollapsed
+}
+function Toggle-CombatPreview {
+    $script:CombatPreviewCollapsed = -not $script:CombatPreviewCollapsed
     Update-SlotPreviewCollapsed
 }
 function Update-AdvancedToolsCollapsed {
@@ -3911,6 +3948,10 @@ foreach ($slot in $script:CombatSlots) {
 }
 $windowBox.Add_SelectedIndexChanged({ if ($windowBox.SelectedIndex -ge 0) { $titleBox.Text = [string]$windowBox.SelectedItem } })
 $slotPreviewToggleButton.Add_Click({ Toggle-SlotPreview })
+$specialPreviewFoldButton.Add_Click({ Toggle-SpecialPreview })
+$routePreviewFoldButton.Add_Click({ Toggle-RoutePreview })
+$cavePreviewFoldButton.Add_Click({ Toggle-CavePreview })
+$combatPreviewFoldButton.Add_Click({ Toggle-CombatPreview })
 Refresh-WindowList
 $settingsLoadedOnStart = Load-UserSettings
 Apply-RoutineToggleStates

@@ -1,18 +1,18 @@
 ﻿{
-    "version":  "1.0.98",
+    "version":  "1.0.99",
     "update_mode":  "package",
     "required_reinstall":  false,
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/gerinogi_update_package_1.0.98_coop_confirm_slot_select.zip",
-                    "sha256":  "8b4f15e2ad1819e67cd909395e234862e4ee8ad48c459e3a423c04b18beec330",
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/gerinogi_update_package_1.0.99_complete_gate_middle_fold_base.zip",
+                    "sha256":  "046fb077415266462f3f1418336b4364da799636fff269a8ee4533e6373dc067",
                     "files":  [
                                   "local_state_routine_runner.ps1",
                                   "state_samples"
                               ]
                 },
     "notes":  [
-                  "협동 화면 하단 확인 버튼 샘플 추가",
-                  "협동은 중앙 표식 확인 후 하단 확인 버튼을 처리",
-                  "광기의 동굴 슬롯 카드 선택 시 기본 던전 슬롯으로 되돌아가는 문제 수정"
+                  "완료 확인 중앙 하단 오클릭 방지: 내부 진입 시간/전투 표식/스킵 이후 상태 재확인 게이트 추가",
+                  "협동이 꺼져도 완료 확인으로 중앙 하단을 누르던 경로 차단",
+                  "중슬롯 접기/열기 기존 구조 유지"
               ]
 }

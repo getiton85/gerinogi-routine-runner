@@ -1,10 +1,10 @@
 ﻿{
-    "version":  "1.0.69",
+    "version":  "1.0.71",
     "update_mode":  "package",
     "required_reinstall":  false,
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.69_coop_confirm_slot_select.zip",
-                    "sha256":  "5def0acb9b1107977eb0b0b275be44f0fb92cc2a30b354c6975a1b6db867c8d9",
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.71_complete_gate_middle_fold.zip",
+                    "sha256":  "8945888a068794d56febf0daf9a4a4b1a9e4675f5b3cf288689bddce60fee319",
                     "files":  [
                                   "local_state_routine_runner.ps1",
                                   "state_samples",
@@ -14,8 +14,8 @@
                               ]
                 },
     "notes":  [
-                  "협동 화면 하단 확인 버튼 샘플 추가",
-                  "협동은 중앙 표식 확인 후 하단 확인 버튼을 처리",
-                  "중슬롯 카드 선택 시 드롭다운 이벤트가 저장 키를 되돌리는 문제 수정"
+                  "완료 확인 후보가 내부 전투 이력 검증을 우회하던 경로 차단",
+                  "상태 기준/스킵 이력 없이 완료 확인 중앙 하단을 누르지 않도록 강화",
+                  "특수 카테고리/던전 루틴/광기의 동굴/전투관련 중슬롯별 접기와 열기 버튼 추가"
               ]
 }
