@@ -231,7 +231,7 @@ $script:RoutineTracePath = Join-Path $script:UserDataRoot 'routine_trace_log.csv
 $script:CrashLogPath = Join-Path $script:UserDataRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $script:UserDataRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $script:UserDataRoot 'reports'
-$script:AppVersion = '1.0.100'
+$script:AppVersion = '1.0.101'
 $script:PendingCompleteSeen = 0
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
@@ -1760,15 +1760,7 @@ function Find-CoopPromptStrict([System.Windows.Forms.Screen]$Screen) {
         Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'Çùµ¿' 'guard-confirmed-button-found' $buttonRect ('guard=' + $guardName)
         return $buttonRect
     }
-
-    $point = Get-SlotPointScreenPoint 'Çùµ¿'
-    if ($null -ne $point -and (Test-PointInsideSlotRegion 'Çùµ¿' $point $Screen)) {
-        $fallbackRect = [System.Drawing.Rectangle]::new([int]($point.X - 12), [int]($point.Y - 12), 24, 24)
-        Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'Çùµ¿' 'guard-confirmed-point-fallback' $fallbackRect ('guard=' + $guardName + '; button sample miss')
-        return $fallbackRect
-    }
-
-    Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'Çùµ¿' 'guard-found-button-miss' $guardRect ('guard=' + $guardName + '; no valid button target')
+    Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'Çùµ¿' 'guard-found-button-miss-no-click' $guardRect ('guard=' + $guardName + '; button sample miss; point fallback disabled')
     return [System.Drawing.Rectangle]::Empty
 }
 function Find-EntryBusyGuard([System.Windows.Forms.Screen]$Screen) {

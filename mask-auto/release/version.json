@@ -1,25 +1,12 @@
 ﻿{
-    "version":  "1.0.64",
+    "version":  "1.0.80",
     "update_mode":  "package",
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/gerinogi_mask_update_package_1.0.64_special_toggle_persist.zip",
-                    "sha256":  "36d7d065e73e0538400a53e4b4622240d060b4bba2474c278cc8231528ea1e32",
-                    "files":  [
-                                  "local_state_routine_runner.ps1",
-                                  "state_samples",
-                                  "slot_points.csv",
-                                  "slot_regions.csv",
-                                  "ui_config.json"
-                              ]
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/packages/state_routine_update_package_1.0.80.zip",
+                    "sha256":  "32b8227e5f1cb76807204856d1a413b15437de345b05165b1012c0af3137b60c",
+                    "size":  844428
                 },
-    "installer":  {
-                      "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/mask-auto/mask install 1.0.48.exe",
-                      "version":  "1.0.48"
-                  },
     "required_reinstall":  false,
-    "notes":  [
-                  "Auto1 persists cooperation ON/OFF setting.",
-                  "Auto1 blocks cooperation global-priority clicks when cooperation is disabled.",
-                  "Existing mask routine and samples are preserved."
-              ]
+    "notes":  "Limit per-image search time and pump UI events between scans so Start and Stop remain responsive.",
+    "updated_at":  "2026-07-22T20:28:09+09:00"
 }

@@ -92,7 +92,7 @@ function New-DefaultUiConfig {
         progress = [ordered]@{
             labels = @('메뉴','어비','던전','입장','상태','대기','전투','완료','종료','순환')
         }
-        slots = @('협동','상태 기준','식사 버튼','메뉴','어비스','던전','입장','완료 확인','나가기','궁극기','스킵','팔라딘')
+        slots = @('협동','상태 기준','상태 기준2','식사 버튼','메뉴','어비스','던전','입장','완료 확인','나가기','궁극기','스킵','팔라딘')
         brand = [ordered]@{
             title = '내 멋대로 게리노기'
             linkText = 'getiton85.github.io/gerinogi-pob'
@@ -153,12 +153,13 @@ function Get-UiColor([string]$Path, [System.Drawing.Color]$Fallback) {
 }
 
 $script:UiConfig = Load-UiConfig
-$script:DefaultSlots = @('협동','상태 기준','식사 버튼','메뉴','어비스','던전','입장','완료 확인','나가기','궁극기','스킵','팔라딘')
+$script:DefaultSlots = @('협동','상태 기준','상태 기준2','식사 버튼','메뉴','어비스','던전','입장','완료 확인','나가기','궁극기','스킵','팔라딘')
 $script:SpecialSlots = @('협동')
 $script:SpecialSlotEnabled = @{'협동' = $true}
 $script:SpecialSlotChecks = @{}
 $script:RouteSlots = @('메뉴','어비스','던전','입장','완료 확인','나가기')
 $script:CombatSlots = @('상태 기준','식사 버튼','궁극기','스킵','팔라딘')
+$script:CombatStateSlots = @('상태 기준','상태 기준2')
 $script:SlotAliases = @{
     '메뉴' = @('1단계')
     '어비스' = @('2단계')
@@ -184,6 +185,10 @@ foreach ($slot in $script:Slots) { $script:Samples[$slot] = $null; $script:SlotP
 $script:SelectedSlot = '상태 기준'
 $script:ActiveSlot = ''
 $script:SlotPreviewCollapsed = $false
+$script:SpecialPreviewCollapsed = $false
+$script:RoutePreviewCollapsed = $false
+$script:CavePreviewCollapsed = $false
+$script:CombatPreviewCollapsed = $false
 $script:AdvancedToolsCollapsed = $true
 $script:HarborEnabled = $true
 $script:DungeonRoutineEnabled = @{
@@ -228,7 +233,7 @@ $script:RoutineTracePath = Join-Path $script:UserDataRoot 'routine_trace_log.csv
 $script:CrashLogPath = Join-Path $script:UserDataRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $script:UserDataRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $script:UserDataRoot 'reports'
-$script:AppVersion = '1.0.69'
+$script:AppVersion = '1.0.80'
 $script:PendingCompleteSeen = 0
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
@@ -236,6 +241,8 @@ $script:LongCompleteFallbackMs = 60000
 $script:CombatMarkerSeen = $false
 $script:BossSkipSeen = $false
 $script:CombatMarkerSeenAfterSkip = $false
+$script:LastCombatActionAt = @{} 
+$script:CombatActionCooldownMs = @{ '식사 버튼' = 8000; '궁극기' = 1500; '팔라딘' = 1500 }
 $script:CoopClickAttempts = 0
 $script:MaxCoopClickAttempts = 2
 $script:DiagnosticFailureCount = 0
@@ -419,6 +426,7 @@ public static class VisionFinder {
     public static double LastSecondScore = 0.0;
     public static double LastScoreGap = 0.0;
     public static bool LastAmbiguous = false;
+    private const int SearchTimeoutMs = 2500;
 
     private static void ResetLastMatch() {
         LastMode = "";
@@ -457,6 +465,17 @@ public static class VisionFinder {
         LastAmbiguous = LastSecondScore >= 0.0 && LastScoreGap < 0.035;
     }
 
+    private static bool ShouldAbortSearch(System.Diagnostics.Stopwatch timer) {
+        if ((NativeInput.GetAsyncKeyState(0x75) & unchecked((short)0x8000)) != 0) {
+            LastMode = "stopped-f6";
+            return true;
+        }
+        if (timer != null && timer.ElapsedMilliseconds >= SearchTimeoutMs) {
+            LastMode = "search-timeout";
+            return true;
+        }
+        return false;
+    }
     public static Bitmap Capture(Rectangle bounds) {
         Bitmap bmp = new Bitmap(bounds.Width, bounds.Height, PixelFormat.Format32bppArgb);
         using (Graphics g = Graphics.FromImage(bmp)) { g.CopyFromScreen(bounds.Left, bounds.Top, 0, 0, bounds.Size, CopyPixelOperation.SourceCopy); }
@@ -505,6 +524,7 @@ public static class VisionFinder {
 
     public static Rectangle FindSaturatedColorSample(Rectangle screenBounds, string samplePath, int searchStep, int sampleStep, int tolerance, double requiredScore) {
         ResetLastMatch();
+        System.Diagnostics.Stopwatch searchTimer = System.Diagnostics.Stopwatch.StartNew();
         using (Bitmap screen = Capture(screenBounds))
         using (Bitmap rawSample = new Bitmap(samplePath))
         using (Bitmap sample = new Bitmap(rawSample.Width, rawSample.Height, PixelFormat.Format32bppArgb)) {
@@ -542,7 +562,7 @@ public static class VisionFinder {
                 int bestX = -1, bestY = -1;
                 int colorTolerance = Math.Max(tolerance, 48);
                 for (int y = 0; y <= sh - th; y += searchStep) {
-                    if ((NativeInput.GetAsyncKeyState(0x75) & unchecked((short)0x8000)) != 0) { LastMode = "stopped-f6"; return Rectangle.Empty; }
+                    if (ShouldAbortSearch(searchTimer)) return Rectangle.Empty;
                     for (int x = 0; x <= sw - tw; x += searchStep) {
                         int ok = 0;
                         for (int i = 0; i < colorCount; i++) {
@@ -608,6 +628,7 @@ public static class VisionFinder {
 
     public static Rectangle FindBrightTextSample(Rectangle screenBounds, string samplePath, int searchStep, int sampleStep, double requiredScore) {
         ResetLastMatch();
+        System.Diagnostics.Stopwatch searchTimer = System.Diagnostics.Stopwatch.StartNew();
         using (Bitmap screen = Capture(screenBounds))
         using (Bitmap rawSample = new Bitmap(samplePath))
         using (Bitmap sample = new Bitmap(rawSample.Width, rawSample.Height, PixelFormat.Format32bppArgb)) {
@@ -640,7 +661,7 @@ public static class VisionFinder {
 
                 double bestScore = -1.0; int bestX = -1, bestY = -1; double secondScore = -1.0;
                 for (int y = 0; y <= sh - th; y += searchStep) {
-                    if ((NativeInput.GetAsyncKeyState(0x75) & unchecked((short)0x8000)) != 0) { LastMode = "stopped-f6"; return Rectangle.Empty; }
+                    if (ShouldAbortSearch(searchTimer)) return Rectangle.Empty;
                     for (int x = 0; x <= sw - tw; x += searchStep) {
                         int ok = 0;
                         for (int i = 0; i < textCount; i++) {
@@ -664,6 +685,7 @@ public static class VisionFinder {
 
     public static Rectangle FindSample(Rectangle screenBounds, string samplePath, int searchStep, int sampleStep, int tolerance, double requiredScore) {
         ResetLastMatch();
+        System.Diagnostics.Stopwatch searchTimer = System.Diagnostics.Stopwatch.StartNew();
         using (Bitmap screen = Capture(screenBounds))
         using (Bitmap rawSample = new Bitmap(samplePath))
         using (Bitmap sample = new Bitmap(rawSample.Width, rawSample.Height, PixelFormat.Format32bppArgb)) {
@@ -709,7 +731,7 @@ public static class VisionFinder {
                 int contrastSlack = Math.Max(tolerance, 30);
 
                 for (int y = 0; y <= sh - th; y += searchStep) {
-                    if ((NativeInput.GetAsyncKeyState(0x75) & unchecked((short)0x8000)) != 0) { LastMode = "stopped-f6"; return Rectangle.Empty; }
+                    if (ShouldAbortSearch(searchTimer)) return Rectangle.Empty;
                     for (int x = 0; x <= sw - tw; x += searchStep) {
                         int originalOk = 0, grayOk = 0, contrastOk = 0, edgeOk = 0, edgeTotal = 0, maskOk = 0, maskTotal = 0;
                         for (int ty = 0; ty < th; ty += sampleStep) {
@@ -998,6 +1020,10 @@ function Get-SlotDisplayName([string]$Slot) {
     if ($Slot -like '광기의 동굴_*') { return $Slot.Substring('광기의 동굴_'.Length) }
     return $Slot
 }
+function Get-SlotOverlayName([string]$Slot) {
+    if ($Slot -like '광기의 동굴_*') { return '광기의 동굴 ' + $Slot.Substring('광기의 동굴_'.Length) }
+    return (Get-SlotDisplayName $Slot)
+}
 function Resolve-RouteSlotFromStorageKey([string]$Slot) {
     if ($Slot -like '광기의 동굴_*') {
         $base = $Slot.Substring('광기의 동굴_'.Length)
@@ -1227,10 +1253,12 @@ function Show-IgnoreZones {
     $screen = $screens[$monitorBox.SelectedIndex]
     $allowed = New-Object System.Collections.Generic.List[object]
     foreach ($slot in $script:Slots) {
-        if (-not (Test-SlotEnabled $slot)) { continue }
-        $rect = Get-SlotRegionScreenRect $slot $screen
+        $visualSlot = $slot
+        if ($script:RouteSlots -contains $slot) { $visualSlot = Get-ActiveRouteSlotKey $slot }
+        if (-not (Test-SlotEnabled $visualSlot)) { continue }
+        $rect = Get-SlotRegionScreenRect $visualSlot $screen
         if (-not $rect.IsEmpty -and $rect.Width -ge 5 -and $rect.Height -ge 5) {
-            [void]$allowed.Add([pscustomobject]@{ Slot = $slot; Rect = $rect })
+            [void]$allowed.Add([pscustomobject]@{ Slot = (Get-SlotOverlayName $visualSlot); Rect = $rect })
         }
     }
     if ($allowed.Count -le 0) {
@@ -1967,8 +1995,7 @@ function Test-CompleteAllowed {
     return $true
 }
 function Test-CompleteVisualCandidateAllowed {
-    if (-not (Test-CompleteWaitElapsed)) { return $false }
-    return $true
+    return (Test-CompleteAllowed)
 }
 function Test-CompleteRecoveryScanAllowed([string]$Stage) {
     if (Test-CompleteAllowed) { return $true }
@@ -2012,7 +2039,11 @@ function Sleep-WithStop([int]$Milliseconds) {
     return $true
 }
 function Find-ValidSlotOnce([string]$Slot, [System.Windows.Forms.Screen]$Screen, [bool]$UsePointCheck = $true) {
+    if (Test-StopRequested) { return [System.Drawing.Rectangle]::Empty }
+    [System.Windows.Forms.Application]::DoEvents()
     $rect = Find-Slot $Slot $Screen
+    [System.Windows.Forms.Application]::DoEvents()
+    if (Test-StopRequested) { return [System.Drawing.Rectangle]::Empty }
     if ($rect.IsEmpty) {
         $point = Get-SlotPointScreenPoint $Slot
         if ($null -ne $point -and (Test-SlotAllowsCoordinateFallback $Slot) -and (Test-PointInsideSlotRegion $Slot $point $Screen)) {
@@ -2031,6 +2062,11 @@ function Find-ValidSlotOnce([string]$Slot, [System.Windows.Forms.Screen]$Screen,
             Write-RoutineTrace $script:CurrentCycle 'single-find' $Slot 'found-invalid' $rect $pointResult.Message
             return [System.Drawing.Rectangle]::Empty
         }
+    }
+    if ($Slot -eq '완료 확인') {
+        Write-RoutineTrace $script:CurrentCycle 'single-find' $Slot 'outer-stability-required' $rect 'completion candidate accepted for outer two-cycle confirmation'
+        Write-RoutineTrace $script:CurrentCycle 'single-find' $Slot 'found-valid' $rect ''
+        return $rect
     }
     if (Test-SlotNeedsStableConfirm $Slot) {
         Start-Sleep -Milliseconds 120
@@ -2216,13 +2252,23 @@ function Get-NextRoutineStage([string]$Slot) {
         default { return '' }
     }
 }
+function Find-CombatStateMarker([System.Windows.Forms.Screen]$Screen) {
+    foreach ($stateSlot in $script:CombatStateSlots) {
+        if ((Get-SlotSamplePaths $stateSlot).Count -le 0) { continue }
+        $rect = Find-ValidSlotOnce $stateSlot $Screen $true
+        if (-not $rect.IsEmpty) {
+            return [pscustomobject]@{ Slot = $stateSlot; Rect = $rect }
+        }
+    }
+    return [pscustomobject]@{ Slot = ''; Rect = [System.Drawing.Rectangle]::Empty }
+}
 function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$Stage) {
     if ([string]::IsNullOrWhiteSpace($Stage)) { $Stage = '메뉴' }
-    if ($Stage -ne '내부' -and (Get-SlotSamplePaths '상태 기준').Count -gt 0) {
-        $globalStateRect = Find-ValidSlotOnce '상태 기준' $Screen $true
-        if (-not $globalStateRect.IsEmpty) {
-            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '상태 기준' 'global-inside-guard' $globalStateRect ('stage=' + $Stage + '; route/special blocked while inside marker is visible')
-            return [pscustomobject]@{ Slot = '상태 기준'; Rect = $globalStateRect; Stage = $Stage }
+    if ($Stage -ne '내부') {
+        $globalStateHit = Find-CombatStateMarker $Screen
+        if (-not $globalStateHit.Rect.IsEmpty) {
+            Write-RoutineTrace $script:CurrentCycle 'stage-scan' ([string]$globalStateHit.Slot) 'global-inside-guard' $globalStateHit.Rect ('stage=' + $Stage + '; route/special blocked while combat marker is visible')
+            return [pscustomobject]@{ Slot = [string]$globalStateHit.Slot; Rect = $globalStateHit.Rect; Stage = $Stage }
         }
     }
     if ($Stage -eq '협동') {
@@ -2250,64 +2296,64 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
         }
     }
     if ($Stage -eq '내부') {
-        $stateRect = [System.Drawing.Rectangle]::Empty
-        if ($null -ne $script:Samples['상태 기준']) {
-            $stateRect = Find-ValidSlotOnce '상태 기준' $Screen $true
-        }
+        $stateHit = Find-CombatStateMarker $Screen
+        $stateRect = $stateHit.Rect
+        $stateSlot = if ([string]::IsNullOrWhiteSpace([string]$stateHit.Slot)) { '상태 기준' } else { [string]$stateHit.Slot }
         $stateNote = 'state marker not visible'
         if (-not $stateRect.IsEmpty) {
             $stateNote = 'state marker visible'
             $script:CombatMarkerSeen = $true
             if ($script:BossSkipSeen) { $script:CombatMarkerSeenAfterSkip = $true }
-            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '상태 기준' 'inside-lock' $stateRect 'stage=내부; allowed=스킵|식사 버튼|궁극기|팔라딘|상태 기준'
-        }
-        if ((Get-SlotSamplePaths '스킵').Count -gt 0) {
-            $skipRect = Find-ValidSlotOnce '스킵' $Screen $true
-            if (-not $skipRect.IsEmpty) {
-                Write-RoutineTrace $script:CurrentCycle 'stage-scan' '스킵' 'candidate-inside-only' $skipRect $stateNote
-                return [pscustomobject]@{ Slot = '스킵'; Rect = $skipRect; Stage = $Stage }
+            Write-RoutineTrace $script:CurrentCycle 'stage-scan' $stateSlot 'inside-lock' $stateRect 'stage=내부; allowed=식사 버튼|궁극기|팔라딘|상태 기준; skip deferred until state missing'
+            foreach ($slot in @('식사 버튼','궁극기','팔라딘')) {
+                if (Test-StopRequested) { return $null }
+                if ((Get-SlotSamplePaths $slot).Count -eq 0) {
+                    Write-RoutineTrace $script:CurrentCycle 'stage-scan' $slot 'missing-sample-inside' ([System.Drawing.Rectangle]::Empty) $stateNote
+                    continue
+                }
+                if (-not (Test-CombatActionReady $slot)) {
+                    Write-RoutineTrace $script:CurrentCycle 'stage-scan' $slot 'cooldown-skip-inside' ([System.Drawing.Rectangle]::Empty) $stateNote
+                    continue
+                }
+                $rect = Find-ValidSlotOnce $slot $Screen $true
+                if (-not $rect.IsEmpty) {
+                    Write-RoutineTrace $script:CurrentCycle 'stage-scan' $slot 'candidate-inside-only' $rect $stateNote
+                    return [pscustomobject]@{ Slot = $slot; Rect = $rect; Stage = $Stage }
+                }
+                Write-RoutineTrace $script:CurrentCycle 'stage-scan' $slot 'miss-inside' ([System.Drawing.Rectangle]::Empty) $stateNote
             }
-            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '스킵' 'miss-inside' ([System.Drawing.Rectangle]::Empty) $stateNote
-        } else {
-            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '스킵' 'missing-sample-inside' ([System.Drawing.Rectangle]::Empty) $stateNote
+            $script:PendingCompleteSeen = 0
+            Write-RoutineTrace $script:CurrentCycle 'stage-scan' $stateSlot 'inside-keep-block-route' $stateRect 'state marker visible; combat checked; skip/complete/exit scan blocked'
+            return [pscustomobject]@{ Slot = $stateSlot; Rect = $stateRect; Stage = $Stage }
         }
-        if ($stateRect.IsEmpty) {
+
+        if (-not $script:CombatMarkerSeen) {
             $insideBusyRect = Find-EntryBusyGuard $Screen
             if (-not $insideBusyRect.IsEmpty) {
                 $script:PendingCompleteSeen = 0
-                Write-RoutineTrace $script:CurrentCycle 'stage-scan' '입장_전투중' 'internal-entry-busy-recovery' $insideBusyRect 'inside stage lost state marker on entry combat screen; restore with ESC'
+                Write-RoutineTrace $script:CurrentCycle 'stage-scan' '입장_전투중' 'internal-entry-busy-recovery' $insideBusyRect 'inside stage has not confirmed combat marker yet; restore with ESC before route checks'
                 return [pscustomobject]@{ Slot = '입장_전투중'; Rect = $insideBusyRect; Stage = $Stage }
             }
+        } else {
+            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '입장_전투중' 'skip-internal-guard-after-combat' ([System.Drawing.Rectangle]::Empty) 'combat marker was already seen; check skip/complete instead of entry busy recovery'
         }
-        if ($stateRect.IsEmpty -and (Test-InternalTransitionFrame $Screen)) {
+
+        if (Test-InternalTransitionFrame $Screen) {
             return [pscustomobject]@{ Slot = '__전환대기'; Rect = [System.Drawing.Rectangle]::Empty; Stage = $Stage }
         }
-        if ($stateRect.IsEmpty) {
-            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '전투슬롯' 'blocked-state-missing' ([System.Drawing.Rectangle]::Empty) 'state marker not visible; skip food/ultimate/paladin'
-        }
-        foreach ($slot in @('식사 버튼','궁극기','팔라딘')) {
-            if (Test-StopRequested) { return $null }
-            $allowCombatScan = (-not $stateRect.IsEmpty)
-            if (-not $allowCombatScan) {
-                Write-RoutineTrace $script:CurrentCycle 'stage-scan' $slot 'blocked-state-missing' ([System.Drawing.Rectangle]::Empty) 'state marker not visible; active combat slot skipped'
-                continue
+        Write-RoutineTrace $script:CurrentCycle 'stage-scan' '전투슬롯' 'state-missing-combat-blocked' ([System.Drawing.Rectangle]::Empty) 'state marker not visible; combat helpers are blocked so skip/complete can be checked first'
+
+        if ((Get-SlotSamplePaths '스킵').Count -gt 0) {
+            $skipRect = Find-ValidSlotOnce '스킵' $Screen $true
+            if (-not $skipRect.IsEmpty) {
+                Write-RoutineTrace $script:CurrentCycle 'stage-scan' '스킵' 'candidate-state-missing-only' $skipRect $stateNote
+                return [pscustomobject]@{ Slot = '스킵'; Rect = $skipRect; Stage = $Stage }
             }
-            if ((Get-SlotSamplePaths $slot).Count -eq 0) {
-                Write-RoutineTrace $script:CurrentCycle 'stage-scan' $slot 'missing-sample-inside' ([System.Drawing.Rectangle]::Empty) $stateNote
-                continue
-            }
-            $rect = Find-ValidSlotOnce $slot $Screen $true
-            if (-not $rect.IsEmpty) {
-                Write-RoutineTrace $script:CurrentCycle 'stage-scan' $slot 'candidate-inside-only' $rect $stateNote
-                return [pscustomobject]@{ Slot = $slot; Rect = $rect; Stage = $Stage }
-            }
-            Write-RoutineTrace $script:CurrentCycle 'stage-scan' $slot 'miss-inside' ([System.Drawing.Rectangle]::Empty) $stateNote
+            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '스킵' 'miss-state-missing' ([System.Drawing.Rectangle]::Empty) $stateNote
+        } else {
+            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '스킵' 'missing-sample-state-missing' ([System.Drawing.Rectangle]::Empty) $stateNote
         }
-        if (-not $stateRect.IsEmpty) {
-            $script:PendingCompleteSeen = 0
-            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '상태 기준' 'inside-keep-block-route' $stateRect 'state marker visible; skip complete/exit scan'
-            return [pscustomobject]@{ Slot = '상태 기준'; Rect = $stateRect; Stage = $Stage }
-        }
+
         if ($null -ne $script:Samples['완료 확인']) {
             $completeRect = Find-ValidSlotOnce '완료 확인' $Screen $true
             if (-not $completeRect.IsEmpty) {
@@ -2325,7 +2371,7 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
                 Write-RoutineTrace $script:CurrentCycle 'stage-scan' '완료 확인' 'blocked-by-gate' ([System.Drawing.Rectangle]::Empty) (Get-CompleteGateDetail)
             }
         }
-        Write-RoutineTrace $script:CurrentCycle 'stage-scan' '' 'none' ([System.Drawing.Rectangle]::Empty) 'stage=내부; checked=상태 기준|스킵|식사 버튼|궁극기|팔라딘|완료 확인'
+        Write-RoutineTrace $script:CurrentCycle 'stage-scan' '' 'none' ([System.Drawing.Rectangle]::Empty) 'stage=내부; checked=상태 기준; state-visible combat helpers only; state-missing skip|완료 확인'
         return $null
     }
     $expectedSlot = $Stage
@@ -2403,6 +2449,7 @@ function Wait-StateActionSettle([string]$Slot) {
 function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]$Screen, [System.Windows.Forms.Label]$StatusLabel, [ref]$InsidePhase) {
     if ($null -eq $Candidate) { return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = ''; NextStage = '' } }
     $slot = [string]$Candidate.Slot
+    if ($slot -eq '상태 기준2') { $slot = '상태 기준' }
     $rect = $Candidate.Rect
     $nextStage = Get-NextRoutineStage $slot
     Mark-ActiveSlot $slot
@@ -2467,7 +2514,7 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
             if ($null -eq $script:InsideStartedAt) { $script:InsideStartedAt = Get-Date }
             if (-not $script:CombatMarkerSeen) { $script:CombatMarkerSeen = $true }
             $script:PendingCompleteSeen = 0
-            Set-ProgressStep 5
+            Set-ProgressStep 7
             Wait-StateActionSettle '상태 기준'
             return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = '전투중 화면 ESC 복구'; NextStage = $nextStage }
         }
@@ -2490,6 +2537,7 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
             [System.Windows.Forms.Application]::DoEvents()
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'send-b-direct' $rect 'candidate already verified'
             Invoke-BKey 'food image matched'
+            Mark-CombatAction $slot
             Wait-StateActionSettle $slot
             return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = '식사 B 입력'; NextStage = $nextStage }
         }
@@ -2501,6 +2549,7 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
             [System.Windows.Forms.Application]::DoEvents()
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'send-6-direct' $rect ('profile=' + [string]$ultimateProfile.Name)
             Invoke-UltimateKey ([string]$ultimateProfile.Name)
+            Mark-CombatAction $slot
             Wait-StateActionSettle $slot
             return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = '궁극기 6 입력'; NextStage = $nextStage }
         }
@@ -2522,6 +2571,7 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
             [System.Windows.Forms.Application]::DoEvents()
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'send-f5-direct' $rect 'inside-only'
             Invoke-PaladinKey 'paladin image matched'
+            Mark-CombatAction $slot
             Wait-StateActionSettle $slot
             return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = '팔라딘 F5 입력'; NextStage = $nextStage }
         }
@@ -2533,7 +2583,7 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
             $script:CombatMarkerSeen = $true
             if ($script:BossSkipSeen) { $script:CombatMarkerSeenAfterSkip = $true }
             if ($null -eq $script:InsideStartedAt) { $script:InsideStartedAt = Get-Date }
-            Set-ProgressStep 5
+            Set-ProgressStep 7
             Wait-StateActionSettle $slot
             return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = '상태 기준 확인'; NextStage = $nextStage }
         }
@@ -2649,10 +2699,22 @@ function Test-AnyDungeonRoutineEnabled {
 }
 
 function Get-ActiveRouteSlotKey([string]$Slot) {
-    if ($Slot -eq '던전' -and (Test-DungeonRoutineEnabled '광기의 동굴') -and -not (Test-DungeonRoutineEnabled '허상의 정박지')) {
-        return (Get-DungeonRouteSlotKey '광기의 동굴' $Slot)
+    if ($Slot -eq '던전') {
+        $selectedCaveSlot = ($script:SelectedSlot -eq (Get-DungeonRouteSlotKey '광기의 동굴' '던전'))
+        if ((Test-DungeonRoutineEnabled '광기의 동굴') -or ($selectedCaveSlot -and -not (Test-DungeonRoutineEnabled '허상의 정박지'))) {
+            return (Get-DungeonRouteSlotKey '광기의 동굴' $Slot)
+        }
     }
     return $Slot
+}
+function Test-CombatActionReady([string]$Slot) {
+    if (-not ($script:CombatActionCooldownMs.ContainsKey($Slot))) { return $true }
+    if (-not ($script:LastCombatActionAt.ContainsKey($Slot))) { return $true }
+    $elapsed = ((Get-Date) - [datetime]$script:LastCombatActionAt[$Slot]).TotalMilliseconds
+    return ($elapsed -ge [int]$script:CombatActionCooldownMs[$Slot])
+}
+function Mark-CombatAction([string]$Slot) {
+    $script:LastCombatActionAt[$Slot] = Get-Date
 }
 function Test-CombatSlotEnabled([string]$Slot) {
     if (-not ($script:CombatSlots -contains $Slot)) { return $true }
@@ -3256,10 +3318,16 @@ $specialPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([Sy
 $specialPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
 $specialEnabledCheck = New-Object System.Windows.Forms.CheckBox; $specialEnabledCheck.Text = '협동 ON'; $specialEnabledCheck.Checked = $true; $specialEnabledCheck.Dock = 'Left'
 $script:SpecialSlotChecks['협동'] = $specialEnabledCheck
+$specialHeaderPanel = New-Object System.Windows.Forms.TableLayoutPanel; $specialHeaderPanel.Dock = 'Fill'; $specialHeaderPanel.ColumnCount = 2; $specialHeaderPanel.RowCount = 1
+$specialHeaderPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
+$specialHeaderPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Absolute, 58))) | Out-Null
+$specialPreviewFoldButton = New-Object System.Windows.Forms.Button; $specialPreviewFoldButton.Text = $script:FoldCloseText; $specialPreviewFoldButton.Dock = 'Fill'; $specialPreviewFoldButton.Font = New-Object System.Drawing.Font($uiFontName, 7, [System.Drawing.FontStyle]::Bold)
+$specialHeaderPanel.Controls.Add($specialEnabledCheck, 0, 0)
+$specialHeaderPanel.Controls.Add($specialPreviewFoldButton, 1, 0)
 $specialSlotPanel = New-Object System.Windows.Forms.TableLayoutPanel; $specialSlotPanel.Dock = 'Fill'; $specialSlotPanel.ColumnCount = 1; $specialSlotPanel.RowCount = 1; $specialSlotPanel.AutoScroll = $false; $specialSlotPanel.Padding = New-Object System.Windows.Forms.Padding(0)
 $specialSlotPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
 $specialSlotPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
-$specialPreviewTable.Controls.Add($specialEnabledCheck, 0, 0)
+$specialPreviewTable.Controls.Add($specialHeaderPanel, 0, 0)
 $specialPreviewTable.Controls.Add($specialSlotPanel, 0, 1)
 $specialPreviewGroup.Controls.Add($specialPreviewTable)
 
@@ -3267,13 +3335,16 @@ $routePreviewGroup = New-Object System.Windows.Forms.GroupBox; $routePreviewGrou
 $routePreviewTable = New-Object System.Windows.Forms.TableLayoutPanel; $routePreviewTable.Dock = 'Fill'; $routePreviewTable.ColumnCount = 1; $routePreviewTable.RowCount = 2
 $routePreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 22))) | Out-Null
 $routePreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
-$routeTogglePanel = New-Object System.Windows.Forms.TableLayoutPanel; $routeTogglePanel.Dock = 'Fill'; $routeTogglePanel.ColumnCount = 2; $routeTogglePanel.RowCount = 1
+$routeTogglePanel = New-Object System.Windows.Forms.TableLayoutPanel; $routeTogglePanel.Dock = 'Fill'; $routeTogglePanel.ColumnCount = 3; $routeTogglePanel.RowCount = 1
 $routeTogglePanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 50))) | Out-Null
 $routeTogglePanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 50))) | Out-Null
+$routeTogglePanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Absolute, 62))) | Out-Null
 $harborEnabledCheck = New-Object System.Windows.Forms.CheckBox; $harborEnabledCheck.Text = '허상의 정박지 ON'; $harborEnabledCheck.Checked = $true; $harborEnabledCheck.Dock = 'Fill'; $harborEnabledCheck.Font = New-Object System.Drawing.Font($uiFontName, 7)
 $caveEnabledCheck = New-Object System.Windows.Forms.CheckBox; $caveEnabledCheck.Text = '광기의 동굴 ON'; $caveEnabledCheck.Checked = $false; $caveEnabledCheck.Dock = 'Fill'; $caveEnabledCheck.Font = New-Object System.Drawing.Font($uiFontName, 7)
 $routeTogglePanel.Controls.Add($harborEnabledCheck, 0, 0)
 $routeTogglePanel.Controls.Add($caveEnabledCheck, 1, 0)
+$routePreviewFoldButton = New-Object System.Windows.Forms.Button; $routePreviewFoldButton.Text = $script:FoldCloseText; $routePreviewFoldButton.Dock = 'Fill'
+$routeTogglePanel.Controls.Add($routePreviewFoldButton, 2, 0)
 $routeSlotPanel = New-Object System.Windows.Forms.TableLayoutPanel; $routeSlotPanel.Dock = 'Fill'; $routeSlotPanel.ColumnCount = 7; $routeSlotPanel.RowCount = 1; $routeSlotPanel.AutoScroll = $false; $routeSlotPanel.Padding = New-Object System.Windows.Forms.Padding(0)
 for ($si = 0; $si -lt 7; $si++) { $routeSlotPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 14.28))) | Out-Null }
 $routeSlotPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
@@ -3289,7 +3360,8 @@ $caveTogglePanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([
 $caveTogglePanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 50))) | Out-Null
 $caveToggleSpacer = New-Object System.Windows.Forms.Label; $caveToggleSpacer.Text = ''; $caveToggleSpacer.Dock = 'Fill'
 $caveTogglePanel.Controls.Add($caveEnabledCheck, 0, 0)
-$caveTogglePanel.Controls.Add($caveToggleSpacer, 1, 0)
+$cavePreviewFoldButton = New-Object System.Windows.Forms.Button; $cavePreviewFoldButton.Text = $script:FoldCloseText; $cavePreviewFoldButton.Dock = 'Fill'
+$caveTogglePanel.Controls.Add($cavePreviewFoldButton, 1, 0)
 $caveSlotPanel = New-Object System.Windows.Forms.TableLayoutPanel; $caveSlotPanel.Dock = 'Fill'; $caveSlotPanel.ColumnCount = 7; $caveSlotPanel.RowCount = 1; $caveSlotPanel.AutoScroll = $false; $caveSlotPanel.Padding = New-Object System.Windows.Forms.Padding(0)
 for ($si = 0; $si -lt 7; $si++) { $caveSlotPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 14.28))) | Out-Null }
 $caveSlotPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
@@ -3302,8 +3374,8 @@ $combatPreviewTable = New-Object System.Windows.Forms.TableLayoutPanel; $combatP
 $combatPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 24))) | Out-Null
 $combatPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 24))) | Out-Null
 $combatPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
-$combatTogglePanel = New-Object System.Windows.Forms.TableLayoutPanel; $combatTogglePanel.Dock = 'Fill'; $combatTogglePanel.ColumnCount = 5; $combatTogglePanel.RowCount = 1
-for ($si = 0; $si -lt 5; $si++) { $combatTogglePanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 20))) | Out-Null }
+$combatTogglePanel = New-Object System.Windows.Forms.TableLayoutPanel; $combatTogglePanel.Dock = 'Fill'; $combatTogglePanel.ColumnCount = 6; $combatTogglePanel.RowCount = 1
+for ($si = 0; $si -lt 5; $si++) { $combatTogglePanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 20))) | Out-Null }; $combatTogglePanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Absolute, 62))) | Out-Null
 $script:CombatSlotChecks = @{}
 $combatToggleIndex = 0
 foreach ($slot in $script:CombatSlots) {
@@ -3316,6 +3388,8 @@ foreach ($slot in $script:CombatSlots) {
     $combatTogglePanel.Controls.Add($check, $combatToggleIndex, 0)
     $combatToggleIndex++
 }
+$combatPreviewFoldButton = New-Object System.Windows.Forms.Button; $combatPreviewFoldButton.Text = $script:FoldCloseText; $combatPreviewFoldButton.Dock = 'Fill'
+$combatTogglePanel.Controls.Add($combatPreviewFoldButton, 5, 0)
 $combatSlotPanel = New-Object System.Windows.Forms.TableLayoutPanel; $combatSlotPanel.Dock = 'Fill'; $combatSlotPanel.ColumnCount = 5; $combatSlotPanel.RowCount = 1; $combatSlotPanel.AutoScroll = $false; $combatSlotPanel.Padding = New-Object System.Windows.Forms.Padding(0)
 for ($si = 0; $si -lt 5; $si++) { $combatSlotPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 20))) | Out-Null }
 $combatSlotPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
@@ -3595,17 +3669,45 @@ function Get-SelectedTargetWindow([string]$TitlePart) {
     return Find-WindowByTitlePart $TitlePart
 }
 function Update-SlotPreviewCollapsed {
-    $specialPreviewGroup.Visible = -not $script:SlotPreviewCollapsed
-    $routePreviewGroup.Visible = -not $script:SlotPreviewCollapsed
-    $combatPreviewGroup.Visible = -not $script:SlotPreviewCollapsed
-    $slotPreviewTable.RowStyles[1].Height = if ($script:SlotPreviewCollapsed) { 0 } else { 96 }
-    $slotPreviewTable.RowStyles[2].Height = if ($script:SlotPreviewCollapsed) { 0 } else { 146 }
-    $slotPreviewTable.RowStyles[3].Height = if ($script:SlotPreviewCollapsed) { 0 } else { 162 }
-    $slotPreviewToggleButton.Text = if ($script:SlotPreviewCollapsed) { '열기' } else { '접기' }
+    $groupVisible = -not $script:SlotPreviewCollapsed
+    $specialPreviewGroup.Visible = $groupVisible
+    $routePreviewGroup.Visible = $groupVisible
+    $cavePreviewGroup.Visible = $groupVisible
+    $combatPreviewGroup.Visible = $groupVisible
+    $specialSlotPanel.Visible = $groupVisible -and (-not $script:SpecialPreviewCollapsed)
+    $routeSlotPanel.Visible = $groupVisible -and (-not $script:RoutePreviewCollapsed)
+    $caveSlotPanel.Visible = $groupVisible -and (-not $script:CavePreviewCollapsed)
+    $combatSlotPanel.Visible = $groupVisible -and (-not $script:CombatPreviewCollapsed)
+    $ultimateProfilePanel.Visible = $groupVisible -and (-not $script:CombatPreviewCollapsed)
+    $slotPreviewTable.RowStyles[1].Height = if (-not $groupVisible) { 0 } elseif ($script:SpecialPreviewCollapsed) { 30 } else { 96 }
+    $slotPreviewTable.RowStyles[2].Height = if (-not $groupVisible) { 0 } elseif ($script:RoutePreviewCollapsed) { 30 } else { 146 }
+    $slotPreviewTable.RowStyles[3].Height = if (-not $groupVisible) { 0 } elseif ($script:CavePreviewCollapsed) { 30 } else { 118 }
+    $slotPreviewTable.RowStyles[4].Height = if (-not $groupVisible) { 0 } elseif ($script:CombatPreviewCollapsed) { 34 } else { 150 }
+    $slotPreviewToggleButton.Text = if ($script:SlotPreviewCollapsed) { $script:FoldOpenText } else { $script:FoldCloseText }
+    $specialPreviewFoldButton.Text = if ($script:SpecialPreviewCollapsed) { $script:FoldOpenText } else { $script:FoldCloseText }
+    $routePreviewFoldButton.Text = if ($script:RoutePreviewCollapsed) { $script:FoldOpenText } else { $script:FoldCloseText }
+    $cavePreviewFoldButton.Text = if ($script:CavePreviewCollapsed) { $script:FoldOpenText } else { $script:FoldCloseText }
+    $combatPreviewFoldButton.Text = if ($script:CombatPreviewCollapsed) { $script:FoldOpenText } else { $script:FoldCloseText }
     $gameTable.RowStyles[2].Height = if ($script:SlotPreviewCollapsed) { 56 } else { 508 }
 }
 function Toggle-SlotPreview {
     $script:SlotPreviewCollapsed = -not $script:SlotPreviewCollapsed
+    Update-SlotPreviewCollapsed
+}
+function Toggle-SpecialPreview {
+    $script:SpecialPreviewCollapsed = -not $script:SpecialPreviewCollapsed
+    Update-SlotPreviewCollapsed
+}
+function Toggle-RoutePreview {
+    $script:RoutePreviewCollapsed = -not $script:RoutePreviewCollapsed
+    Update-SlotPreviewCollapsed
+}
+function Toggle-CavePreview {
+    $script:CavePreviewCollapsed = -not $script:CavePreviewCollapsed
+    Update-SlotPreviewCollapsed
+}
+function Toggle-CombatPreview {
+    $script:CombatPreviewCollapsed = -not $script:CombatPreviewCollapsed
     Update-SlotPreviewCollapsed
 }
 function Update-AdvancedToolsCollapsed {
@@ -3652,6 +3754,8 @@ function Set-DungeonRoutineToggle([string]$Name, [bool]$Enabled) {
     if ($script:SuppressDungeonRoutineToggleEvents) { return }
     $script:DungeonRoutineEnabled[$Name] = $Enabled
     if ($Name -eq '허상의 정박지') { $script:HarborEnabled = $Enabled }
+    if ($Name -eq '광기의 동굴' -and $Enabled -and $script:SelectedSlot -eq '던전') { $script:SelectedSlot = Get-DungeonRouteSlotKey '광기의 동굴' '던전' }
+    if ($Name -eq '허상의 정박지' -and $Enabled -and $script:SelectedSlot -eq (Get-DungeonRouteSlotKey '광기의 동굴' '던전')) { $script:SelectedSlot = '던전' }
     if ($Enabled) {
         $other = if ($Name -eq '허상의 정박지') { '광기의 동굴' } else { '허상의 정박지' }
         $script:DungeonRoutineEnabled[$other] = $false
@@ -3663,9 +3767,21 @@ function Set-DungeonRoutineToggle([string]$Name, [bool]$Enabled) {
         } catch { }
         finally { $script:SuppressDungeonRoutineToggleEvents = $false }
     }
+    try { Save-UserSettings } catch { }
     Refresh-Slots
 }
 function Select-Slot([string]$Slot) {
+    if ($Slot -eq (Get-DungeonRouteSlotKey '광기의 동굴' '던전')) {
+        $script:DungeonRoutineEnabled['광기의 동굴'] = $true
+        $script:DungeonRoutineEnabled['허상의 정박지'] = $false
+        $script:HarborEnabled = $false
+        try { if ($caveEnabledCheck) { $caveEnabledCheck.Checked = $true }; if ($harborEnabledCheck) { $harborEnabledCheck.Checked = $false } } catch { }
+    } elseif ($Slot -eq '던전') {
+        $script:DungeonRoutineEnabled['허상의 정박지'] = $true
+        $script:DungeonRoutineEnabled['광기의 동굴'] = $false
+        $script:HarborEnabled = $true
+        try { if ($harborEnabledCheck) { $harborEnabledCheck.Checked = $true }; if ($caveEnabledCheck) { $caveEnabledCheck.Checked = $false } } catch { }
+    }
     $script:SelectedSlot = $Slot
     $baseSlot = Resolve-RouteSlotFromStorageKey $Slot
     if ($slotBox.Items.Contains($baseSlot) -and $slotBox.SelectedItem -ne $baseSlot) {
@@ -3674,7 +3790,7 @@ function Select-Slot([string]$Slot) {
     }
     Refresh-Slots
 }
-function Mark-ActiveSlot([string]$Slot) { $script:ActiveSlot = $Slot; switch ($Slot) { '메뉴' { Set-ProgressStep 1 } '어비스' { Set-ProgressStep 2 } '던전' { Set-ProgressStep 3 } '입장' { Set-ProgressStep 4 } '상태 기준' { Set-ProgressStep 5 } '완료 확인' { Set-ProgressStep 8 } '나가기' { Set-ProgressStep 9 } default { } } }
+function Mark-ActiveSlot([string]$Slot) { $script:ActiveSlot = $Slot; switch ($Slot) { '메뉴' { Set-ProgressStep 1 } '어비스' { Set-ProgressStep 2 } '던전' { Set-ProgressStep 3 } '입장' { Set-ProgressStep 4 } '상태 기준' { Set-ProgressStep 7 } '상태 기준2' { Set-ProgressStep 7 } '식사 버튼' { Set-ProgressStep 7 } '궁극기' { Set-ProgressStep 7 } '팔라딘' { Set-ProgressStep 7 } '스킵' { Set-ProgressStep 7 } '완료 확인' { Set-ProgressStep 8 } '나가기' { Set-ProgressStep 9 } default { } } }
 function Handle-FileDrop([string]$Slot, $Data) { $paths = $Data.GetData([System.Windows.Forms.DataFormats]::FileDrop); if ($paths -and $paths.Length -gt 0) { Select-Slot $Slot; Assign-ImageFileToSlot $Slot $paths[0]; Refresh-Slots; $statusLabel.Text = (Get-SlotStatusName $Slot) + ' 슬롯에 이미지 파일을 연결했습니다.' } }
 function Add-DropHandlers($Control, [string]$Slot) { $Control.AllowDrop = $true; $Control.Add_DragEnter({ if ($_.Data.GetDataPresent([System.Windows.Forms.DataFormats]::FileDrop)) { $_.Effect = [System.Windows.Forms.DragDropEffects]::Copy } }.GetNewClosure()); $Control.Add_DragDrop({ Handle-FileDrop $Slot $_.Data }.GetNewClosure()) }
 function New-SlotPreviewCard([string]$CardSlot) {
@@ -3911,6 +4027,10 @@ foreach ($slot in $script:CombatSlots) {
 }
 $windowBox.Add_SelectedIndexChanged({ if ($windowBox.SelectedIndex -ge 0) { $titleBox.Text = [string]$windowBox.SelectedItem } })
 $slotPreviewToggleButton.Add_Click({ Toggle-SlotPreview })
+$specialPreviewFoldButton.Add_Click({ Toggle-SpecialPreview })
+$routePreviewFoldButton.Add_Click({ Toggle-RoutePreview })
+$cavePreviewFoldButton.Add_Click({ Toggle-CavePreview })
+$combatPreviewFoldButton.Add_Click({ Toggle-CombatPreview })
 Refresh-WindowList
 $settingsLoadedOnStart = Load-UserSettings
 Apply-RoutineToggleStates
@@ -4031,6 +4151,9 @@ try {
 } finally {
     Write-CrashLog 'app-exit' $null
 }
+
+
+
 
 
 

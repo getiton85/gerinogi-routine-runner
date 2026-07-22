@@ -233,7 +233,7 @@ $script:RoutineTracePath = Join-Path $script:UserDataRoot 'routine_trace_log.csv
 $script:CrashLogPath = Join-Path $script:UserDataRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $script:UserDataRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $script:UserDataRoot 'reports'
-$script:AppVersion = '1.0.79'
+$script:AppVersion = '1.0.80'
 $script:PendingCompleteSeen = 0
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
@@ -426,6 +426,7 @@ public static class VisionFinder {
     public static double LastSecondScore = 0.0;
     public static double LastScoreGap = 0.0;
     public static bool LastAmbiguous = false;
+    private const int SearchTimeoutMs = 2500;
 
     private static void ResetLastMatch() {
         LastMode = "";
@@ -464,6 +465,17 @@ public static class VisionFinder {
         LastAmbiguous = LastSecondScore >= 0.0 && LastScoreGap < 0.035;
     }
 
+    private static bool ShouldAbortSearch(System.Diagnostics.Stopwatch timer) {
+        if ((NativeInput.GetAsyncKeyState(0x75) & unchecked((short)0x8000)) != 0) {
+            LastMode = "stopped-f6";
+            return true;
+        }
+        if (timer != null && timer.ElapsedMilliseconds >= SearchTimeoutMs) {
+            LastMode = "search-timeout";
+            return true;
+        }
+        return false;
+    }
     public static Bitmap Capture(Rectangle bounds) {
         Bitmap bmp = new Bitmap(bounds.Width, bounds.Height, PixelFormat.Format32bppArgb);
         using (Graphics g = Graphics.FromImage(bmp)) { g.CopyFromScreen(bounds.Left, bounds.Top, 0, 0, bounds.Size, CopyPixelOperation.SourceCopy); }
@@ -512,6 +524,7 @@ public static class VisionFinder {
 
     public static Rectangle FindSaturatedColorSample(Rectangle screenBounds, string samplePath, int searchStep, int sampleStep, int tolerance, double requiredScore) {
         ResetLastMatch();
+        System.Diagnostics.Stopwatch searchTimer = System.Diagnostics.Stopwatch.StartNew();
         using (Bitmap screen = Capture(screenBounds))
         using (Bitmap rawSample = new Bitmap(samplePath))
         using (Bitmap sample = new Bitmap(rawSample.Width, rawSample.Height, PixelFormat.Format32bppArgb)) {
@@ -549,7 +562,7 @@ public static class VisionFinder {
                 int bestX = -1, bestY = -1;
                 int colorTolerance = Math.Max(tolerance, 48);
                 for (int y = 0; y <= sh - th; y += searchStep) {
-                    if ((NativeInput.GetAsyncKeyState(0x75) & unchecked((short)0x8000)) != 0) { LastMode = "stopped-f6"; return Rectangle.Empty; }
+                    if (ShouldAbortSearch(searchTimer)) return Rectangle.Empty;
                     for (int x = 0; x <= sw - tw; x += searchStep) {
                         int ok = 0;
                         for (int i = 0; i < colorCount; i++) {
@@ -615,6 +628,7 @@ public static class VisionFinder {
 
     public static Rectangle FindBrightTextSample(Rectangle screenBounds, string samplePath, int searchStep, int sampleStep, double requiredScore) {
         ResetLastMatch();
+        System.Diagnostics.Stopwatch searchTimer = System.Diagnostics.Stopwatch.StartNew();
         using (Bitmap screen = Capture(screenBounds))
         using (Bitmap rawSample = new Bitmap(samplePath))
         using (Bitmap sample = new Bitmap(rawSample.Width, rawSample.Height, PixelFormat.Format32bppArgb)) {
@@ -647,7 +661,7 @@ public static class VisionFinder {
 
                 double bestScore = -1.0; int bestX = -1, bestY = -1; double secondScore = -1.0;
                 for (int y = 0; y <= sh - th; y += searchStep) {
-                    if ((NativeInput.GetAsyncKeyState(0x75) & unchecked((short)0x8000)) != 0) { LastMode = "stopped-f6"; return Rectangle.Empty; }
+                    if (ShouldAbortSearch(searchTimer)) return Rectangle.Empty;
                     for (int x = 0; x <= sw - tw; x += searchStep) {
                         int ok = 0;
                         for (int i = 0; i < textCount; i++) {
@@ -671,6 +685,7 @@ public static class VisionFinder {
 
     public static Rectangle FindSample(Rectangle screenBounds, string samplePath, int searchStep, int sampleStep, int tolerance, double requiredScore) {
         ResetLastMatch();
+        System.Diagnostics.Stopwatch searchTimer = System.Diagnostics.Stopwatch.StartNew();
         using (Bitmap screen = Capture(screenBounds))
         using (Bitmap rawSample = new Bitmap(samplePath))
         using (Bitmap sample = new Bitmap(rawSample.Width, rawSample.Height, PixelFormat.Format32bppArgb)) {
@@ -716,7 +731,7 @@ public static class VisionFinder {
                 int contrastSlack = Math.Max(tolerance, 30);
 
                 for (int y = 0; y <= sh - th; y += searchStep) {
-                    if ((NativeInput.GetAsyncKeyState(0x75) & unchecked((short)0x8000)) != 0) { LastMode = "stopped-f6"; return Rectangle.Empty; }
+                    if (ShouldAbortSearch(searchTimer)) return Rectangle.Empty;
                     for (int x = 0; x <= sw - tw; x += searchStep) {
                         int originalOk = 0, grayOk = 0, contrastOk = 0, edgeOk = 0, edgeTotal = 0, maskOk = 0, maskTotal = 0;
                         for (int ty = 0; ty < th; ty += sampleStep) {
@@ -2024,7 +2039,11 @@ function Sleep-WithStop([int]$Milliseconds) {
     return $true
 }
 function Find-ValidSlotOnce([string]$Slot, [System.Windows.Forms.Screen]$Screen, [bool]$UsePointCheck = $true) {
+    if (Test-StopRequested) { return [System.Drawing.Rectangle]::Empty }
+    [System.Windows.Forms.Application]::DoEvents()
     $rect = Find-Slot $Slot $Screen
+    [System.Windows.Forms.Application]::DoEvents()
+    if (Test-StopRequested) { return [System.Drawing.Rectangle]::Empty }
     if ($rect.IsEmpty) {
         $point = Get-SlotPointScreenPoint $Slot
         if ($null -ne $point -and (Test-SlotAllowsCoordinateFallback $Slot) -and (Test-PointInsideSlotRegion $Slot $point $Screen)) {
