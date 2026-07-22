@@ -1,19 +1,19 @@
-﻿{
-    "version":  "1.0.102",
+{
+    "version":  "1.0.103",
     "update_mode":  "package",
     "required_reinstall":  false,
     "package":  {
-                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/gerinogi_update_package_1.0.102_entry_busy_guard_disabled.zip",
-                    "sha256":  "568d95e49fff9ae85644d5faaf979321b3d9d8aa402e2f235cdd96b5d54a75d4",
-                    "size":  1422328,
+                    "url":  "https://raw.githubusercontent.com/getiton85/gerinogi-routine-runner/main/packages/gerinogi_update_package_1.0.103_any_dungeon_start_guard.zip",
+                    "sha256":  "db2d2fc6ac9e49e31e680ee838228e3f2612df01246e48d06b0dca951550795e",
+                    "size":  1422349,
                     "files":  [
                                   "local_state_routine_runner.ps1",
                                   "state_samples"
                               ]
                 },
     "notes":  [
-                  "입장 전투중 ESC 복구 가드 기본 보류",
-                  "잘못된 전투중 감지로 메뉴가 열렸다 닫히는 문제 방지",
-                  "25MB 초과 실행 로그 자동 보관"
+                  "Allow start when any dungeon routine is ON",
+                  "Use all selected dungeon routines instead of Harbor-only start guard",
+                  "Keep existing combat, coop, skip, and click routines unchanged"
               ]
 }

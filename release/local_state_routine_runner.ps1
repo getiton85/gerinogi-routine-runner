@@ -1,4 +1,4 @@
-Add-Type -AssemblyName System.Windows.Forms
+ï»¿Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
 $ErrorActionPreference = 'Stop'
@@ -26,7 +26,7 @@ function New-DefaultUiConfig {
     return [ordered]@{
         app = [ordered]@{
             title = 'Local State Routine Runner'
-            versionPrefix = 'Çö¹öÀü '
+            versionPrefix = 'í˜„ë²„ì „ '
             fontName = 'Malgun Gothic'
             fontSize = 8
             topMost = $true
@@ -55,46 +55,46 @@ function New-DefaultUiConfig {
             brandLink = '0,82,155'
         }
         tabs = [ordered]@{
-            main = '½ÇÇè¼ÂÆÃ'
-            options = '¼¼ºÎ¿É¼Ç'
+            main = 'ì‹¤í—˜ì…‹íŒ…'
+            options = 'ì„¸ë¶€ì˜µì…˜'
         }
         labels = [ordered]@{
-            targetGroup = '´ë»ó'
-            targetWindow = '´ë»ó Ã¢'
-            monitor = '¸ğ´ÏÅÍ'
-            slotSelect = '½½·Ô ¼±ÅÃ'
-            slotPreview = 'Çã»óÀÇ Á¤¹ÚÁö'
-            specialSlotPreview = 'Æ¯¼öÄ«Å×°í¸®'
-            combatSlotPreview = 'ÀüÅõ°ü·Ã ½½·Ô ¹Ì¸®º¸±â'
-            progress = 'ÁøÇà »óÈ²'
-            settings = '¼ÂÆÃ'
+            targetGroup = 'ëŒ€ìƒ'
+            targetWindow = 'ëŒ€ìƒ ì°½'
+            monitor = 'ëª¨ë‹ˆí„°'
+            slotSelect = 'ìŠ¬ë¡¯ ì„ íƒ'
+            slotPreview = 'í—ˆìƒì˜ ì •ë°•ì§€'
+            specialSlotPreview = 'íŠ¹ìˆ˜ì¹´í…Œê³ ë¦¬'
+            combatSlotPreview = 'ì „íˆ¬ê´€ë ¨ ìŠ¬ë¡¯ ë¯¸ë¦¬ë³´ê¸°'
+            progress = 'ì§„í–‰ ìƒí™©'
+            settings = 'ì…‹íŒ…'
         }
         buttons = [ordered]@{
-            searchWindows = '°Ë»ö'
-            capture = '´ëÇ¥(Shift+F8)'
-            point = 'ÁÂÇ¥(Shift+F7)'
-            start = '½ÃÀÛ(Shift+F5)'
-            stop = 'Áß´Ü(Shift+F6)'
-            file = 'ÆÄÀÏ'
-            folder = 'Æú´õ'
-            delete = '»èÁ¦'
-            locate = 'À§Ä¡'
-            probe = 'Å¬¸¯È®ÀÎ'
-            diagnostic = 'Áø´Ü'
-            report = '¹®Á¦º¸°í'
-            log = '·Î±×'
-            exit = 'Á¾·á'
-            ignore = 'Á¦¿Ü(F9)'
-            showIgnore = 'Á¦¿ÜÈ®ÀÎ'
-            clearIgnore = 'Á¦¿Ü»èÁ¦'
-            update = '¾÷µ¥ÀÌÆ® È®ÀÎ'
+            searchWindows = 'ê²€ìƒ‰'
+            capture = 'ëŒ€í‘œ(Shift+F8)'
+            point = 'ì¢Œí‘œ(Shift+F7)'
+            start = 'ì‹œì‘(Shift+F5)'
+            stop = 'ì¤‘ë‹¨(Shift+F6)'
+            file = 'íŒŒì¼'
+            folder = 'í´ë”'
+            delete = 'ì‚­ì œ'
+            locate = 'ìœ„ì¹˜'
+            probe = 'í´ë¦­í™•ì¸'
+            diagnostic = 'ì§„ë‹¨'
+            report = 'ë¬¸ì œë³´ê³ '
+            log = 'ë¡œê·¸'
+            exit = 'ì¢…ë£Œ'
+            ignore = 'ì œì™¸(F9)'
+            showIgnore = 'ì œì™¸í™•ì¸'
+            clearIgnore = 'ì œì™¸ì‚­ì œ'
+            update = 'ì—…ë°ì´íŠ¸ í™•ì¸'
         }
         progress = [ordered]@{
-            labels = @('¸Ş´º','¾îºñ','´øÀü','ÀÔÀå','»óÅÂ','´ë±â','ÀüÅõ','¿Ï·á','Á¾·á','¼øÈ¯')
+            labels = @('ë©”ë‰´','ì–´ë¹„','ë˜ì „','ì…ì¥','ìƒíƒœ','ëŒ€ê¸°','ì „íˆ¬','ì™„ë£Œ','ì¢…ë£Œ','ìˆœí™˜')
         }
-        slots = @('Çùµ¿','»óÅÂ ±âÁØ','½Ä»ç ¹öÆ°','¸Ş´º','¾îºñ½º','´øÀü','ÀÔÀå','¿Ï·á È®ÀÎ','³ª°¡±â','±Ã±Ø±â','½ºÅµ','ÆÈ¶óµò')
+        slots = @('í˜‘ë™','ìƒíƒœ ê¸°ì¤€','ì‹ì‚¬ ë²„íŠ¼','ë©”ë‰´','ì–´ë¹„ìŠ¤','ë˜ì „','ì…ì¥','ì™„ë£Œ í™•ì¸','ë‚˜ê°€ê¸°','ê¶ê·¹ê¸°','ìŠ¤í‚µ','íŒ”ë¼ë”˜')
         brand = [ordered]@{
-            title = '³» ¸Ú´ë·Î °Ô¸®³ë±â'
+            title = 'ë‚´ ë©‹ëŒ€ë¡œ ê²Œë¦¬ë…¸ê¸°'
             linkText = 'getiton85.github.io/gerinogi-pob'
             url = 'https://getiton85.github.io/gerinogi-pob/'
             imagePath = 'C:\Users\freem\Pictures\Mabinogi Mobile\screenshots\MabinogiMobile_2026070318471243.png'
@@ -153,18 +153,18 @@ function Get-UiColor([string]$Path, [System.Drawing.Color]$Fallback) {
 }
 
 $script:UiConfig = Load-UiConfig
-$script:DefaultSlots = @('Çùµ¿','»óÅÂ ±âÁØ','½Ä»ç ¹öÆ°','¸Ş´º','¾îºñ½º','´øÀü','ÀÔÀå','¿Ï·á È®ÀÎ','³ª°¡±â','±Ã±Ø±â','½ºÅµ','ÆÈ¶óµò')
-$script:SpecialSlots = @('Çùµ¿')
-$script:SpecialSlotEnabled = @{'Çùµ¿' = $true}
+$script:DefaultSlots = @('í˜‘ë™','ìƒíƒœ ê¸°ì¤€','ì‹ì‚¬ ë²„íŠ¼','ë©”ë‰´','ì–´ë¹„ìŠ¤','ë˜ì „','ì…ì¥','ì™„ë£Œ í™•ì¸','ë‚˜ê°€ê¸°','ê¶ê·¹ê¸°','ìŠ¤í‚µ','íŒ”ë¼ë”˜')
+$script:SpecialSlots = @('í˜‘ë™')
+$script:SpecialSlotEnabled = @{'í˜‘ë™' = $true}
 $script:SpecialSlotChecks = @{}
-$script:RouteSlots = @('¸Ş´º','¾îºñ½º','´øÀü','ÀÔÀå','¿Ï·á È®ÀÎ','³ª°¡±â')
-$script:CombatSlots = @('»óÅÂ ±âÁØ','½Ä»ç ¹öÆ°','±Ã±Ø±â','½ºÅµ','ÆÈ¶óµò')
+$script:RouteSlots = @('ë©”ë‰´','ì–´ë¹„ìŠ¤','ë˜ì „','ì…ì¥','ì™„ë£Œ í™•ì¸','ë‚˜ê°€ê¸°')
+$script:CombatSlots = @('ìƒíƒœ ê¸°ì¤€','ì‹ì‚¬ ë²„íŠ¼','ê¶ê·¹ê¸°','ìŠ¤í‚µ','íŒ”ë¼ë”˜')
 $script:SlotAliases = @{
-    '¸Ş´º' = @('1´Ü°è')
-    '¾îºñ½º' = @('2´Ü°è')
-    '´øÀü' = @('3´Ü°è')
-    'ÀÔÀå' = @('4´Ü°è')
-    'Äù½ºÆ®' = @('5´Ü°è')
+    'ë©”ë‰´' = @('1ë‹¨ê³„')
+    'ì–´ë¹„ìŠ¤' = @('2ë‹¨ê³„')
+    'ë˜ì „' = @('3ë‹¨ê³„')
+    'ì…ì¥' = @('4ë‹¨ê³„')
+    'í€˜ìŠ¤íŠ¸' = @('5ë‹¨ê³„')
 }
 $configuredSlots = @(Get-UiValue 'slots' $script:DefaultSlots)
 $requiredSlotCount = ($script:DefaultSlots | Where-Object { $configuredSlots -contains $_ }).Count
@@ -172,16 +172,16 @@ if ($requiredSlotCount -eq $script:DefaultSlots.Count) { $script:Slots = $config
 $script:Samples = @{}
 $script:SlotPoints = @{}
 $script:MultiSampleLimits = @{
-    'Çùµ¿' = 3
-    '¿Ï·á È®ÀÎ' = 10
-    '³ª°¡±â' = 3
-    '½Ä»ç ¹öÆ°' = 3
-    '±Ã±Ø±â' = 3
-    '½ºÅµ' = 3
-    'ÆÈ¶óµò' = 3
+    'í˜‘ë™' = 3
+    'ì™„ë£Œ í™•ì¸' = 10
+    'ë‚˜ê°€ê¸°' = 3
+    'ì‹ì‚¬ ë²„íŠ¼' = 3
+    'ê¶ê·¹ê¸°' = 3
+    'ìŠ¤í‚µ' = 3
+    'íŒ”ë¼ë”˜' = 3
 }
 foreach ($slot in $script:Slots) { $script:Samples[$slot] = $null; $script:SlotPoints[$slot] = $null }
-$script:SelectedSlot = '»óÅÂ ±âÁØ'
+$script:SelectedSlot = 'ìƒíƒœ ê¸°ì¤€'
 $script:ActiveSlot = ''
 $script:SlotPreviewCollapsed = $false
 $script:HarborPreviewCollapsed = $false
@@ -190,8 +190,8 @@ $script:CombatPreviewCollapsed = $false
 $script:AdvancedToolsCollapsed = $true
 $script:HarborEnabled = $true
 $script:DungeonRoutineEnabled = @{
-    'Çã»óÀÇ Á¤¹ÚÁö' = $true
-    '±¤±âÀÇ µ¿±¼' = $false
+    'í—ˆìƒì˜ ì •ë°•ì§€' = $true
+    'ê´‘ê¸°ì˜ ë™êµ´' = $false
 }
 $script:SuppressDungeonRoutineToggleEvents = $false
 $script:SuppressSlotBoxSelectionEvents = $false
@@ -231,7 +231,7 @@ $script:RoutineTracePath = Join-Path $script:UserDataRoot 'routine_trace_log.csv
 $script:CrashLogPath = Join-Path $script:UserDataRoot 'crash_log.txt'
 $script:DiagnosticDir = Join-Path $script:UserDataRoot 'diagnostic_frames'
 $script:ReportDir = Join-Path $script:UserDataRoot 'reports'
-$script:AppVersion = '1.0.102'
+$script:AppVersion = '1.0.104'
 $script:PendingCompleteSeen = 0
 $script:InsideStartedAt = $null
 $script:MinimumCompleteWaitMs = 30000
@@ -272,21 +272,21 @@ $script:MaxIgnoreZones = 4
 $script:SelectedUltimateProfileIndex = 0
 $script:UltimateProfiles = @()
 for ($ui = 1; $ui -le 5; $ui++) {
-    $script:UltimateProfiles += [pscustomobject]@{ Name = ('±Ã±Ø±â ¼³Á¤ ' + $ui) }
-    $script:Samples[('±Ã±Ø±â_' + $ui)] = $null
-    $script:SlotPoints[('±Ã±Ø±â_' + $ui)] = $null
+    $script:UltimateProfiles += [pscustomobject]@{ Name = ('ê¶ê·¹ê¸° ì„¤ì • ' + $ui) }
+    $script:Samples[('ê¶ê·¹ê¸°_' + $ui)] = $null
+    $script:SlotPoints[('ê¶ê·¹ê¸°_' + $ui)] = $null
 }
 $script:QuestProfiles = @()
 $script:SelectedQuestProfileIndex = 0
 for ($qi = 1; $qi -le 4; $qi++) {
-    $script:QuestProfiles += [pscustomobject]@{ Name = ('Äù½ºÆ® ¼³Á¤ ' + $qi) }
-    $script:Samples[('Äù½ºÆ®_' + $qi)] = $null
-    $script:SlotPoints[('Äù½ºÆ®_' + $qi)] = $null
+    $script:QuestProfiles += [pscustomobject]@{ Name = ('í€˜ìŠ¤íŠ¸ ì„¤ì • ' + $qi) }
+    $script:Samples[('í€˜ìŠ¤íŠ¸_' + $qi)] = $null
+    $script:SlotPoints[('í€˜ìŠ¤íŠ¸_' + $qi)] = $null
 }
 $script:SlotRegions = @{}
 foreach ($slot in $script:Slots) { $script:SlotRegions[$slot] = $null }
-for ($ui = 1; $ui -le 5; $ui++) { $script:SlotRegions[('±Ã±Ø±â_' + $ui)] = $null }
-for ($qi = 1; $qi -le 4; $qi++) { $script:SlotRegions[('Äù½ºÆ®_' + $qi)] = $null }
+for ($ui = 1; $ui -le 5; $ui++) { $script:SlotRegions[('ê¶ê·¹ê¸°_' + $ui)] = $null }
+for ($qi = 1; $qi -le 4; $qi++) { $script:SlotRegions[('í€˜ìŠ¤íŠ¸_' + $qi)] = $null }
 $script:UpdateManifestPath = Join-Path $PSScriptRoot 'update_manifest_url.txt'
 $script:BackupDir = Join-Path $PSScriptRoot 'update_backup'
 $script:NewLine = [Environment]::NewLine
@@ -295,7 +295,7 @@ $script:BundledSkipSampleBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAQ8AAABXCAYAAAAahcAQA
 function Ensure-BundledSkipSample {
     try {
         if (-not [System.IO.Directory]::Exists($script:SampleDir)) { New-Item -ItemType Directory -Force -Path $script:SampleDir | Out-Null }
-        $target = Join-Path $script:SampleDir '½ºÅµ_¸¶½ºÅ©Å×½ºÆ®.png'
+        $target = Join-Path $script:SampleDir 'ìŠ¤í‚µ_ë§ˆìŠ¤í¬í…ŒìŠ¤íŠ¸.png'
         if (-not [System.IO.File]::Exists($target)) {
             [System.IO.File]::WriteAllBytes($target, [Convert]::FromBase64String($script:BundledSkipSampleBase64))
         }
@@ -731,7 +731,7 @@ function Get-ClickMode {
     try {
         if ($script:ClickModeBox -and -not $script:ClickModeBox.IsDisposed -and $script:ClickModeBox.SelectedItem) { return [string]$script:ClickModeBox.SelectedItem }
     } catch { }
-    return 'µÑ´Ù'
+    return 'ë‘˜ë‹¤'
 }
 function Write-ClickTrace([int]$X, [int]$Y, [string]$Mode, [int]$DownSent, [int]$UpSent, [int]$ErrorCode, [string]$Note) {
     if (-not [System.IO.File]::Exists($script:ClickTracePath)) { 'time,x,y,mode,down_sent,up_sent,error_code,note' | Set-Content -LiteralPath $script:ClickTracePath -Encoding UTF8 }
@@ -761,7 +761,7 @@ function Invoke-LeftClick([int]$X, [int]$Y, [int]$HoldOverrideMs = -1) {
     $holdMs = if ($HoldOverrideMs -gt 0) { $HoldOverrideMs } else { Get-ClickHoldMs }
     $settleMs = Get-MoveSettleMs
     $mode = Get-ClickMode
-    if ($mode -ne '¹é±×¶ó¿îµå') {
+    if ($mode -ne 'ë°±ê·¸ë¼ìš´ë“œ') {
         [void][NativeInput]::SetCursorPos($X, $Y)
         Start-Sleep -Milliseconds $settleMs
         $current = Get-CurrentCursorPoint
@@ -774,14 +774,14 @@ function Invoke-LeftClick([int]$X, [int]$Y, [int]$HoldOverrideMs = -1) {
     $upSent = 0
     $errorCode = 0
     $note = ''
-    if ($mode -eq '¹é±×¶ó¿îµå') {
+    if ($mode -eq 'ë°±ê·¸ë¼ìš´ë“œ') {
         $result = Invoke-BackgroundClick $X $Y $holdMs
         $downSent = $result.Down
         $upSent = $result.Up
         $errorCode = $result.Error
         $note = $result.Note
     }
-    if ($mode -eq 'SendInput' -or $mode -eq 'µÑ´Ù') {
+    if ($mode -eq 'SendInput' -or $mode -eq 'ë‘˜ë‹¤') {
         $size = [System.Runtime.InteropServices.Marshal]::SizeOf([type]'NativeInput+INPUT')
         $down = New-Object 'NativeInput+INPUT[]' 1
         $down[0].type = [NativeInput]::INPUT_MOUSE
@@ -796,8 +796,8 @@ function Invoke-LeftClick([int]$X, [int]$Y, [int]$HoldOverrideMs = -1) {
         if ($errorCode -eq 0) { $errorCode = [System.Runtime.InteropServices.Marshal]::GetLastWin32Error() }
         $note = 'SendInput'
     }
-    if ($mode -eq 'mouse_event' -or $mode -eq 'µÑ´Ù') {
-        if ($mode -eq 'µÑ´Ù') { Start-Sleep -Milliseconds 250 }
+    if ($mode -eq 'mouse_event' -or $mode -eq 'ë‘˜ë‹¤') {
+        if ($mode -eq 'ë‘˜ë‹¤') { Start-Sleep -Milliseconds 250 }
         [NativeInput]::mouse_event([NativeInput]::MOUSEEVENTF_LEFTDOWN, 0, 0, 0, [UIntPtr]::Zero)
         Start-Sleep -Milliseconds $holdMs
         [NativeInput]::mouse_event([NativeInput]::MOUSEEVENTF_LEFTUP, 0, 0, 0, [UIntPtr]::Zero)
@@ -814,7 +814,7 @@ function Invoke-UltimateKey([string]$ProfileName) {
     [NativeInput]::keybd_event(0x36, 0, 0, [UIntPtr]::Zero)
     Start-Sleep -Milliseconds 70
     [NativeInput]::keybd_event(0x36, 0, [NativeInput]::KEYEVENTF_KEYUP, [UIntPtr]::Zero)
-    Write-RoutineTrace $script:CurrentCycle 'key' '±Ã±Ø±â' 'send-vk6' ([System.Drawing.Rectangle]::Empty) $ProfileName
+    Write-RoutineTrace $script:CurrentCycle 'key' 'ê¶ê·¹ê¸°' 'send-vk6' ([System.Drawing.Rectangle]::Empty) $ProfileName
     Start-Sleep -Milliseconds 120
 }
 function Invoke-BKey([string]$Reason) {
@@ -823,7 +823,7 @@ function Invoke-BKey([string]$Reason) {
         Start-Sleep -Milliseconds 100
     }
     [System.Windows.Forms.SendKeys]::SendWait('b')
-    Write-RoutineTrace $script:CurrentCycle 'key' '½Ä»ç ¹öÆ°' 'send-b' ([System.Drawing.Rectangle]::Empty) $Reason
+    Write-RoutineTrace $script:CurrentCycle 'key' 'ì‹ì‚¬ ë²„íŠ¼' 'send-b' ([System.Drawing.Rectangle]::Empty) $Reason
     Start-Sleep -Milliseconds 180
 }
 function Invoke-EscapeTwice([string]$Reason) {
@@ -835,7 +835,7 @@ function Invoke-EscapeTwice([string]$Reason) {
         [NativeInput]::keybd_event(0x1B, 0, 0, [UIntPtr]::Zero)
         Start-Sleep -Milliseconds 70
         [NativeInput]::keybd_event(0x1B, 0, [NativeInput]::KEYEVENTF_KEYUP, [UIntPtr]::Zero)
-        Write-RoutineTrace $script:CurrentCycle 'key' 'ÀÔÀå_ÀüÅõÁß' ('send-esc-' + $i) ([System.Drawing.Rectangle]::Empty) $Reason
+        Write-RoutineTrace $script:CurrentCycle 'key' 'ì…ì¥_ì „íˆ¬ì¤‘' ('send-esc-' + $i) ([System.Drawing.Rectangle]::Empty) $Reason
         if ($i -lt 2) { Sleep-WithStop 500 }
     }
     Start-Sleep -Milliseconds 180
@@ -850,60 +850,60 @@ function Load-ImageUnlocked([string]$Path) {
 function Get-UltimateSlotKey([int]$Index = -1) {
     if ($Index -lt 0) { $Index = [int]$script:SelectedUltimateProfileIndex }
     $Index = [Math]::Max(0, [Math]::Min(4, $Index))
-    return '±Ã±Ø±â_' + ($Index + 1)
+    return 'ê¶ê·¹ê¸°_' + ($Index + 1)
 }
 function Get-QuestSlotKey([int]$Index = -1) {
     if ($Index -lt 0) { $Index = [int]$script:SelectedQuestProfileIndex }
     $Index = [Math]::Max(0, [Math]::Min(3, $Index))
-    return 'Äù½ºÆ®_' + ($Index + 1)
+    return 'í€˜ìŠ¤íŠ¸_' + ($Index + 1)
 }
 function Get-DungeonRouteSlotKey([string]$DungeonName, [string]$Slot) {
-    if (($DungeonName -eq '±¤±âÀÇ µ¿±¼') -and ($Slot -eq '´øÀü')) { return '±¤±âÀÇ µ¿±¼_' + $Slot }
+    if (($DungeonName -eq 'ê´‘ê¸°ì˜ ë™êµ´') -and ($Slot -eq 'ë˜ì „')) { return 'ê´‘ê¸°ì˜ ë™êµ´_' + $Slot }
     return $Slot
 }
 function Get-SlotDisplayName([string]$Slot) {
-    if ($Slot -like '±¤±âÀÇ µ¿±¼_*') { return $Slot.Substring('±¤±âÀÇ µ¿±¼_'.Length) }
+    if ($Slot -like 'ê´‘ê¸°ì˜ ë™êµ´_*') { return $Slot.Substring('ê´‘ê¸°ì˜ ë™êµ´_'.Length) }
     return $Slot
 }
 function Resolve-RouteSlotFromStorageKey([string]$Slot) {
-    if ($Slot -like '±¤±âÀÇ µ¿±¼_*') {
-        $base = $Slot.Substring('±¤±âÀÇ µ¿±¼_'.Length)
+    if ($Slot -like 'ê´‘ê¸°ì˜ ë™êµ´_*') {
+        $base = $Slot.Substring('ê´‘ê¸°ì˜ ë™êµ´_'.Length)
         if ($script:RouteSlots -contains $base) { return $base }
     }
     return $Slot
 }
 function Get-EffectiveSlotKey([string]$Slot) {
-    if ($Slot -eq '±Ã±Ø±â') { return Get-UltimateSlotKey }
-    if ($Slot -eq 'Äù½ºÆ®') { return Get-QuestSlotKey }
-    if ($Slot -like '±¤±âÀÇ µ¿±¼_*') { $base = $Slot.Substring('±¤±âÀÇ µ¿±¼_'.Length); if ($base -eq '´øÀü') { return $Slot }; return $base }
+    if ($Slot -eq 'ê¶ê·¹ê¸°') { return Get-UltimateSlotKey }
+    if ($Slot -eq 'í€˜ìŠ¤íŠ¸') { return Get-QuestSlotKey }
+    if ($Slot -like 'ê´‘ê¸°ì˜ ë™êµ´_*') { $base = $Slot.Substring('ê´‘ê¸°ì˜ ë™êµ´_'.Length); if ($base -eq 'ë˜ì „') { return $Slot }; return $base }
     return $Slot
 }
 function Get-SlotStorageKeys {
     $keys = New-Object System.Collections.Generic.List[string]
     foreach ($slot in $script:Slots) {
-        if ($slot -eq '±Ã±Ø±â') {
+        if ($slot -eq 'ê¶ê·¹ê¸°') {
             for ($i = 0; $i -lt 5; $i++) { [void]$keys.Add((Get-UltimateSlotKey $i)) }
-        } elseif ($slot -eq 'Äù½ºÆ®') {
+        } elseif ($slot -eq 'í€˜ìŠ¤íŠ¸') {
             for ($i = 0; $i -lt 4; $i++) { [void]$keys.Add((Get-QuestSlotKey $i)) }
         } else {
             [void]$keys.Add($slot)
         }
     }
-    [void]$keys.Add((Get-DungeonRouteSlotKey '±¤±âÀÇ µ¿±¼' '´øÀü'))
+    [void]$keys.Add((Get-DungeonRouteSlotKey 'ê´‘ê¸°ì˜ ë™êµ´' 'ë˜ì „'))
     return @($keys | Select-Object -Unique)
 }
 function Get-SlotFileStem([string]$Slot) {
     return (Get-EffectiveSlotKey $Slot).Replace(' ', '_')
 }
 function Get-SlotStatusName([string]$Slot) {
-    if ($Slot -eq '±Ã±Ø±â') { return $Slot + ' ¼³Á¤ ' + ([int]$script:SelectedUltimateProfileIndex + 1) }
-    if ($Slot -eq 'Äù½ºÆ®') { return $Slot + ' ¼³Á¤ ' + ([int]$script:SelectedQuestProfileIndex + 1) }
+    if ($Slot -eq 'ê¶ê·¹ê¸°') { return $Slot + ' ì„¤ì • ' + ([int]$script:SelectedUltimateProfileIndex + 1) }
+    if ($Slot -eq 'í€˜ìŠ¤íŠ¸') { return $Slot + ' ì„¤ì • ' + ([int]$script:SelectedQuestProfileIndex + 1) }
     return Get-SlotDisplayName $Slot
 }
 function Assign-ImageFileToSlot([string]$Slot, [string]$SourcePath) {
     if (-not [System.IO.File]::Exists($SourcePath)) { return }
     $ext = [System.IO.Path]::GetExtension($SourcePath).ToLowerInvariant()
-    if ($ext -notin @('.png','.jpg','.jpeg','.bmp')) { [System.Windows.Forms.MessageBox]::Show('Áö¿øÇÏ´Â ÀÌ¹ÌÁö ÆÄÀÏÀº PNG, JPG, BMPÀÔ´Ï´Ù.', 'ÀÌ¹ÌÁö ¿¬°á') | Out-Null; return }
+    if ($ext -notin @('.png','.jpg','.jpeg','.bmp')) { [System.Windows.Forms.MessageBox]::Show('ì§€ì›í•˜ëŠ” ì´ë¯¸ì§€ íŒŒì¼ì€ PNG, JPG, BMPì…ë‹ˆë‹¤.', 'ì´ë¯¸ì§€ ì—°ê²°') | Out-Null; return }
     $slotKey = Get-EffectiveSlotKey $Slot
     $safe = Get-SlotFileStem $Slot
     $name = $safe + '_' + (Get-Date -Format 'yyyyMMdd_HHmmss_fff') + '.png'
@@ -933,11 +933,11 @@ function Resolve-SlotName([string]$Name) {
 }
 function Resolve-SlotStorageName([string]$Name) {
     if ([string]::IsNullOrWhiteSpace($Name)) { return $null }
-    if ($Name -match '^±Ã±Ø±â_([1-5])$') { return $Name }
-    if ($Name -match '^Äù½ºÆ®_([1-4])$') { return $Name }
-    if ($Name -like '±¤±âÀÇ µ¿±¼_*') { $base = $Name.Substring('±¤±âÀÇ µ¿±¼_'.Length); if ($base -eq '´øÀü') { return $Name }; return Resolve-SlotName $base }
-    if ($Name -eq '±Ã±Ø±â') { return '±Ã±Ø±â_1' }
-    if ($Name -eq 'Äù½ºÆ®') { return 'Äù½ºÆ®_1' }
+    if ($Name -match '^ê¶ê·¹ê¸°_([1-5])$') { return $Name }
+    if ($Name -match '^í€˜ìŠ¤íŠ¸_([1-4])$') { return $Name }
+    if ($Name -like 'ê´‘ê¸°ì˜ ë™êµ´_*') { $base = $Name.Substring('ê´‘ê¸°ì˜ ë™êµ´_'.Length); if ($base -eq 'ë˜ì „') { return $Name }; return Resolve-SlotName $base }
+    if ($Name -eq 'ê¶ê·¹ê¸°') { return 'ê¶ê·¹ê¸°_1' }
+    if ($Name -eq 'í€˜ìŠ¤íŠ¸') { return 'í€˜ìŠ¤íŠ¸_1' }
     return Resolve-SlotName $Name
 }
 function Load-SavedSamples {
@@ -946,8 +946,8 @@ function Load-SavedSamples {
     foreach ($slot in (Get-SlotStorageKeys)) {
         $latest = $null
         $loadNames = @(Get-SlotLoadNames $slot)
-        if ($slot -eq '±Ã±Ø±â_1') { $loadNames += '±Ã±Ø±â' }
-        if ($slot -eq 'Äù½ºÆ®_1') { $loadNames += 'Äù½ºÆ®'; $loadNames += '5´Ü°è' }
+        if ($slot -eq 'ê¶ê·¹ê¸°_1') { $loadNames += 'ê¶ê·¹ê¸°' }
+        if ($slot -eq 'í€˜ìŠ¤íŠ¸_1') { $loadNames += 'í€˜ìŠ¤íŠ¸'; $loadNames += '5ë‹¨ê³„' }
         foreach ($loadName in $loadNames) {
             $prefix = $loadName.Replace(' ', '_') + '_'
             $candidate = Get-ChildItem -LiteralPath $script:SampleDir -File -Filter '*.png' | Where-Object { $_.Name.StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase) } | Sort-Object LastWriteTime -Descending | Select-Object -First 1
@@ -980,8 +980,8 @@ function Get-SlotSamplePaths([string]$Slot) {
             [void]$paths.Add($file.FullName)
         }
     }
-    if ($slotKey -eq 'Äù½ºÆ®_1') {
-        foreach ($loadName in @('Äù½ºÆ®','5´Ü°è')) {
+    if ($slotKey -eq 'í€˜ìŠ¤íŠ¸_1') {
+        foreach ($loadName in @('í€˜ìŠ¤íŠ¸','5ë‹¨ê³„')) {
             $prefix = $loadName.Replace(' ', '_') + '_'
             foreach ($file in (Get-ChildItem -LiteralPath $script:SampleDir -File -Filter '*.png' | Where-Object { $_.Name.StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase) } | Sort-Object LastWriteTime -Descending)) {
                 [void]$paths.Add($file.FullName)
@@ -1070,7 +1070,7 @@ function Test-RectInIgnoreZone([System.Drawing.Rectangle]$Rect) {
 }
 function Add-IgnoreZone {
     if ($script:IgnoreZones.Count -ge $script:MaxIgnoreZones) {
-        [System.Windows.Forms.MessageBox]::Show('Á¦¿Ü ±¸¿ªÀº ÃÖ´ë 4°³±îÁö ÀúÀåÇÕ´Ï´Ù. ´Ù½Ã ÁöÁ¤ÇÏ·Á¸é Á¦¿Ü»èÁ¦¸¦ ¸ÕÀú ´­·¯ÁÖ¼¼¿ä.', 'Á¦¿Ü ±¸¿ª') | Out-Null
+        [System.Windows.Forms.MessageBox]::Show('ì œì™¸ êµ¬ì—­ì€ ìµœëŒ€ 4ê°œê¹Œì§€ ì €ì¥í•©ë‹ˆë‹¤. ë‹¤ì‹œ ì§€ì •í•˜ë ¤ë©´ ì œì™¸ì‚­ì œë¥¼ ë¨¼ì € ëˆŒëŸ¬ì£¼ì„¸ìš”.', 'ì œì™¸ êµ¬ì—­') | Out-Null
         return
     }
     $screen = $screens[$monitorBox.SelectedIndex]
@@ -1088,12 +1088,12 @@ function Add-IgnoreZone {
         $script:IgnoreZones.Add([pscustomobject]@{ X = [int]$rect.Left; Y = [int]$rect.Top; Width = [int]$rect.Width; Height = [int]$rect.Height; Mode = 'screen'; WindowWidth = 0; WindowHeight = 0 }) | Out-Null
     }
     Save-IgnoreZones
-    $statusLabel.Text = 'Á¦¿Ü ±¸¿ª ' + $script:IgnoreZones.Count + '/4 ÀúÀåµÊ'
+    $statusLabel.Text = 'ì œì™¸ êµ¬ì—­ ' + $script:IgnoreZones.Count + '/4 ì €ì¥ë¨'
 }
 function Clear-IgnoreZones {
     $script:IgnoreZones.Clear()
     Save-IgnoreZones
-    $statusLabel.Text = 'Á¦¿Ü ±¸¿ªÀ» ¸ğµÎ »èÁ¦Çß½À´Ï´Ù.'
+    $statusLabel.Text = 'ì œì™¸ êµ¬ì—­ì„ ëª¨ë‘ ì‚­ì œí–ˆìŠµë‹ˆë‹¤.'
 }
 function Show-IgnoreZones {
     $screen = $screens[$monitorBox.SelectedIndex]
@@ -1106,7 +1106,7 @@ function Show-IgnoreZones {
         }
     }
     if ($allowed.Count -le 0) {
-        [System.Windows.Forms.MessageBox]::Show('µî·ÏµÈ ½½·Ô ±¸¿ªÀÌ ¾ø½À´Ï´Ù. F8·Î °¢ ½½·Ô ±¸¿ªÀ» ¸ÕÀú ÁöÁ¤ÇÏ¼¼¿ä.', 'ÀÚµ¿ Á¦¿Ü È®ÀÎ') | Out-Null
+        [System.Windows.Forms.MessageBox]::Show('ë“±ë¡ëœ ìŠ¬ë¡¯ êµ¬ì—­ì´ ì—†ìŠµë‹ˆë‹¤. F8ë¡œ ê° ìŠ¬ë¡¯ êµ¬ì—­ì„ ë¨¼ì € ì§€ì •í•˜ì„¸ìš”.', 'ìë™ ì œì™¸ í™•ì¸') | Out-Null
         return
     }
     $overlay = New-Object System.Windows.Forms.Form
@@ -1157,7 +1157,7 @@ function Show-IgnoreZones {
     }.GetNewClosure())
     $overlay.Show()
     $timer.Start()
-    $statusLabel.Text = 'ÀÚµ¿ Á¦¿Ü È®ÀÎ: ½½·Ô ±¸¿ª ' + $allowed.Count + '°³ ¿ÜºÎ¸¦ ºÓ°Ô Ç¥½ÃÇß½À´Ï´Ù.'
+    $statusLabel.Text = 'ìë™ ì œì™¸ í™•ì¸: ìŠ¬ë¡¯ êµ¬ì—­ ' + $allowed.Count + 'ê°œ ì™¸ë¶€ë¥¼ ë¶‰ê²Œ í‘œì‹œí–ˆìŠµë‹ˆë‹¤.'
 }
 function Capture-Slot([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
     $rect = Select-ScreenRegion $Screen
@@ -1174,13 +1174,13 @@ function Capture-Slot([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
         $bmp.Save($path, [System.Drawing.Imaging.ImageFormat]::Png)
         if ($script:Samples[$slotKey] -and [System.IO.File]::Exists($script:Samples[$slotKey].Path)) { [System.IO.File]::Delete($script:Samples[$slotKey].Path) }
         $script:Samples[$slotKey] = [pscustomobject]@{ Path = $path; Name = $name; Width = $rect.Width; Height = $rect.Height }
-        $script:LastCaptureMessage = (Get-SlotStatusName $Slot) + ' ÀÌ¹ÌÁö°¡ ÀúÀåµÇ¾ú½À´Ï´Ù.'
+        $script:LastCaptureMessage = (Get-SlotStatusName $Slot) + ' ì´ë¯¸ì§€ê°€ ì €ì¥ë˜ì—ˆìŠµë‹ˆë‹¤.'
     }
     finally { $bmp.Dispose() }
 }
 function Capture-ExtraSlotSample([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
     if (-not (Test-MultiSampleSlot $Slot)) {
-        $script:LastCaptureMessage = $Slot + ' ½½·ÔÀº Ãß°¡ »ùÇÃ ´ë»óÀÌ ¾Æ´Õ´Ï´Ù.'
+        $script:LastCaptureMessage = $Slot + ' ìŠ¬ë¡¯ì€ ì¶”ê°€ ìƒ˜í”Œ ëŒ€ìƒì´ ì•„ë‹™ë‹ˆë‹¤.'
         return
     }
     $rect = Select-ScreenRegion $Screen
@@ -1200,7 +1200,7 @@ function Capture-ExtraSlotSample([string]$Slot, [System.Windows.Forms.Screen]$Sc
             Select-Object -Skip $limit |
             ForEach-Object { try { [System.IO.File]::Delete($_.FullName) } catch {} }
         $count = (Get-ChildItem -LiteralPath $folder -File -Filter '*.png' | Measure-Object).Count
-        $script:LastCaptureMessage = (Get-SlotStatusName $Slot) + ' Ãß°¡ »ùÇÃ ÀúÀå: ' + $count + '/' + $limit
+        $script:LastCaptureMessage = (Get-SlotStatusName $Slot) + ' ì¶”ê°€ ìƒ˜í”Œ ì €ì¥: ' + $count + '/' + $limit
     }
     finally { $bmp.Dispose() }
 }
@@ -1219,7 +1219,7 @@ function Save-CapturedSlotRegion([string]$Slot, [System.Drawing.Rectangle]$Rect)
     Save-SlotRegions
 }
 function Save-CapturedSlotPoint([string]$Slot, [System.Drawing.Rectangle]$Rect) {
-    if ($Slot -eq '»óÅÂ ±âÁØ') { return }
+    if ($Slot -eq 'ìƒíƒœ ê¸°ì¤€') { return }
     $slotKey = Get-EffectiveSlotKey $Slot
     $cx = [int]($Rect.Left + $Rect.Width / 2)
     $cy = [int]($Rect.Top + $Rect.Height / 2)
@@ -1247,7 +1247,7 @@ function Save-SlotPoints {
     $rows = New-Object System.Collections.Generic.List[string]
     $rows.Add('slot,x,y,mode,window_width,window_height')
     foreach ($slot in (Get-SlotStorageKeys)) {
-        if ($slot -eq '»óÅÂ ±âÁØ') { continue }
+        if ($slot -eq 'ìƒíƒœ ê¸°ì¤€') { continue }
         $point = $script:SlotPoints[$slot]
         if ($null -ne $point) {
             $mode = if ($point.Mode) { [string]$point.Mode } else { 'screen' }
@@ -1278,7 +1278,7 @@ function Load-SlotPoints {
     $loaded = 0
     foreach ($row in (Import-Csv -LiteralPath $script:SlotPointPath)) {
         $resolvedSlot = Resolve-SlotStorageName ([string]$row.slot)
-        if (($null -ne $resolvedSlot) -and $resolvedSlot -ne '»óÅÂ ±âÁØ') {
+        if (($null -ne $resolvedSlot) -and $resolvedSlot -ne 'ìƒíƒœ ê¸°ì¤€') {
             $mode = if ($row.PSObject.Properties.Name -contains 'mode' -and -not [string]::IsNullOrWhiteSpace($row.mode)) { [string]$row.mode } else { 'screen' }
             $windowWidth = 0
             $windowHeight = 0
@@ -1318,14 +1318,14 @@ function Get-CurrentCursorPoint {
 function Get-CoordinateMode {
     try {
         if ($coordinateModeBox -and -not $coordinateModeBox.IsDisposed -and $coordinateModeBox.SelectedItem) {
-            if ([string]$coordinateModeBox.SelectedItem -eq '´ë»ó Ã¢ ±âÁØ') { return 'window' }
+            if ([string]$coordinateModeBox.SelectedItem -eq 'ëŒ€ìƒ ì°½ ê¸°ì¤€') { return 'window' }
         }
     } catch { }
     return 'screen'
 }
 function Get-CoordinateModeLabel([string]$Mode) {
-    if ($Mode -eq 'window') { return 'Ã¢' }
-    return 'È­¸é'
+    if ($Mode -eq 'window') { return 'ì°½' }
+    return 'í™”ë©´'
 }
 function Get-ActiveTargetBounds {
     if ($script:TargetHandle -ne [IntPtr]::Zero) {
@@ -1347,15 +1347,15 @@ function Get-ActiveTargetBounds {
 }
 function Save-CurrentPointForSelectedSlot {
     $point = Get-CurrentCursorPoint
-    if ($null -eq $point) { $statusLabel.Text = 'ÇöÀç ¸¶¿ì½º ÁÂÇ¥¸¦ ÀĞÁö ¸øÇß½À´Ï´Ù.'; return }
+    if ($null -eq $point) { $statusLabel.Text = 'í˜„ì¬ ë§ˆìš°ìŠ¤ ì¢Œí‘œë¥¼ ì½ì§€ ëª»í–ˆìŠµë‹ˆë‹¤.'; return }
     $slot = $script:SelectedSlot
-    if ($slot -eq '»óÅÂ ±âÁØ') { $script:SlotPoints[$slot] = $null; Save-SlotPoints; Refresh-Slots; $statusLabel.Text = '»óÅÂ ±âÁØÀº ÁÂÇ¥ ÀúÀå ´ë»óÀÌ ¾Æ´Õ´Ï´Ù.'; return }
+    if ($slot -eq 'ìƒíƒœ ê¸°ì¤€') { $script:SlotPoints[$slot] = $null; Save-SlotPoints; Refresh-Slots; $statusLabel.Text = 'ìƒíƒœ ê¸°ì¤€ì€ ì¢Œí‘œ ì €ì¥ ëŒ€ìƒì´ ì•„ë‹™ë‹ˆë‹¤.'; return }
     $slotKey = Get-EffectiveSlotKey $slot
     $mode = Get-CoordinateMode
     if ($mode -eq 'window') {
         $bounds = Get-ActiveTargetBounds
         if ($bounds.IsEmpty) {
-            $statusLabel.Text = '´ë»ó Ã¢À» Ã£Áö ¸øÇØ È­¸é ±âÁØÀ¸·Î ÁÂÇ¥¸¦ ÀúÀåÇß½À´Ï´Ù.'
+            $statusLabel.Text = 'ëŒ€ìƒ ì°½ì„ ì°¾ì§€ ëª»í•´ í™”ë©´ ê¸°ì¤€ìœ¼ë¡œ ì¢Œí‘œë¥¼ ì €ì¥í–ˆìŠµë‹ˆë‹¤.'
             $script:SlotPoints[$slotKey] = [pscustomobject]@{ X = [int]$point.X; Y = [int]$point.Y; Mode = 'screen'; WindowWidth = 0; WindowHeight = 0 }
         } else {
             $script:SlotPoints[$slotKey] = [pscustomobject]@{ X = ([int]$point.X - [int]$bounds.Left); Y = ([int]$point.Y - [int]$bounds.Top); Mode = 'window'; WindowWidth = [int]$bounds.Width; WindowHeight = [int]$bounds.Height }
@@ -1366,11 +1366,11 @@ function Save-CurrentPointForSelectedSlot {
     Save-SlotPoints
     Refresh-Slots
     $saved = $script:SlotPoints[$slotKey]
-    $statusLabel.Text = (Get-SlotStatusName $slot) + ' ÁÂÇ¥ ÀúÀå(' + (Get-CoordinateModeLabel $saved.Mode) + '): X=' + $saved.X + ', Y=' + $saved.Y
+    $statusLabel.Text = (Get-SlotStatusName $slot) + ' ì¢Œí‘œ ì €ì¥(' + (Get-CoordinateModeLabel $saved.Mode) + '): X=' + $saved.X + ', Y=' + $saved.Y
 }
 function Get-PointTolerance { try { if ($pointToleranceBox) { return [int]$pointToleranceBox.Value } } catch { }; return 120 }
 function Check-SlotPointMatch([string]$Slot, [System.Drawing.Rectangle]$Rect) {
-    if ($Slot -eq '»óÅÂ ±âÁØ') { return [pscustomobject]@{ Ok = $true; Message = '' } }
+    if ($Slot -eq 'ìƒíƒœ ê¸°ì¤€') { return [pscustomobject]@{ Ok = $true; Message = '' } }
     if (-not $pointCheck.Checked) { return [pscustomobject]@{ Ok = $true; Message = '' } }
     $slotKey = Get-EffectiveSlotKey $Slot
     $point = $script:SlotPoints[$slotKey]
@@ -1382,13 +1382,13 @@ function Check-SlotPointMatch([string]$Slot, [System.Drawing.Rectangle]$Rect) {
     $compareY = $cy
     $expectedX = [double]$point.X
     $expectedY = [double]$point.Y
-    $basis = 'È­¸é'
+    $basis = 'í™”ë©´'
     if ($mode -eq 'window') {
         $bounds = Get-ActiveTargetBounds
         if ($bounds.IsEmpty) { return [pscustomobject]@{ Ok = $true; Message = '' } }
         $compareX = [double]($cx - $bounds.Left)
         $compareY = [double]($cy - $bounds.Top)
-        $basis = 'Ã¢'
+        $basis = 'ì°½'
         if ([int]$point.WindowWidth -gt 0 -and [int]$point.WindowHeight -gt 0) {
             $expectedX = [double]$point.X * ([double]$bounds.Width / [double]$point.WindowWidth)
             $expectedY = [double]$point.Y * ([double]$bounds.Height / [double]$point.WindowHeight)
@@ -1398,7 +1398,7 @@ function Check-SlotPointMatch([string]$Slot, [System.Drawing.Rectangle]$Rect) {
     $dy = [Math]::Abs($compareY - $expectedY)
     $distance = [Math]::Sqrt(($dx * $dx) + ($dy * $dy))
     $limit = Get-PointTolerance
-    if ($Slot -eq '¿Ï·á È®ÀÎ') {
+    if ($Slot -eq 'ì™„ë£Œ í™•ì¸') {
         $region = $script:SlotRegions[$slotKey]
         if ($null -ne $region) {
             $regionWidth = [double]$region.Width
@@ -1415,10 +1415,10 @@ function Check-SlotPointMatch([string]$Slot, [System.Drawing.Rectangle]$Rect) {
         }
     }
     if ($distance -le $limit) { return [pscustomobject]@{ Ok = $true; Message = '' } }
-    return [pscustomobject]@{ Ok = $false; Message = ($Slot + ' ÁÂÇ¥ °ËÁõ ½ÇÆĞ(' + $basis + ' ±âÁØ): ÀÌ¹ÌÁö Áß½É X=' + ([int]$compareX) + ', Y=' + ([int]$compareY) + ' / ÀúÀå X=' + ([int]$expectedX) + ', Y=' + ([int]$expectedY) + ' / °Å¸® ' + ('{0:F1}' -f $distance) + 'px') }
+    return [pscustomobject]@{ Ok = $false; Message = ($Slot + ' ì¢Œí‘œ ê²€ì¦ ì‹¤íŒ¨(' + $basis + ' ê¸°ì¤€): ì´ë¯¸ì§€ ì¤‘ì‹¬ X=' + ([int]$compareX) + ', Y=' + ([int]$compareY) + ' / ì €ì¥ X=' + ([int]$expectedX) + ', Y=' + ([int]$expectedY) + ' / ê±°ë¦¬ ' + ('{0:F1}' -f $distance) + 'px') }
 }
 function Get-SlotPointScreenPoint([string]$Slot) {
-    if ($Slot -eq '»óÅÂ ±âÁØ') { return $null }
+    if ($Slot -eq 'ìƒíƒœ ê¸°ì¤€') { return $null }
     $slotKey = Get-EffectiveSlotKey $Slot
     $point = $script:SlotPoints[$slotKey]
     if ($null -eq $point) { return $null }
@@ -1461,7 +1461,7 @@ function Get-CurrentSearchBounds([System.Windows.Forms.Screen]$Screen) {
     return Get-SearchBounds $Screen
 }
 function Test-SlotRequiresRegion([string]$Slot) {
-    return @('Çùµ¿','¸Ş´º','¾îºñ½º','´øÀü','ÀÔÀå','¿Ï·á È®ÀÎ','³ª°¡±â','½Ä»ç ¹öÆ°','±Ã±Ø±â','½ºÅµ','ÆÈ¶óµò') -contains $Slot
+    return @('í˜‘ë™','ë©”ë‰´','ì–´ë¹„ìŠ¤','ë˜ì „','ì…ì¥','ì™„ë£Œ í™•ì¸','ë‚˜ê°€ê¸°','ì‹ì‚¬ ë²„íŠ¼','ê¶ê·¹ê¸°','ìŠ¤í‚µ','íŒ”ë¼ë”˜') -contains $Slot
 }
 function Test-SlotAllowsCoordinateFallback([string]$Slot) {
     if ($script:SpecialSlots -contains $Slot) { return $false }
@@ -1549,28 +1549,28 @@ function Get-SlotSearchBounds([string]$Slot, [System.Windows.Forms.Screen]$Scree
     if (Test-SlotRequiresRegion $Slot) {
         return [System.Drawing.Rectangle]::Empty
     }
-    if ($Slot -eq '½Ä»ç ¹öÆ°') {
+    if ($Slot -eq 'ì‹ì‚¬ ë²„íŠ¼') {
         $x = [int]$bounds.Left
         $y = [int]$bounds.Top
         $w = [int]($bounds.Width * 0.25)
         $h = [int]($bounds.Height * 0.20)
         return [System.Drawing.Rectangle]::new($x, $y, $w, $h)
     }
-    if ($Slot -eq '¿Ï·á È®ÀÎ') {
+    if ($Slot -eq 'ì™„ë£Œ í™•ì¸') {
         $x = [int]($bounds.Left + ($bounds.Width * 0.18))
         $y = [int]($bounds.Top + ($bounds.Height * 0.48))
         $w = [int]($bounds.Width * 0.64)
         $h = [int]($bounds.Height * 0.48)
         return [System.Drawing.Rectangle]::new($x, $y, $w, $h)
     }
-    if ($Slot -eq '³ª°¡±â') {
+    if ($Slot -eq 'ë‚˜ê°€ê¸°') {
         $x = [int]($bounds.Left + ($bounds.Width * 0.28))
         $y = [int]($bounds.Top + ($bounds.Height * 0.76))
         $w = [int]($bounds.Width * 0.44)
         $h = [int]($bounds.Height * 0.22)
         return [System.Drawing.Rectangle]::new($x, $y, $w, $h)
     }
-    if ($Slot -eq '±Ã±Ø±â') {
+    if ($Slot -eq 'ê¶ê·¹ê¸°') {
         $x = [int]($bounds.Left + ($bounds.Width * 0.55))
         $y = [int]($bounds.Top + ($bounds.Height * 0.58))
         $w = [int]($bounds.Width * 0.43)
@@ -1599,14 +1599,14 @@ function Find-Slot([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
         }
         $slotTolerance = Get-ColorTolerance
         $slotRequired = Get-MatchRequired
-        if ($Slot -eq '±Ã±Ø±â') {
+        if ($Slot -eq 'ê¶ê·¹ê¸°') {
             $slotTolerance = [Math]::Max($slotTolerance, 38)
             $slotRequired = [Math]::Min($slotRequired, 0.82)
         }
-        if ($Slot -eq '½ºÅµ' -or $Slot -eq '¿Ï·á È®ÀÎ') {
+        if ($Slot -eq 'ìŠ¤í‚µ' -or $Slot -eq 'ì™„ë£Œ í™•ì¸') {
             $slotTolerance = [Math]::Min($slotTolerance, 45)
             $slotRequired = [Math]::Max($slotRequired, 0.82)
-            $brightRequired = if ($Slot -eq '¿Ï·á È®ÀÎ') { 0.62 } elseif ($Slot -eq '½ºÅµ') { 0.50 } else { 0.55 }
+            $brightRequired = if ($Slot -eq 'ì™„ë£Œ í™•ì¸') { 0.62 } elseif ($Slot -eq 'ìŠ¤í‚µ') { 0.50 } else { 0.55 }
             $brightRect = [VisionFinder]::FindBrightTextSample($searchBounds, $samplePath, 3, 5, $brightRequired)
             if (-not $brightRect.IsEmpty) {
                 if (Test-RectInIgnoreZone $brightRect) {
@@ -1614,7 +1614,7 @@ function Find-Slot([string]$Slot, [System.Windows.Forms.Screen]$Screen) {
                     continue
                 }
                 $scoreDetail = [VisionFinder]::LastMode + ' ' + ('{0:P1}' -f [VisionFinder]::LastScore) + '; second=' + ('{0:P1}' -f [VisionFinder]::LastSecondScore) + '; gap=' + ('{0:P1}' -f [VisionFinder]::LastScoreGap)
-                if ($Slot -eq '½ºÅµ' -and [VisionFinder]::LastAmbiguous) {
+                if ($Slot -eq 'ìŠ¤í‚µ' -and [VisionFinder]::LastAmbiguous) {
                     Write-RoutineTrace $script:CurrentCycle 'vision' $Slot 'ambiguous-match' $brightRect ([System.IO.Path]::GetFileName($samplePath) + ' / ' + $scoreDetail)
                     continue
                 }
@@ -1686,42 +1686,42 @@ function Find-ValidSlotOnce([string]$Slot, [System.Windows.Forms.Screen]$Screen,
 }
 function Invoke-ExitActionUntilClosed([System.Windows.Forms.Screen]$Screen, [System.Windows.Forms.Label]$StatusLabel, [System.Drawing.Rectangle]$ExitRect) {
     for ($try = 1; $try -le 2; $try++) {
-        $StatusLabel.Text = '³ª°¡±â °¨Áö: Á¾·á Ã³¸® ' + $try + '/2'
+        $StatusLabel.Text = 'ë‚˜ê°€ê¸° ê°ì§€: ì¢…ë£Œ ì²˜ë¦¬ ' + $try + '/2'
         [System.Windows.Forms.Application]::DoEvents()
-        Write-RoutineTrace $script:CurrentCycle 'post-clear' '³ª°¡±â' 'click-before' $ExitRect ('try=' + $try)
-        [void](Click-SlotTarget '³ª°¡±â' $ExitRect ([int]$stepDelayBox.Value) 520)
-        Write-RoutineTrace $script:CurrentCycle 'post-clear' '³ª°¡±â' 'click-after' $ExitRect ('try=' + $try)
+        Write-RoutineTrace $script:CurrentCycle 'post-clear' 'ë‚˜ê°€ê¸°' 'click-before' $ExitRect ('try=' + $try)
+        [void](Click-SlotTarget 'ë‚˜ê°€ê¸°' $ExitRect ([int]$stepDelayBox.Value) 520)
+        Write-RoutineTrace $script:CurrentCycle 'post-clear' 'ë‚˜ê°€ê¸°' 'click-after' $ExitRect ('try=' + $try)
         [void](Sleep-WithStop 1400)
         if ($script:StopRequested) { return [pscustomobject]@{ Closed = $false; Clicks = $try; Rect = [System.Drawing.Rectangle]::Empty } }
-        $stillExit = Find-ValidSlotOnce '³ª°¡±â' $Screen $true
+        $stillExit = Find-ValidSlotOnce 'ë‚˜ê°€ê¸°' $Screen $true
         if ($stillExit.IsEmpty) {
-            Write-RoutineTrace $script:CurrentCycle 'post-clear' '³ª°¡±â' 'closed' ([System.Drawing.Rectangle]::Empty) ('clicks=' + $try)
+            Write-RoutineTrace $script:CurrentCycle 'post-clear' 'ë‚˜ê°€ê¸°' 'closed' ([System.Drawing.Rectangle]::Empty) ('clicks=' + $try)
             return [pscustomobject]@{ Closed = $true; Clicks = $try; Rect = [System.Drawing.Rectangle]::Empty }
         }
-        Write-RoutineTrace $script:CurrentCycle 'post-clear' '³ª°¡±â' 'still-visible' $stillExit ('after-click-try=' + $try)
+        Write-RoutineTrace $script:CurrentCycle 'post-clear' 'ë‚˜ê°€ê¸°' 'still-visible' $stillExit ('after-click-try=' + $try)
         $ExitRect = $stillExit
     }
-    Write-RoutineTrace $script:CurrentCycle 'post-clear' '³ª°¡±â' 'retry-without-space' $ExitRect 'space fallback disabled; keep exit stage'
+    Write-RoutineTrace $script:CurrentCycle 'post-clear' 'ë‚˜ê°€ê¸°' 'retry-without-space' $ExitRect 'space fallback disabled; keep exit stage'
     return [pscustomobject]@{ Closed = $false; Clicks = 2; Rect = $ExitRect }
 }
 function Invoke-FoodButtonIfVisible([System.Windows.Forms.Screen]$Screen, [System.Windows.Forms.Label]$StatusLabel) {
-    if ($null -eq $script:Samples['½Ä»ç ¹öÆ°']) { return $false }
-    $rect = Find-Slot '½Ä»ç ¹öÆ°' $Screen
+    if ($null -eq $script:Samples['ì‹ì‚¬ ë²„íŠ¼']) { return $false }
+    $rect = Find-Slot 'ì‹ì‚¬ ë²„íŠ¼' $Screen
     if ($rect.IsEmpty) { return $false }
-    $pointResult = Check-SlotPointMatch '½Ä»ç ¹öÆ°' $rect
+    $pointResult = Check-SlotPointMatch 'ì‹ì‚¬ ë²„íŠ¼' $rect
     if (-not $pointResult.Ok) {
-        Write-RoutineTrace $script:CurrentCycle 'food' '½Ä»ç ¹öÆ°' 'point-blocked' $rect $pointResult.Message
+        Write-RoutineTrace $script:CurrentCycle 'food' 'ì‹ì‚¬ ë²„íŠ¼' 'point-blocked' $rect $pointResult.Message
         return $false
     }
-    Write-RoutineTrace $script:CurrentCycle 'food' '½Ä»ç ¹öÆ°' 'found-click' $rect 'image and coordinate confirmed'
-    $StatusLabel.Text = '½Ä»ç ¹öÆ° °¨Áö: Å¬¸¯ ÈÄ B º¸°­'
+    Write-RoutineTrace $script:CurrentCycle 'food' 'ì‹ì‚¬ ë²„íŠ¼' 'found-click' $rect 'image and coordinate confirmed'
+    $StatusLabel.Text = 'ì‹ì‚¬ ë²„íŠ¼ ê°ì§€: í´ë¦­ í›„ B ë³´ê°•'
     [System.Windows.Forms.Application]::DoEvents()
-    [void](Click-SlotTarget '½Ä»ç ¹öÆ°' $rect 500 120)
-    $stillFood = Find-Slot '½Ä»ç ¹öÆ°' $Screen
+    [void](Click-SlotTarget 'ì‹ì‚¬ ë²„íŠ¼' $rect 500 120)
+    $stillFood = Find-Slot 'ì‹ì‚¬ ë²„íŠ¼' $Screen
     if (-not $stillFood.IsEmpty) {
-        $stillPoint = Check-SlotPointMatch '½Ä»ç ¹öÆ°' $stillFood
+        $stillPoint = Check-SlotPointMatch 'ì‹ì‚¬ ë²„íŠ¼' $stillFood
         if ($stillPoint.Ok) {
-            Write-RoutineTrace $script:CurrentCycle 'food' '½Ä»ç ¹öÆ°' 'still-visible-send-b' $stillFood 'click did not clear food prompt'
+            Write-RoutineTrace $script:CurrentCycle 'food' 'ì‹ì‚¬ ë²„íŠ¼' 'still-visible-send-b' $stillFood 'click did not clear food prompt'
             Invoke-BKey 'food still visible after click'
         }
     }
@@ -1736,7 +1736,7 @@ function Reset-CoopAttempts {
 
 function Get-CoopGuardSamplePaths {
     if (-not (Test-Path -LiteralPath $script:SampleDir)) { return @() }
-    return @(Get-ChildItem -LiteralPath $script:SampleDir -File -Filter 'Çùµ¿_Ç¥½Ä*.png' | Sort-Object LastWriteTime -Descending | Select-Object -ExpandProperty FullName)
+    return @(Get-ChildItem -LiteralPath $script:SampleDir -File -Filter 'í˜‘ë™_í‘œì‹*.png' | Sort-Object LastWriteTime -Descending | Select-Object -ExpandProperty FullName)
 }
 function Get-CoopGuardSearchBounds([System.Windows.Forms.Screen]$Screen) {
     $b = $Screen.Bounds
@@ -1749,7 +1749,7 @@ function Get-CoopGuardSearchBounds([System.Windows.Forms.Screen]$Screen) {
 function Find-CoopPromptStrict([System.Windows.Forms.Screen]$Screen) {
     $guardPaths = @(Get-CoopGuardSamplePaths)
     if ($guardPaths.Count -eq 0) {
-        Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'Çùµ¿' 'missing-guard-sample' ([System.Drawing.Rectangle]::Empty) 'Çùµ¿_Ç¥½Ä sample is required; do not click generic confirm button'
+        Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'í˜‘ë™' 'missing-guard-sample' ([System.Drawing.Rectangle]::Empty) 'í˜‘ë™_í‘œì‹ sample is required; do not click generic confirm button'
         return [System.Drawing.Rectangle]::Empty
     }
     $guardBounds = Get-CoopGuardSearchBounds $Screen
@@ -1766,7 +1766,7 @@ function Find-CoopPromptStrict([System.Windows.Forms.Screen]$Screen) {
             $isAmbiguous = $false
             try { $isAmbiguous = [VisionFinder]::LastAmbiguous } catch { $isAmbiguous = $false }
             if ($isAmbiguous) {
-                Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'Çùµ¿' 'guard-ambiguous-reject' $candidate (([System.IO.Path]::GetFileName($guardPath)) + '; ' + [VisionFinder]::LastMode + ' ' + ('{0:P1}' -f [VisionFinder]::LastScore))
+                Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'í˜‘ë™' 'guard-ambiguous-reject' $candidate (([System.IO.Path]::GetFileName($guardPath)) + '; ' + [VisionFinder]::LastMode + ' ' + ('{0:P1}' -f [VisionFinder]::LastScore))
                 continue
             }
             $guardRect = $candidate
@@ -1775,23 +1775,23 @@ function Find-CoopPromptStrict([System.Windows.Forms.Screen]$Screen) {
         }
     }
     if ($guardRect.IsEmpty) {
-        Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'Çùµ¿' 'guard-miss' $guardBounds 'Çùµ¿ title guard not visible; continue to menu without clicking'
+        Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'í˜‘ë™' 'guard-miss' $guardBounds 'í˜‘ë™ title guard not visible; continue to menu without clicking'
         return [System.Drawing.Rectangle]::Empty
     }
 
-    $buttonRect = Find-Slot 'Çùµ¿' $Screen
+    $buttonRect = Find-Slot 'í˜‘ë™' $Screen
     if (-not $buttonRect.IsEmpty) {
-        Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'Çùµ¿' 'guard-confirmed-button-found' $buttonRect ('guard=' + $guardName)
+        Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'í˜‘ë™' 'guard-confirmed-button-found' $buttonRect ('guard=' + $guardName)
         return $buttonRect
     }
-    Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'Çùµ¿' 'guard-found-button-miss-no-click' $guardRect ('guard=' + $guardName + '; button sample miss; point fallback disabled')
+    Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'í˜‘ë™' 'guard-found-button-miss-no-click' $guardRect ('guard=' + $guardName + '; button sample miss; point fallback disabled')
     return [System.Drawing.Rectangle]::Empty
 }
 function Find-EntryBusyGuard([System.Windows.Forms.Screen]$Screen) {
     if (-not $script:EntryBusyGuardEnabled) { return [System.Drawing.Rectangle]::Empty }
-    $guardPath = Join-Path $script:SampleDir 'ÀÔÀå_ÀüÅõÁß_°¡µå.png'
+    $guardPath = Join-Path $script:SampleDir 'ì…ì¥_ì „íˆ¬ì¤‘_ê°€ë“œ.png'
     if (-not [System.IO.File]::Exists($guardPath)) { return [System.Drawing.Rectangle]::Empty }
-    $bounds = Get-SlotSearchBounds 'ÀÔÀå' $Screen
+    $bounds = Get-SlotSearchBounds 'ì…ì¥' $Screen
     if ($bounds.IsEmpty) { return [System.Drawing.Rectangle]::Empty }
     $searchBounds = Expand-SearchBoundsForSample $bounds $guardPath $Screen
     $rect = [VisionFinder]::FindBrightTextSample($searchBounds, $guardPath, 3, 5, 0.72)
@@ -1799,33 +1799,33 @@ function Find-EntryBusyGuard([System.Windows.Forms.Screen]$Screen) {
         $rect = [VisionFinder]::FindSample($searchBounds, $guardPath, 4, 8, [Math]::Max((Get-ColorTolerance), 45), 0.78)
     }
     if (-not $rect.IsEmpty) {
-        Save-DiagnosticFrame 'ÀÔÀå_ÀüÅõÁß' 'found' $searchBounds $rect ('entry busy guard ' + [VisionFinder]::LastMode + ' ' + ('{0:P1}' -f [VisionFinder]::LastScore))
+        Save-DiagnosticFrame 'ì…ì¥_ì „íˆ¬ì¤‘' 'found' $searchBounds $rect ('entry busy guard ' + [VisionFinder]::LastMode + ' ' + ('{0:P1}' -f [VisionFinder]::LastScore))
     }
     return $rect
 }
 function Find-StateMarkerForRouting([System.Windows.Forms.Screen]$Screen) {
-    if ((Get-SlotSamplePaths '»óÅÂ ±âÁØ').Count -eq 0) { return [System.Drawing.Rectangle]::Empty }
-    return Find-ValidSlotOnce '»óÅÂ ±âÁØ' $Screen $true
+    if ((Get-SlotSamplePaths 'ìƒíƒœ ê¸°ì¤€').Count -eq 0) { return [System.Drawing.Rectangle]::Empty }
+    return Find-ValidSlotOnce 'ìƒíƒœ ê¸°ì¤€' $Screen $true
 }
 function Get-NextRoutineStage([string]$Slot) {
     switch ($Slot) {
-        'Çùµ¿' { return '¸Ş´ºÈ®ÀÎ' }
-        '¸Ş´º' { return '¾îºñ½º' }
-        '¾îºñ½º' { return '´øÀü' }
-        '´øÀü' { return 'ÀÔÀå' }
-        'ÀÔÀå' { return '³»ºÎ' }
-        'ÀÔÀå_ÀüÅõÁß' { return '³»ºÎ' }
-        '»óÅÂ ±âÁØ' { return '³»ºÎ' }
-        '½Ä»ç ¹öÆ°' { return '³»ºÎ' }
-        '±Ã±Ø±â' { return '³»ºÎ' }
-        '½ºÅµ' { return '³»ºÎ' }
-        'ÆÈ¶óµò' { return '³»ºÎ' }
-        '¿Ï·á È®ÀÎ' { return '³ª°¡±â' }
-        '³ª°¡±â' {
-            if ((Test-SpecialSlotEnabled 'Çùµ¿') -and (Get-SlotSamplePaths 'Çùµ¿').Count -gt 0) { return 'Çùµ¿' }
-            return '¸Ş´º'
+        'í˜‘ë™' { return 'ë©”ë‰´í™•ì¸' }
+        'ë©”ë‰´' { return 'ì–´ë¹„ìŠ¤' }
+        'ì–´ë¹„ìŠ¤' { return 'ë˜ì „' }
+        'ë˜ì „' { return 'ì…ì¥' }
+        'ì…ì¥' { return 'ë‚´ë¶€' }
+        'ì…ì¥_ì „íˆ¬ì¤‘' { return 'ë‚´ë¶€' }
+        'ìƒíƒœ ê¸°ì¤€' { return 'ë‚´ë¶€' }
+        'ì‹ì‚¬ ë²„íŠ¼' { return 'ë‚´ë¶€' }
+        'ê¶ê·¹ê¸°' { return 'ë‚´ë¶€' }
+        'ìŠ¤í‚µ' { return 'ë‚´ë¶€' }
+        'íŒ”ë¼ë”˜' { return 'ë‚´ë¶€' }
+        'ì™„ë£Œ í™•ì¸' { return 'ë‚˜ê°€ê¸°' }
+        'ë‚˜ê°€ê¸°' {
+            if ((Test-SpecialSlotEnabled 'í˜‘ë™') -and (Get-SlotSamplePaths 'í˜‘ë™').Count -gt 0) { return 'í˜‘ë™' }
+            return 'ë©”ë‰´'
         }
-        '__Çùµ¿¾øÀ½' { return '¸Ş´º' }
+        '__í˜‘ë™ì—†ìŒ' { return 'ë©”ë‰´' }
         default { return '' }
     }
 }
@@ -1853,97 +1853,97 @@ function Get-CompleteGateDetail {
 }
 
 function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$Stage) {
-    if ([string]::IsNullOrWhiteSpace($Stage)) { $Stage = '¸Ş´º' }
-    if ($Stage -ne '³»ºÎ') {
+    if ([string]::IsNullOrWhiteSpace($Stage)) { $Stage = 'ë©”ë‰´' }
+    if ($Stage -ne 'ë‚´ë¶€') {
         $globalStateRect = Find-StateMarkerForRouting $Screen
         if (-not $globalStateRect.IsEmpty) {
             $script:PendingCompleteSeen = 0
-            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '»óÅÂ ±âÁØ' 'global-inside-guard' $globalStateRect ('stage=' + $Stage + '; route/special blocked')
-            return [pscustomobject]@{ Slot = '»óÅÂ ±âÁØ'; Rect = $globalStateRect; Stage = $Stage }
+            Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'ìƒíƒœ ê¸°ì¤€' 'global-inside-guard' $globalStateRect ('stage=' + $Stage + '; route/special blocked')
+            return [pscustomobject]@{ Slot = 'ìƒíƒœ ê¸°ì¤€'; Rect = $globalStateRect; Stage = $Stage }
         }
     }
-    if ($Stage -in @('¸Ş´º','¸Ş´ºÈ®ÀÎ')) {
-        if ((Test-SpecialSlotEnabled 'Çùµ¿') -and (Get-SlotSamplePaths 'Çùµ¿').Count -gt 0 -and (Test-CoopAttemptAllowed)) {
+    if ($Stage -in @('ë©”ë‰´','ë©”ë‰´í™•ì¸')) {
+        if ((Test-SpecialSlotEnabled 'í˜‘ë™') -and (Get-SlotSamplePaths 'í˜‘ë™').Count -gt 0 -and (Test-CoopAttemptAllowed)) {
             $priorityCoopRect = Find-CoopPromptStrict $Screen
             if (-not $priorityCoopRect.IsEmpty) {
                 $script:PendingCompleteSeen = 0
-                Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'Çùµ¿' 'candidate-priority-special' $priorityCoopRect ('stage=' + $Stage + '; coop prompt priority')
-                return [pscustomobject]@{ Slot = 'Çùµ¿'; Rect = $priorityCoopRect; Stage = $Stage }
+                Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'í˜‘ë™' 'candidate-priority-special' $priorityCoopRect ('stage=' + $Stage + '; coop prompt priority')
+                return [pscustomobject]@{ Slot = 'í˜‘ë™'; Rect = $priorityCoopRect; Stage = $Stage }
             }
-            Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'Çùµ¿' 'miss-priority-special' ([System.Drawing.Rectangle]::Empty) ('stage=' + $Stage + '; coop prompt not visible')
+            Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'í˜‘ë™' 'miss-priority-special' ([System.Drawing.Rectangle]::Empty) ('stage=' + $Stage + '; coop prompt not visible')
         }
     }
-    if ($Stage -eq 'Çùµ¿') {
-        if (-not (Test-SpecialSlotEnabled 'Çùµ¿')) {
-            Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'Çùµ¿' 'skip-special-disabled' ([System.Drawing.Rectangle]::Empty) 'special disabled; continue to menu'
-            return [pscustomobject]@{ Slot = '__Çùµ¿¾øÀ½'; Rect = [System.Drawing.Rectangle]::Empty; Stage = $Stage }
+    if ($Stage -eq 'í˜‘ë™') {
+        if (-not (Test-SpecialSlotEnabled 'í˜‘ë™')) {
+            Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'í˜‘ë™' 'skip-special-disabled' ([System.Drawing.Rectangle]::Empty) 'special disabled; continue to menu'
+            return [pscustomobject]@{ Slot = '__í˜‘ë™ì—†ìŒ'; Rect = [System.Drawing.Rectangle]::Empty; Stage = $Stage }
         }
-        if ((Get-SlotSamplePaths 'Çùµ¿').Count -eq 0) {
-            Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'Çùµ¿' 'skip-special-after-loop' ([System.Drawing.Rectangle]::Empty) 'missing sample; continue to menu'
-            return [pscustomobject]@{ Slot = '__Çùµ¿¾øÀ½'; Rect = [System.Drawing.Rectangle]::Empty; Stage = $Stage }
+        if ((Get-SlotSamplePaths 'í˜‘ë™').Count -eq 0) {
+            Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'í˜‘ë™' 'skip-special-after-loop' ([System.Drawing.Rectangle]::Empty) 'missing sample; continue to menu'
+            return [pscustomobject]@{ Slot = '__í˜‘ë™ì—†ìŒ'; Rect = [System.Drawing.Rectangle]::Empty; Stage = $Stage }
         }
         if (-not (Test-CoopAttemptAllowed)) {
-            Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'Çùµ¿' 'attempt-limit-skip' ([System.Drawing.Rectangle]::Empty) ('attempts=' + $script:CoopClickAttempts + '/' + $script:MaxCoopClickAttempts + '; continue to menu')
-            return [pscustomobject]@{ Slot = '__Çùµ¿¾øÀ½'; Rect = [System.Drawing.Rectangle]::Empty; Stage = $Stage }
+            Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'í˜‘ë™' 'attempt-limit-skip' ([System.Drawing.Rectangle]::Empty) ('attempts=' + $script:CoopClickAttempts + '/' + $script:MaxCoopClickAttempts + '; continue to menu')
+            return [pscustomobject]@{ Slot = '__í˜‘ë™ì—†ìŒ'; Rect = [System.Drawing.Rectangle]::Empty; Stage = $Stage }
         }
         $coopRect = Find-CoopPromptStrict $Screen
         if (-not $coopRect.IsEmpty) {
-            Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'Çùµ¿' 'candidate-after-loop' $coopRect 'stage=Çùµ¿; special after loop'
-            return [pscustomobject]@{ Slot = 'Çùµ¿'; Rect = $coopRect; Stage = $Stage }
+            Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'í˜‘ë™' 'candidate-after-loop' $coopRect 'stage=í˜‘ë™; special after loop'
+            return [pscustomobject]@{ Slot = 'í˜‘ë™'; Rect = $coopRect; Stage = $Stage }
         }
-        Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'Çùµ¿' 'miss-special-after-loop' ([System.Drawing.Rectangle]::Empty) 'special not visible; continue to menu'
-        return [pscustomobject]@{ Slot = '__Çùµ¿¾øÀ½'; Rect = [System.Drawing.Rectangle]::Empty; Stage = $Stage }
+        Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'í˜‘ë™' 'miss-special-after-loop' ([System.Drawing.Rectangle]::Empty) 'special not visible; continue to menu'
+        return [pscustomobject]@{ Slot = '__í˜‘ë™ì—†ìŒ'; Rect = [System.Drawing.Rectangle]::Empty; Stage = $Stage }
     }
-    if ($Stage -eq 'ÀÔÀå') {
+    if ($Stage -eq 'ì…ì¥') {
         $entryBusyRect = Find-EntryBusyGuard $Screen
         if (-not $entryBusyRect.IsEmpty) {
-            Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'ÀÔÀå_ÀüÅõÁß' 'route-guard-candidate' $entryBusyRect ('stage=' + $Stage + '; entry screen already in battle')
-            return [pscustomobject]@{ Slot = 'ÀÔÀå_ÀüÅõÁß'; Rect = $entryBusyRect; Stage = $Stage }
+            Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'ì…ì¥_ì „íˆ¬ì¤‘' 'route-guard-candidate' $entryBusyRect ('stage=' + $Stage + '; entry screen already in battle')
+            return [pscustomobject]@{ Slot = 'ì…ì¥_ì „íˆ¬ì¤‘'; Rect = $entryBusyRect; Stage = $Stage }
         }
     }
-    if ($Stage -eq '³»ºÎ') {
+    if ($Stage -eq 'ë‚´ë¶€') {
         $stateRect = [System.Drawing.Rectangle]::Empty
-        if ($null -ne $script:Samples['»óÅÂ ±âÁØ']) {
-            $stateRect = Find-ValidSlotOnce '»óÅÂ ±âÁØ' $Screen $true
+        if ($null -ne $script:Samples['ìƒíƒœ ê¸°ì¤€']) {
+            $stateRect = Find-ValidSlotOnce 'ìƒíƒœ ê¸°ì¤€' $Screen $true
         }
         $stateNote = 'state marker not visible'
         if (-not $stateRect.IsEmpty) {
             $stateNote = 'state marker visible'
             $script:PendingCompleteSeen = 0
-            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '»óÅÂ ±âÁØ' 'inside-lock' $stateRect 'stage=³»ºÎ; allowed=½ºÅµ|½Ä»ç ¹öÆ°|±Ã±Ø±â|ÆÈ¶óµò|»óÅÂ ±âÁØ'
+            Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'ìƒíƒœ ê¸°ì¤€' 'inside-lock' $stateRect 'stage=ë‚´ë¶€; allowed=ìŠ¤í‚µ|ì‹ì‚¬ ë²„íŠ¼|ê¶ê·¹ê¸°|íŒ”ë¼ë”˜|ìƒíƒœ ê¸°ì¤€'
         }
-        if ((Get-SlotSamplePaths '½ºÅµ').Count -gt 0) {
-            $skipRect = Find-ValidSlotOnce '½ºÅµ' $Screen $true
+        if ((Get-SlotSamplePaths 'ìŠ¤í‚µ').Count -gt 0) {
+            $skipRect = Find-ValidSlotOnce 'ìŠ¤í‚µ' $Screen $true
             if (-not $skipRect.IsEmpty) {
             $script:PendingCompleteSeen = 0
-                Write-RoutineTrace $script:CurrentCycle 'stage-scan' '½ºÅµ' 'candidate-inside-only' $skipRect $stateNote
-                return [pscustomobject]@{ Slot = '½ºÅµ'; Rect = $skipRect; Stage = $Stage }
+                Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'ìŠ¤í‚µ' 'candidate-inside-only' $skipRect $stateNote
+                return [pscustomobject]@{ Slot = 'ìŠ¤í‚µ'; Rect = $skipRect; Stage = $Stage }
             }
-            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '½ºÅµ' 'miss-inside' ([System.Drawing.Rectangle]::Empty) $stateNote
+            Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'ìŠ¤í‚µ' 'miss-inside' ([System.Drawing.Rectangle]::Empty) $stateNote
         } else {
-            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '½ºÅµ' 'missing-sample-inside' ([System.Drawing.Rectangle]::Empty) $stateNote
+            Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'ìŠ¤í‚µ' 'missing-sample-inside' ([System.Drawing.Rectangle]::Empty) $stateNote
         }
         if ($stateRect.IsEmpty) {
             $insideBusyRect = Find-EntryBusyGuard $Screen
             if (-not $insideBusyRect.IsEmpty) {
                 $script:PendingCompleteSeen = 0
-                Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'ÀÔÀå_ÀüÅõÁß' 'internal-entry-busy-recovery' $insideBusyRect 'inside stage lost state marker on entry combat screen; restore with ESC'
-                return [pscustomobject]@{ Slot = 'ÀÔÀå_ÀüÅõÁß'; Rect = $insideBusyRect; Stage = $Stage }
+                Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'ì…ì¥_ì „íˆ¬ì¤‘' 'internal-entry-busy-recovery' $insideBusyRect 'inside stage lost state marker on entry combat screen; restore with ESC'
+                return [pscustomobject]@{ Slot = 'ì…ì¥_ì „íˆ¬ì¤‘'; Rect = $insideBusyRect; Stage = $Stage }
             }
         }
-        if ($stateRect.IsEmpty -and (Test-SpecialSlotEnabled 'Çùµ¿') -and (Get-SlotSamplePaths 'Çùµ¿').Count -gt 0) {
+        if ($stateRect.IsEmpty -and (Test-SpecialSlotEnabled 'í˜‘ë™') -and (Get-SlotSamplePaths 'í˜‘ë™').Count -gt 0) {
             $coopInsideRect = Find-CoopPromptStrict $Screen
             if (-not $coopInsideRect.IsEmpty) {
                 $script:PendingCompleteSeen = 0
-                Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'Çùµ¿' 'candidate-inside-special' $coopInsideRect 'state marker not visible; coop prompt before complete'
-                return [pscustomobject]@{ Slot = 'Çùµ¿'; Rect = $coopInsideRect; Stage = $Stage }
+                Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'í˜‘ë™' 'blocked-inside-special' $coopInsideRect 'inside stage keeps current flow; coop does not advance to menu'
+            } else {
+                Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'í˜‘ë™' 'miss-inside-special' ([System.Drawing.Rectangle]::Empty) 'state marker not visible; coop not visible'
             }
-            Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'Çùµ¿' 'miss-inside-special' ([System.Drawing.Rectangle]::Empty) 'state marker not visible; coop not visible'
         }
         if ($stateRect.IsEmpty) {
-            Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'ÀüÅõ½½·Ô' 'blocked-state-missing' ([System.Drawing.Rectangle]::Empty) 'state marker not visible; skip food/ultimate/paladin'
+            Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'ì „íˆ¬ìŠ¬ë¡¯' 'blocked-state-missing' ([System.Drawing.Rectangle]::Empty) 'state marker not visible; skip food/ultimate/paladin'
         }
-        foreach ($slot in @('½Ä»ç ¹öÆ°','±Ã±Ø±â','ÆÈ¶óµò')) {
+        foreach ($slot in @('ì‹ì‚¬ ë²„íŠ¼','ê¶ê·¹ê¸°','íŒ”ë¼ë”˜')) {
             if (Test-StopRequested) { return $null }
             if ($stateRect.IsEmpty) { continue }
             if ((Get-SlotSamplePaths $slot).Count -eq 0) {
@@ -1960,18 +1960,18 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
         }
         if (-not $stateRect.IsEmpty) {
             $script:PendingCompleteSeen = 0
-            return [pscustomobject]@{ Slot = '»óÅÂ ±âÁØ'; Rect = $stateRect; Stage = $Stage }
+            return [pscustomobject]@{ Slot = 'ìƒíƒœ ê¸°ì¤€'; Rect = $stateRect; Stage = $Stage }
         }
-        if ($null -ne $script:Samples['¿Ï·á È®ÀÎ']) {
-            $completeRect = Find-ValidSlotOnce '¿Ï·á È®ÀÎ' $Screen $true
+        if ($null -ne $script:Samples['ì™„ë£Œ í™•ì¸']) {
+            $completeRect = Find-ValidSlotOnce 'ì™„ë£Œ í™•ì¸' $Screen $true
             if (-not $completeRect.IsEmpty) {
                 if (Test-CompleteVisualCandidateAllowed) {
                     $script:PendingCompleteSeen = [int]$script:PendingCompleteSeen + 1
-                    Write-RoutineTrace $script:CurrentCycle 'stage-scan' '¿Ï·á È®ÀÎ' 'candidate-after-inside-pending' $completeRect ('state marker not visible; stable=' + $script:PendingCompleteSeen + '/2')
+                    Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'ì™„ë£Œ í™•ì¸' 'candidate-after-inside-pending' $completeRect ('state marker not visible; stable=' + $script:PendingCompleteSeen + '/2')
                     if ($script:PendingCompleteSeen -lt 2) { return $null }
                     $script:PendingCompleteSeen = 0
-                    Write-RoutineTrace $script:CurrentCycle 'stage-scan' '¿Ï·á È®ÀÎ' 'candidate-after-inside' $completeRect 'state marker not visible; stable confirmed'
-                    return [pscustomobject]@{ Slot = '¿Ï·á È®ÀÎ'; Rect = $completeRect; Stage = $Stage }
+                    Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'ì™„ë£Œ í™•ì¸' 'candidate-after-inside' $completeRect 'state marker not visible; stable confirmed'
+                    return [pscustomobject]@{ Slot = 'ì™„ë£Œ í™•ì¸'; Rect = $completeRect; Stage = $Stage }
                 }
                 else {
                     $script:PendingCompleteSeen = 0
@@ -1980,26 +1980,26 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
             }
         }
         $script:PendingCompleteSeen = 0
-        Write-RoutineTrace $script:CurrentCycle 'stage-scan' '' 'none' ([System.Drawing.Rectangle]::Empty) 'stage=³»ºÎ; checked=»óÅÂ ±âÁØ|½ºÅµ|Çùµ¿|½Ä»ç ¹öÆ°|±Ã±Ø±â|ÆÈ¶óµò|¿Ï·á È®ÀÎ'
+        Write-RoutineTrace $script:CurrentCycle 'stage-scan' '' 'none' ([System.Drawing.Rectangle]::Empty) 'stage=ë‚´ë¶€; checked=ìƒíƒœ ê¸°ì¤€|ìŠ¤í‚µ|í˜‘ë™|ì‹ì‚¬ ë²„íŠ¼|ê¶ê·¹ê¸°|íŒ”ë¼ë”˜|ì™„ë£Œ í™•ì¸'
         return $null
     }
     $expectedSlot = $Stage
-    if ($Stage -eq '¸Ş´ºÈ®ÀÎ') { $expectedSlot = '¸Ş´º' }
-    if ($Stage -eq '¿Ï·á') { $expectedSlot = '¿Ï·á È®ÀÎ' }
-    if ($Stage -eq 'Á¾·á') { $expectedSlot = '³ª°¡±â' }
+    if ($Stage -eq 'ë©”ë‰´í™•ì¸') { $expectedSlot = 'ë©”ë‰´' }
+    if ($Stage -eq 'ì™„ë£Œ') { $expectedSlot = 'ì™„ë£Œ í™•ì¸' }
+    if ($Stage -eq 'ì¢…ë£Œ') { $expectedSlot = 'ë‚˜ê°€ê¸°' }
     if ($script:RouteSlots -contains $expectedSlot) { $expectedSlot = Get-ActiveRouteSlotKey $expectedSlot }
-    if ($Stage -eq '¸Ş´ºÈ®ÀÎ' -and (Test-SpecialSlotEnabled 'Çùµ¿') -and (Get-SlotSamplePaths 'Çùµ¿').Count -gt 0) {
+    if ($Stage -eq 'ë©”ë‰´í™•ì¸' -and (Test-SpecialSlotEnabled 'í˜‘ë™') -and (Get-SlotSamplePaths 'í˜‘ë™').Count -gt 0) {
         $stillCoopRect = Find-CoopPromptStrict $Screen
         if (-not $stillCoopRect.IsEmpty) {
-            Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'Çùµ¿' 'still-visible-before-menu' $stillCoopRect 'stage=¸Ş´ºÈ®ÀÎ; coop prompt still visible; retry coop click'
-            return [pscustomobject]@{ Slot = 'Çùµ¿'; Rect = $stillCoopRect; Stage = $Stage }
+            Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'í˜‘ë™' 'still-visible-before-menu' $stillCoopRect 'stage=ë©”ë‰´í™•ì¸; coop prompt still visible; retry coop click'
+            return [pscustomobject]@{ Slot = 'í˜‘ë™'; Rect = $stillCoopRect; Stage = $Stage }
         }
     }
-    if ($Stage -eq '³ª°¡±â' -and (Get-SlotSamplePaths '¿Ï·á È®ÀÎ').Count -gt 0) {
-        $stillCompleteRect = Find-ValidSlotOnce '¿Ï·á È®ÀÎ' $Screen $true
+    if ($Stage -eq 'ë‚˜ê°€ê¸°' -and (Get-SlotSamplePaths 'ì™„ë£Œ í™•ì¸').Count -gt 0) {
+        $stillCompleteRect = Find-ValidSlotOnce 'ì™„ë£Œ í™•ì¸' $Screen $true
         if (-not $stillCompleteRect.IsEmpty) {
-            Write-RoutineTrace $script:CurrentCycle 'stage-scan' '¿Ï·á È®ÀÎ' 'still-visible-before-exit' $stillCompleteRect 'stage=³ª°¡±â; complete screen still visible; retry complete click'
-            return [pscustomobject]@{ Slot = '¿Ï·á È®ÀÎ'; Rect = $stillCompleteRect; Stage = $Stage }
+            Write-RoutineTrace $script:CurrentCycle 'stage-scan' 'ì™„ë£Œ í™•ì¸' 'still-visible-before-exit' $stillCompleteRect 'stage=ë‚˜ê°€ê¸°; complete screen still visible; retry complete click'
+            return [pscustomobject]@{ Slot = 'ì™„ë£Œ í™•ì¸'; Rect = $stillCompleteRect; Stage = $Stage }
         }
     }
     if ((Get-SlotSamplePaths $expectedSlot).Count -eq 0) {
@@ -2016,17 +2016,17 @@ function Find-RoutineCandidate([System.Windows.Forms.Screen]$Screen, [string]$St
 }
 function Get-StateActionSettleMs([string]$Slot) {
     switch ($Slot) {
-        'Çùµ¿' { return 120 }
-        '¸Ş´º' { return 900 }
-        '¾îºñ½º' { return 900 }
-        '´øÀü' { return 900 }
-        'ÀÔÀå' { return 1800 }
-        '»óÅÂ ±âÁØ' { return 450 }
-        '¿Ï·á È®ÀÎ' { return 1800 }
-        '½Ä»ç ¹öÆ°' { return 900 }
-        '±Ã±Ø±â' { return 600 }
-        '½ºÅµ' { return 700 }
-        'ÆÈ¶óµò' { return 900 }
+        'í˜‘ë™' { return 120 }
+        'ë©”ë‰´' { return 900 }
+        'ì–´ë¹„ìŠ¤' { return 900 }
+        'ë˜ì „' { return 900 }
+        'ì…ì¥' { return 1800 }
+        'ìƒíƒœ ê¸°ì¤€' { return 450 }
+        'ì™„ë£Œ í™•ì¸' { return 1800 }
+        'ì‹ì‚¬ ë²„íŠ¼' { return 900 }
+        'ê¶ê·¹ê¸°' { return 600 }
+        'ìŠ¤í‚µ' { return 700 }
+        'íŒ”ë¼ë”˜' { return 900 }
         default { return 900 }
     }
 }
@@ -2042,26 +2042,30 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
     $nextStage = Get-NextRoutineStage $slot
     Mark-ActiveSlot $slot
     switch ($slot) {
-        '__Çùµ¿¾øÀ½' {
-            $StatusLabel.Text = 'Çùµ¿ ¾øÀ½: ¸Ş´º ´Ü°è·Î ÀÌµ¿'
+        '__í˜‘ë™ì—†ìŒ' {
+            $StatusLabel.Text = 'í˜‘ë™ ì—†ìŒ: ë©”ë‰´ ë‹¨ê³„ë¡œ ì´ë™'
             [System.Windows.Forms.Application]::DoEvents()
-            Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'advance-no-click' $rect 'next=¸Ş´º'
-            return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = 'Çùµ¿ ¾øÀ½'; NextStage = $nextStage }
+            Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'advance-no-click' $rect 'next=ë©”ë‰´'
+            return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = 'í˜‘ë™ ì—†ìŒ'; NextStage = $nextStage }
         }
-        'Çùµ¿' {
-            $StatusLabel.Text = 'Çùµ¿ °¨Áö: Å¬¸¯ ÈÄ ¸Ş´º È®ÀÎ'
+        'í˜‘ë™' {
+            $StatusLabel.Text = 'í˜‘ë™ ê°ì§€: í´ë¦­ í›„ ë©”ë‰´ í™•ì¸'
             [System.Windows.Forms.Application]::DoEvents()
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'click-before' $rect 'special pre-menu'
             [void](Click-SlotTarget $slot $rect 80 100)
             $script:CoopClickAttempts = [int]$script:CoopClickAttempts + 1
-            $nextStage = if (Test-CoopAttemptAllowed) { $nextStage } else { '¸Ş´º' }
+            if ([string]$Candidate.Stage -eq 'ë‚´ë¶€') {
+                $nextStage = 'ë‚´ë¶€'
+            } else {
+                $nextStage = if (Test-CoopAttemptAllowed) { $nextStage } else { 'ë©”ë‰´' }
+            }
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'click-after' $rect ('next=' + $nextStage + '; attempts=' + $script:CoopClickAttempts + '/' + $script:MaxCoopClickAttempts)
             Wait-StateActionSettle $slot
-            return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = 'Çùµ¿ Å¬¸¯'; NextStage = $nextStage }
+            return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = 'í˜‘ë™ í´ë¦­'; NextStage = $nextStage }
         }
-        'ÀÔÀå' {
+        'ì…ì¥' {
             Reset-CoopAttempts
-            $StatusLabel.Text = 'ÀÔÀå °¨Áö: Å¬¸¯ ÈÄ ³»ºÎ ÁøÇà °¨½Ã'
+            $StatusLabel.Text = 'ì…ì¥ ê°ì§€: í´ë¦­ í›„ ë‚´ë¶€ ì§„í–‰ ê°ì‹œ'
             [System.Windows.Forms.Application]::DoEvents()
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'click-before' $rect 'enter-to-inside; quest removed'
             [void](Click-SlotTarget $slot $rect ([int]$stepDelayBox.Value))
@@ -2073,9 +2077,9 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
             $script:CombatMarkerSeenAfterSkip = $false
             Set-ProgressStep 5
             Wait-StateActionSettle $slot
-            return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = 'ÀÔÀå Å¬¸¯ ÈÄ ³»ºÎ °¨½Ã'; NextStage = $nextStage }
+            return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = 'ì…ì¥ í´ë¦­ í›„ ë‚´ë¶€ ê°ì‹œ'; NextStage = $nextStage }
         }
-        '³ª°¡±â' {
+        'ë‚˜ê°€ê¸°' {
             $exitResult = Invoke-ExitActionUntilClosed $Screen $StatusLabel $rect
             if ($exitResult.Closed) {
                 $InsidePhase.Value = $false
@@ -2084,13 +2088,13 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
                 $script:BossSkipSeen = $false
                 $script:CombatMarkerSeenAfterSkip = $false
                 Set-ProgressStep 10
-                return [pscustomobject]@{ Clicks = [int]$exitResult.Clicks; Completed = $true; Message = '¼øÈ¯ ¿Ï·á'; NextStage = '¸Ş´º' }
+                return [pscustomobject]@{ Clicks = [int]$exitResult.Clicks; Completed = $true; Message = 'ìˆœí™˜ ì™„ë£Œ'; NextStage = 'ë©”ë‰´' }
             }
-            return [pscustomobject]@{ Clicks = [int]$exitResult.Clicks; Completed = $false; Message = '³ª°¡±â ÀçÅ½»ö'; NextStage = '³ª°¡±â' }
+            return [pscustomobject]@{ Clicks = [int]$exitResult.Clicks; Completed = $false; Message = 'ë‚˜ê°€ê¸° ì¬íƒìƒ‰'; NextStage = 'ë‚˜ê°€ê¸°' }
         }
-        'ÀÔÀå_ÀüÅõÁß' {
+        'ì…ì¥_ì „íˆ¬ì¤‘' {
             Reset-CoopAttempts
-            $StatusLabel.Text = 'ÀüÅõÁß È­¸é °¨Áö: ESC º¹±¸ ÈÄ ³»ºÎ °¨½Ã'
+            $StatusLabel.Text = 'ì „íˆ¬ì¤‘ í™”ë©´ ê°ì§€: ESC ë³µêµ¬ í›„ ë‚´ë¶€ ê°ì‹œ'
             [System.Windows.Forms.Application]::DoEvents()
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'inside-monitor-restore-before-esc' $rect 'entry screen is already in combat; press ESC twice and return to state monitor'
             Invoke-EscapeTwice 'entry busy guard'
@@ -2100,12 +2104,12 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
             if (-not $script:CombatMarkerSeen) { $script:CombatMarkerSeen = $true }
             $script:PendingCompleteSeen = 0
             Set-ProgressStep 5
-            Wait-StateActionSettle '»óÅÂ ±âÁØ'
-            return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = 'ÀüÅõÁß È­¸é ESC º¹±¸'; NextStage = $nextStage }
+            Wait-StateActionSettle 'ìƒíƒœ ê¸°ì¤€'
+            return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = 'ì „íˆ¬ì¤‘ í™”ë©´ ESC ë³µêµ¬'; NextStage = $nextStage }
         }
-        '¿Ï·á È®ÀÎ' {
+        'ì™„ë£Œ í™•ì¸' {
             Reset-CoopAttempts
-            $StatusLabel.Text = '¿Ï·á È®ÀÎ °¨Áö: Å¬¸¯'
+            $StatusLabel.Text = 'ì™„ë£Œ í™•ì¸ ê°ì§€: í´ë¦­'
             [System.Windows.Forms.Application]::DoEvents()
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'click-before' $rect ''
             [void](Click-SlotTarget $slot $rect ([int]$stepDelayBox.Value))
@@ -2113,32 +2117,32 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
             $InsidePhase.Value = $false
             Set-ProgressStep 8
             Wait-StateActionSettle $slot
-            return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = '¿Ï·á È®ÀÎ Å¬¸¯'; NextStage = $nextStage }
+            return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = 'ì™„ë£Œ í™•ì¸ í´ë¦­'; NextStage = $nextStage }
         }
-        '½Ä»ç ¹öÆ°' {
-            if (-not $InsidePhase.Value) { return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = '½Ä»ç ¹«½Ã: ³»ºÎ ÁøÇà ¾Æ´Ô'; NextStage = '' } }
-            $StatusLabel.Text = '½Ä»ç ¹öÆ° °¨Áö: Å¬¸¯ ÈÄ B º¸°­'
+        'ì‹ì‚¬ ë²„íŠ¼' {
+            if (-not $InsidePhase.Value) { return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = 'ì‹ì‚¬ ë¬´ì‹œ: ë‚´ë¶€ ì§„í–‰ ì•„ë‹˜'; NextStage = '' } }
+            $StatusLabel.Text = 'ì‹ì‚¬ ë²„íŠ¼ ê°ì§€: í´ë¦­ í›„ B ë³´ê°•'
             [System.Windows.Forms.Application]::DoEvents()
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'food-helper-before' $rect 'candidate already verified'
             [void](Invoke-FoodButtonIfVisible $Screen $StatusLabel)
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'food-helper-after' $rect ''
             Wait-StateActionSettle $slot
-            return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = '½Ä»ç Å¬¸¯+B º¸°­'; NextStage = $nextStage }
+            return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = 'ì‹ì‚¬ í´ë¦­+B ë³´ê°•'; NextStage = $nextStage }
         }
-        '±Ã±Ø±â' {
-            if (-not $InsidePhase.Value) { return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = '±Ã±Ø±â ¹«½Ã: ³»ºÎ ÁøÇà ¾Æ´Ô'; NextStage = '' } }
+        'ê¶ê·¹ê¸°' {
+            if (-not $InsidePhase.Value) { return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = 'ê¶ê·¹ê¸° ë¬´ì‹œ: ë‚´ë¶€ ì§„í–‰ ì•„ë‹˜'; NextStage = '' } }
             Save-SelectedUltimateProfileFromControls
             $ultimateProfile = Get-SelectedUltimateProfile
-            $StatusLabel.Text = '±Ã±Ø±â °¨Áö: ' + [string]$ultimateProfile.Name + ' / 6 ÀÔ·Â'
+            $StatusLabel.Text = 'ê¶ê·¹ê¸° ê°ì§€: ' + [string]$ultimateProfile.Name + ' / 6 ì…ë ¥'
             [System.Windows.Forms.Application]::DoEvents()
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'send-6-direct' $rect ('profile=' + [string]$ultimateProfile.Name)
             Invoke-UltimateKey ([string]$ultimateProfile.Name)
             Wait-StateActionSettle $slot
-            return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = '±Ã±Ø±â 6 ÀÔ·Â'; NextStage = $nextStage }
+            return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = 'ê¶ê·¹ê¸° 6 ì…ë ¥'; NextStage = $nextStage }
         }
-        '½ºÅµ' {
-            if (-not $InsidePhase.Value) { return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = '½ºÅµ ¹«½Ã: ³»ºÎ ÁøÇà ¾Æ´Ô'; NextStage = '' } }
-            $StatusLabel.Text = '½ºÅµ °¨Áö: Å¬¸¯'
+        'ìŠ¤í‚µ' {
+            if (-not $InsidePhase.Value) { return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = 'ìŠ¤í‚µ ë¬´ì‹œ: ë‚´ë¶€ ì§„í–‰ ì•„ë‹˜'; NextStage = '' } }
+            $StatusLabel.Text = 'ìŠ¤í‚µ ê°ì§€: í´ë¦­'
             [System.Windows.Forms.Application]::DoEvents()
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'click-before' $rect 'inside-only'
             [void](Click-SlotTarget $slot $rect 250 120)
@@ -2146,21 +2150,21 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
             $script:BossSkipSeen = $true
             $script:CombatMarkerSeenAfterSkip = $false
             Wait-StateActionSettle $slot
-            return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = '½ºÅµ Å¬¸¯'; NextStage = $nextStage }
+            return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = 'ìŠ¤í‚µ í´ë¦­'; NextStage = $nextStage }
         }
-        'ÆÈ¶óµò' {
-            if (-not $InsidePhase.Value) { return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = 'ÆÈ¶óµò ¹«½Ã: ³»ºÎ ÁøÇà ¾Æ´Ô'; NextStage = '' } }
-            $StatusLabel.Text = 'ÆÈ¶óµò °¨Áö: Å¬¸¯'
+        'íŒ”ë¼ë”˜' {
+            if (-not $InsidePhase.Value) { return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = 'íŒ”ë¼ë”˜ ë¬´ì‹œ: ë‚´ë¶€ ì§„í–‰ ì•„ë‹˜'; NextStage = '' } }
+            $StatusLabel.Text = 'íŒ”ë¼ë”˜ ê°ì§€: í´ë¦­'
             [System.Windows.Forms.Application]::DoEvents()
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'click-before' $rect 'inside-only'
             [void](Click-SlotTarget $slot $rect 400 120)
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'click-after' $rect ''
             Wait-StateActionSettle $slot
-            return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = 'ÆÈ¶óµò Å¬¸¯'; NextStage = $nextStage }
+            return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = 'íŒ”ë¼ë”˜ í´ë¦­'; NextStage = $nextStage }
         }
-        '»óÅÂ ±âÁØ' {
+        'ìƒíƒœ ê¸°ì¤€' {
             $script:SlotPoints[$slot] = $null
-            $StatusLabel.Text = '»óÅÂ ±âÁØ °¨Áö: ³»ºÎ ÁøÇà Áß, ½ºÅµ/½Ä»ç/±Ã±Ø±â/ÆÈ¶óµò¸¸ °¨½Ã'
+            $StatusLabel.Text = 'ìƒíƒœ ê¸°ì¤€ ê°ì§€: ë‚´ë¶€ ì§„í–‰ ì¤‘, ìŠ¤í‚µ/ì‹ì‚¬/ê¶ê·¹ê¸°/íŒ”ë¼ë”˜ë§Œ ê°ì‹œ'
             [System.Windows.Forms.Application]::DoEvents()
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'inside-observe-only' $rect 'blocked route slots while visible'
             $InsidePhase.Value = $true
@@ -2169,10 +2173,10 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
             if ($null -eq $script:InsideStartedAt) { $script:InsideStartedAt = Get-Date }
             Set-ProgressStep 5
             Wait-StateActionSettle $slot
-            return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = '»óÅÂ ±âÁØ È®ÀÎ'; NextStage = $nextStage }
+            return [pscustomobject]@{ Clicks = 0; Completed = $false; Message = 'ìƒíƒœ ê¸°ì¤€ í™•ì¸'; NextStage = $nextStage }
         }
-        'Äù½ºÆ®' {
-            $StatusLabel.Text = 'Äù½ºÆ® °¨Áö: ÁøÇà ½ÃÀÛ'
+        'í€˜ìŠ¤íŠ¸' {
+            $StatusLabel.Text = 'í€˜ìŠ¤íŠ¸ ê°ì§€: ì§„í–‰ ì‹œì‘'
             [System.Windows.Forms.Application]::DoEvents()
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'click-before' $rect ''
             [void](Click-SlotTarget $slot $rect ([int]$stepDelayBox.Value) 120)
@@ -2181,17 +2185,17 @@ function Invoke-RoutineCandidateAction($Candidate, [System.Windows.Forms.Screen]
             if ($null -eq $script:InsideStartedAt) { $script:InsideStartedAt = Get-Date }
             Set-ProgressStep 7
             Wait-StateActionSettle $slot
-            return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = 'Äù½ºÆ® Å¬¸¯'; NextStage = $nextStage }
+            return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = 'í€˜ìŠ¤íŠ¸ í´ë¦­'; NextStage = $nextStage }
         }
         default {
             if ($script:RouteSlots -contains $slot) { Reset-CoopAttempts }
-            $StatusLabel.Text = $slot + ' °¨Áö: Å¬¸¯'
+            $StatusLabel.Text = $slot + ' ê°ì§€: í´ë¦­'
             [System.Windows.Forms.Application]::DoEvents()
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'click-before' $rect ''
             [void](Click-SlotTarget $slot $rect ([int]$stepDelayBox.Value))
             Write-RoutineTrace $script:CurrentCycle 'state-action' $slot 'click-after' $rect ''
             Wait-StateActionSettle $slot
-            return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = $slot + ' Å¬¸¯'; NextStage = $nextStage }
+            return [pscustomobject]@{ Clicks = 1; Completed = $false; Message = $slot + ' í´ë¦­'; NextStage = $nextStage }
         }
     }
 }
@@ -2269,20 +2273,20 @@ function Test-HarborEnabled {
 }
 function Test-DungeonRoutineEnabled([string]$Name) {
     try {
-        if ($Name -eq 'Çã»óÀÇ Á¤¹ÚÁö' -and $harborEnabledCheck) { return [bool]$harborEnabledCheck.Checked }
-        if ($Name -eq '±¤±âÀÇ µ¿±¼' -and $caveEnabledCheck) { return [bool]$caveEnabledCheck.Checked }
+        if ($Name -eq 'í—ˆìƒì˜ ì •ë°•ì§€' -and $harborEnabledCheck) { return [bool]$harborEnabledCheck.Checked }
+        if ($Name -eq 'ê´‘ê¸°ì˜ ë™êµ´' -and $caveEnabledCheck) { return [bool]$caveEnabledCheck.Checked }
     } catch { }
     if ($script:DungeonRoutineEnabled.ContainsKey($Name)) { return [bool]$script:DungeonRoutineEnabled[$Name] }
     return $false
 }
 
 function Test-AnyDungeonRoutineEnabled {
-    return ((Test-DungeonRoutineEnabled 'Çã»óÀÇ Á¤¹ÚÁö') -or (Test-DungeonRoutineEnabled '±¤±âÀÇ µ¿±¼'))
+    return ((Test-DungeonRoutineEnabled 'í—ˆìƒì˜ ì •ë°•ì§€') -or (Test-DungeonRoutineEnabled 'ê´‘ê¸°ì˜ ë™êµ´'))
 }
 
 function Get-ActiveRouteSlotKey([string]$Slot) {
-    if ($Slot -eq '´øÀü' -and (Test-DungeonRoutineEnabled '±¤±âÀÇ µ¿±¼') -and -not (Test-DungeonRoutineEnabled 'Çã»óÀÇ Á¤¹ÚÁö')) {
-        return (Get-DungeonRouteSlotKey '±¤±âÀÇ µ¿±¼' $Slot)
+    if ($Slot -eq 'ë˜ì „' -and (Test-DungeonRoutineEnabled 'ê´‘ê¸°ì˜ ë™êµ´') -and -not (Test-DungeonRoutineEnabled 'í—ˆìƒì˜ ì •ë°•ì§€')) {
+        return (Get-DungeonRouteSlotKey 'ê´‘ê¸°ì˜ ë™êµ´' $Slot)
     }
     return $Slot
 }
@@ -2343,7 +2347,7 @@ function Save-SelectedUltimateProfileFromControls {
         if ($script:UltimateProfiles.Count -le 0) { return }
         $index = [Math]::Max(0, [Math]::Min($script:UltimateProfiles.Count - 1, [int]$script:SelectedUltimateProfileIndex))
         $name = $ultimateNameBox.Text.Trim()
-        if ([string]::IsNullOrWhiteSpace($name)) { $name = '±Ã±Ø±â ¼³Á¤ ' + ($index + 1) }
+        if ([string]::IsNullOrWhiteSpace($name)) { $name = 'ê¶ê·¹ê¸° ì„¤ì • ' + ($index + 1) }
         $script:UltimateProfiles[$index] = [pscustomobject]@{ Name = $name }
     } catch { }
 }
@@ -2389,10 +2393,10 @@ function Save-UserSettings {
             target_title = $titleBox.Text
             monitor_index = [int]$monitorBox.SelectedIndex
             selected_slot = [string]$script:SelectedSlot
-            harbor_enabled = [bool](Test-DungeonRoutineEnabled 'Çã»óÀÇ Á¤¹ÚÁö')
+            harbor_enabled = [bool](Test-DungeonRoutineEnabled 'í—ˆìƒì˜ ì •ë°•ì§€')
             dungeon_routine_enabled = [ordered]@{
-                harbor = [bool](Test-DungeonRoutineEnabled 'Çã»óÀÇ Á¤¹ÚÁö')
-                cave = [bool](Test-DungeonRoutineEnabled '±¤±âÀÇ µ¿±¼')
+                harbor = [bool](Test-DungeonRoutineEnabled 'í—ˆìƒì˜ ì •ë°•ì§€')
+                cave = [bool](Test-DungeonRoutineEnabled 'ê´‘ê¸°ì˜ ë™êµ´')
             }
             special_enabled = $specialEnabled
             combat_enabled = $combatEnabled
@@ -2446,13 +2450,13 @@ function Load-UserSettings {
         if ($settings.dungeon_routine_enabled) {
             $harborProp = $settings.dungeon_routine_enabled.PSObject.Properties['harbor']
             $caveProp = $settings.dungeon_routine_enabled.PSObject.Properties['cave']
-            if ($null -ne $harborProp) { $script:DungeonRoutineEnabled['Çã»óÀÇ Á¤¹ÚÁö'] = [bool]$harborProp.Value }
-            if ($null -ne $caveProp) { $script:DungeonRoutineEnabled['±¤±âÀÇ µ¿±¼'] = [bool]$caveProp.Value }
-            $script:HarborEnabled = [bool]$script:DungeonRoutineEnabled['Çã»óÀÇ Á¤¹ÚÁö']
+            if ($null -ne $harborProp) { $script:DungeonRoutineEnabled['í—ˆìƒì˜ ì •ë°•ì§€'] = [bool]$harborProp.Value }
+            if ($null -ne $caveProp) { $script:DungeonRoutineEnabled['ê´‘ê¸°ì˜ ë™êµ´'] = [bool]$caveProp.Value }
+            $script:HarborEnabled = [bool]$script:DungeonRoutineEnabled['í—ˆìƒì˜ ì •ë°•ì§€']
         } elseif ($null -ne $settings.harbor_enabled) {
             $script:HarborEnabled = [bool]$settings.harbor_enabled
-            $script:DungeonRoutineEnabled['Çã»óÀÇ Á¤¹ÚÁö'] = [bool]$script:HarborEnabled
-            $script:DungeonRoutineEnabled['±¤±âÀÇ µ¿±¼'] = $false
+            $script:DungeonRoutineEnabled['í—ˆìƒì˜ ì •ë°•ì§€'] = [bool]$script:HarborEnabled
+            $script:DungeonRoutineEnabled['ê´‘ê¸°ì˜ ë™êµ´'] = $false
         }
         if ($settings.special_enabled) {
             foreach ($slot in $script:SpecialSlots) {
@@ -2470,12 +2474,12 @@ function Load-UserSettings {
             $loadedProfiles = @()
             foreach ($profile in @($settings.ultimate_profiles)) {
                 $name = [string]$profile.name
-                if ([string]::IsNullOrWhiteSpace($name)) { $name = '±Ã±Ø±â ¼³Á¤ ' + ($loadedProfiles.Count + 1) }
+                if ([string]::IsNullOrWhiteSpace($name)) { $name = 'ê¶ê·¹ê¸° ì„¤ì • ' + ($loadedProfiles.Count + 1) }
                 $loadedProfiles += [pscustomobject]@{ Name = $name }
             }
             if ($loadedProfiles.Count -gt 0) {
                 while ($loadedProfiles.Count -lt 5) {
-                    $loadedProfiles += [pscustomobject]@{ Name = ('±Ã±Ø±â ¼³Á¤ ' + ($loadedProfiles.Count + 1)) }
+                    $loadedProfiles += [pscustomobject]@{ Name = ('ê¶ê·¹ê¸° ì„¤ì • ' + ($loadedProfiles.Count + 1)) }
                 }
                 $script:UltimateProfiles = @($loadedProfiles | Select-Object -First 5)
             }
@@ -2517,7 +2521,7 @@ function Get-UpdateManifestUrl {
 }
 function Ensure-UpdateManifestUrlFile {
     if (-not [System.IO.File]::Exists($script:UpdateManifestPath)) {
-        [System.IO.File]::WriteAllText($script:UpdateManifestPath, "GitHub version.json raw URLÀ» ¿©±â¿¡ ºÙ¿©³ÖÀ¸¼¼¿ä.`r`n", [System.Text.Encoding]::UTF8)
+        [System.IO.File]::WriteAllText($script:UpdateManifestPath, "GitHub version.json raw URLì„ ì—¬ê¸°ì— ë¶™ì—¬ë„£ìœ¼ì„¸ìš”.`r`n", [System.Text.Encoding]::UTF8)
     }
 }
 function Get-RemoteText([string]$Url) {
@@ -2526,13 +2530,13 @@ function Get-RemoteText([string]$Url) {
     try { return $client.DownloadString($Url) } finally { $client.Dispose() }
 }
 function Invoke-AppInstallerUpdate($Manifest) {
-    if ($script:Running) { [System.Windows.Forms.MessageBox]::Show('½ÇÇà Áß¿¡´Â ¾÷µ¥ÀÌÆ®ÇÒ ¼ö ¾ø½À´Ï´Ù. ¸ÕÀú Áß´ÜÇÏ¼¼¿ä.', '¾÷µ¥ÀÌÆ®') | Out-Null; return }
+    if ($script:Running) { [System.Windows.Forms.MessageBox]::Show('ì‹¤í–‰ ì¤‘ì—ëŠ” ì—…ë°ì´íŠ¸í•  ìˆ˜ ì—†ìŠµë‹ˆë‹¤. ë¨¼ì € ì¤‘ë‹¨í•˜ì„¸ìš”.', 'ì—…ë°ì´íŠ¸') | Out-Null; return }
     $installer = $Manifest.installer
-    if ($null -eq $installer -or [string]::IsNullOrWhiteSpace([string]$installer.url)) { throw 'installer.url °ªÀÌ ¾ø½À´Ï´Ù.' }
+    if ($null -eq $installer -or [string]::IsNullOrWhiteSpace([string]$installer.url)) { throw 'installer.url ê°’ì´ ì—†ìŠµë‹ˆë‹¤.' }
     $stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
     $targetBackup = Join-Path $script:BackupDir $stamp
     New-Item -ItemType Directory -Force -Path $targetBackup | Out-Null
-    $installerPath = Join-Path $targetBackup '»óÅÂ·çÆ¾ ¼³Ä¡.exe'
+    $installerPath = Join-Path $targetBackup 'ìƒíƒœë£¨í‹´ ì„¤ì¹˜.exe'
     $client = New-Object System.Net.WebClient
     $client.Headers.Add('User-Agent', 'GerinogiRoutineInstallerUpdater/' + $script:AppVersion)
     try {
@@ -2541,9 +2545,9 @@ function Invoke-AppInstallerUpdate($Manifest) {
     finally { $client.Dispose() }
     if ($installer.sha256) {
         $hash = (Get-FileHash -LiteralPath $installerPath -Algorithm SHA256).Hash.ToLowerInvariant()
-        if ($hash -ne ([string]$installer.sha256).ToLowerInvariant()) { throw '¼³Ä¡ÆÄÀÏ ÇØ½Ã °ËÁõ ½ÇÆĞ' }
+        if ($hash -ne ([string]$installer.sha256).ToLowerInvariant()) { throw 'ì„¤ì¹˜íŒŒì¼ í•´ì‹œ ê²€ì¦ ì‹¤íŒ¨' }
     }
-    [System.Windows.Forms.MessageBox]::Show('ÀÌ ¾÷µ¥ÀÌÆ®´Â ¼³Ä¡ÆÄÀÏ·Î Àû¿ëµË´Ï´Ù.' + $script:NewLine + 'ÇÁ·Î±×·¥À» Á¾·áÇÏ°í ¼³Ä¡¸¦ ½ÃÀÛÇÕ´Ï´Ù.' + $script:NewLine + '±âÁ¸ ¼³Á¤°ú »ùÇÃÀº À¯ÁöµË´Ï´Ù.', '¾÷µ¥ÀÌÆ®') | Out-Null
+    [System.Windows.Forms.MessageBox]::Show('ì´ ì—…ë°ì´íŠ¸ëŠ” ì„¤ì¹˜íŒŒì¼ë¡œ ì ìš©ë©ë‹ˆë‹¤.' + $script:NewLine + 'í”„ë¡œê·¸ë¨ì„ ì¢…ë£Œí•˜ê³  ì„¤ì¹˜ë¥¼ ì‹œì‘í•©ë‹ˆë‹¤.' + $script:NewLine + 'ê¸°ì¡´ ì„¤ì •ê³¼ ìƒ˜í”Œì€ ìœ ì§€ë©ë‹ˆë‹¤.', 'ì—…ë°ì´íŠ¸') | Out-Null
     Start-Process -FilePath $installerPath -WorkingDirectory $targetBackup
     $script:StopRequested = $true
     $form.Close()
@@ -2553,20 +2557,20 @@ function Invoke-AppUpdateCheck([bool]$Silent) {
     if ([string]::IsNullOrWhiteSpace($url) -or $url.StartsWith('GitHub version.json')) {
         Ensure-UpdateManifestUrlFile
         if (-not $Silent) {
-            [System.Windows.Forms.MessageBox]::Show('¾÷µ¥ÀÌÆ® ÁÖ¼Ò°¡ ¾ÆÁ÷ µî·ÏµÇÁö ¾Ê¾Ò½À´Ï´Ù.' + $script:NewLine + 'update_manifest_url.txt ÆÄÀÏ¿¡ GitHub version.json raw URLÀ» ³Ö¾îÁÖ¼¼¿ä.', '¾÷µ¥ÀÌÆ® È®ÀÎ') | Out-Null
+            [System.Windows.Forms.MessageBox]::Show('ì—…ë°ì´íŠ¸ ì£¼ì†Œê°€ ì•„ì§ ë“±ë¡ë˜ì§€ ì•Šì•˜ìŠµë‹ˆë‹¤.' + $script:NewLine + 'update_manifest_url.txt íŒŒì¼ì— GitHub version.json raw URLì„ ë„£ì–´ì£¼ì„¸ìš”.', 'ì—…ë°ì´íŠ¸ í™•ì¸') | Out-Null
             Start-Process -FilePath $script:UpdateManifestPath
         }
         return
     }
     try {
         $manifest = (Get-RemoteText $url) | ConvertFrom-Json
-        if ($null -eq $manifest.version) { throw 'version °ªÀÌ ¾ø½À´Ï´Ù.' }
+        if ($null -eq $manifest.version) { throw 'version ê°’ì´ ì—†ìŠµë‹ˆë‹¤.' }
         if ((Compare-VersionString $script:AppVersion ([string]$manifest.version)) -ge 0) {
-            if (-not $Silent) { [System.Windows.Forms.MessageBox]::Show('ÇöÀç ÃÖ½Å ¹öÀüÀÔ´Ï´Ù. ÇöÀç ¹öÀü: ' + $script:AppVersion, '¾÷µ¥ÀÌÆ® È®ÀÎ') | Out-Null }
+            if (-not $Silent) { [System.Windows.Forms.MessageBox]::Show('í˜„ì¬ ìµœì‹  ë²„ì „ì…ë‹ˆë‹¤. í˜„ì¬ ë²„ì „: ' + $script:AppVersion, 'ì—…ë°ì´íŠ¸ í™•ì¸') | Out-Null }
             return
         }
-        $msg = '»õ ¹öÀüÀÌ ÀÖ½À´Ï´Ù.' + $script:NewLine + 'ÇöÀç: ' + $script:AppVersion + $script:NewLine + 'ÃÖ½Å: ' + $manifest.version + $script:NewLine + '¾÷µ¥ÀÌÆ®ÇÒ±î¿ä?'
-        if ([System.Windows.Forms.MessageBox]::Show($msg, '¾÷µ¥ÀÌÆ® È®ÀÎ', [System.Windows.Forms.MessageBoxButtons]::YesNo) -ne [System.Windows.Forms.DialogResult]::Yes) { return }
+        $msg = 'ìƒˆ ë²„ì „ì´ ìˆìŠµë‹ˆë‹¤.' + $script:NewLine + 'í˜„ì¬: ' + $script:AppVersion + $script:NewLine + 'ìµœì‹ : ' + $manifest.version + $script:NewLine + 'ì—…ë°ì´íŠ¸í• ê¹Œìš”?'
+        if ([System.Windows.Forms.MessageBox]::Show($msg, 'ì—…ë°ì´íŠ¸ í™•ì¸', [System.Windows.Forms.MessageBoxButtons]::YesNo) -ne [System.Windows.Forms.DialogResult]::Yes) { return }
         $mode = if ($manifest.update_mode) { [string]$manifest.update_mode } else { 'files' }
         if ($mode -eq 'installer') {
             Invoke-AppInstallerUpdate $manifest
@@ -2577,20 +2581,20 @@ function Invoke-AppUpdateCheck([bool]$Silent) {
         }
     }
     catch {
-        if (-not $Silent) { [System.Windows.Forms.MessageBox]::Show('¾÷µ¥ÀÌÆ® È®ÀÎ ½ÇÆĞ: ' + $_.Exception.Message, '¾÷µ¥ÀÌÆ® È®ÀÎ') | Out-Null }
+        if (-not $Silent) { [System.Windows.Forms.MessageBox]::Show('ì—…ë°ì´íŠ¸ í™•ì¸ ì‹¤íŒ¨: ' + $_.Exception.Message, 'ì—…ë°ì´íŠ¸ í™•ì¸') | Out-Null }
     }
 }
 function Invoke-AppPackageUpdate($Manifest) {
-    if ($script:Running) { [System.Windows.Forms.MessageBox]::Show('½ÇÇà Áß¿¡´Â ¾÷µ¥ÀÌÆ®ÇÒ ¼ö ¾ø½À´Ï´Ù. ¸ÕÀú Áß´ÜÇÏ¼¼¿ä.', '¾÷µ¥ÀÌÆ®') | Out-Null; return }
+    if ($script:Running) { [System.Windows.Forms.MessageBox]::Show('ì‹¤í–‰ ì¤‘ì—ëŠ” ì—…ë°ì´íŠ¸í•  ìˆ˜ ì—†ìŠµë‹ˆë‹¤. ë¨¼ì € ì¤‘ë‹¨í•˜ì„¸ìš”.', 'ì—…ë°ì´íŠ¸') | Out-Null; return }
     $package = $Manifest.package
-    if ($null -eq $package -or [string]::IsNullOrWhiteSpace([string]$package.url)) { throw 'package.url °ªÀÌ ¾ø½À´Ï´Ù.' }
+    if ($null -eq $package -or [string]::IsNullOrWhiteSpace([string]$package.url)) { throw 'package.url ê°’ì´ ì—†ìŠµë‹ˆë‹¤.' }
     $stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
     $targetBackup = Join-Path $script:BackupDir $stamp
     New-Item -ItemType Directory -Force -Path $targetBackup | Out-Null
     $manifestPath = Join-Path $targetBackup 'manifest.json'
     $workerPath = Join-Path $targetBackup 'package_update_worker.ps1'
-    $restartPath = Join-Path $PSScriptRoot '»óÅÂ·çÆ¾ ½ÇÇà.vbs'
-    if (-not [System.IO.File]::Exists($restartPath)) { $restartPath = Join-Path $PSScriptRoot '»óÅÂ·çÆ¾ ½ÇÇà.bat' }
+    $restartPath = Join-Path $PSScriptRoot 'ìƒíƒœë£¨í‹´ ì‹¤í–‰.vbs'
+    if (-not [System.IO.File]::Exists($restartPath)) { $restartPath = Join-Path $PSScriptRoot 'ìƒíƒœë£¨í‹´ ì‹¤í–‰.bat' }
     ($Manifest | ConvertTo-Json -Depth 8) | Set-Content -LiteralPath $manifestPath -Encoding UTF8
     $worker = @'
 param(
@@ -2654,7 +2658,7 @@ try {
     }
     Start-Sleep -Milliseconds 800
     $manifest = Get-Content -LiteralPath $ManifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
-    if ($null -eq $manifest.package) { throw 'package Á¤º¸°¡ ¾ø½À´Ï´Ù.' }
+    if ($null -eq $manifest.package) { throw 'package ì •ë³´ê°€ ì—†ìŠµë‹ˆë‹¤.' }
     $packageUrl = [string]$manifest.package.url
     $expectedHash = if ($manifest.package.sha256) { ([string]$manifest.package.sha256).ToLowerInvariant() } else { '' }
     $packagePath = Join-Path $BackupRoot 'update_package.zip'
@@ -2670,7 +2674,7 @@ try {
         $hash = (Get-FileHash -LiteralPath $packagePath -Algorithm SHA256).Hash.ToLowerInvariant()
         if ($hash -ne $expectedHash) {
             Write-WorkerLog ('package hash mismatch expected=' + $expectedHash + ' actual=' + $hash)
-            throw 'ÆĞÅ°Áö ÇØ½Ã °ËÁõ ½ÇÆĞ'
+            throw 'íŒ¨í‚¤ì§€ í•´ì‹œ ê²€ì¦ ì‹¤íŒ¨'
         }
     }
     Add-Type -AssemblyName System.IO.Compression.FileSystem
@@ -2680,38 +2684,38 @@ try {
         if ([System.IO.File]::Exists((Join-Path $extractRoot 'local_state_routine_runner.ps1'))) {
             $releaseRoot = $extractRoot
         } else {
-            throw 'ÆĞÅ°Áö ¾È¿¡ release Æú´õ°¡ ¾ø½À´Ï´Ù.'
+            throw 'íŒ¨í‚¤ì§€ ì•ˆì— release í´ë”ê°€ ì—†ìŠµë‹ˆë‹¤.'
         }
     }
     Copy-PackageDirectory $releaseRoot $Root $BackupRoot
     Write-WorkerLog 'package update complete'
     Add-Type -AssemblyName System.Windows.Forms
-    [System.Windows.Forms.MessageBox]::Show('ÆĞÄ¡°¡ ¿Ï·áµÇ¾ú½À´Ï´Ù.' + [Environment]::NewLine + '»õ ¹öÀüÀ¸·Î ´Ù½Ã ½ÇÇàÇÕ´Ï´Ù.', '¾÷µ¥ÀÌÆ®') | Out-Null
+    [System.Windows.Forms.MessageBox]::Show('íŒ¨ì¹˜ê°€ ì™„ë£Œë˜ì—ˆìŠµë‹ˆë‹¤.' + [Environment]::NewLine + 'ìƒˆ ë²„ì „ìœ¼ë¡œ ë‹¤ì‹œ ì‹¤í–‰í•©ë‹ˆë‹¤.', 'ì—…ë°ì´íŠ¸') | Out-Null
     Start-RoutineAgain $RestartPath $Root
 }
 catch {
     Write-WorkerLog ('failed: ' + $_.Exception.Message)
     Add-Type -AssemblyName System.Windows.Forms
-    [System.Windows.Forms.MessageBox]::Show('¾÷µ¥ÀÌÆ® ½ÇÆĞ: ' + $_.Exception.Message + [Environment]::NewLine + '·Î±×: ' + (Join-Path $BackupRoot 'update_worker.log'), '¾÷µ¥ÀÌÆ®') | Out-Null
+    [System.Windows.Forms.MessageBox]::Show('ì—…ë°ì´íŠ¸ ì‹¤íŒ¨: ' + $_.Exception.Message + [Environment]::NewLine + 'ë¡œê·¸: ' + (Join-Path $BackupRoot 'update_worker.log'), 'ì—…ë°ì´íŠ¸') | Out-Null
     Start-RoutineAgain $RestartPath $Root
 }
 '@
     Set-Content -LiteralPath $workerPath -Value $worker -Encoding UTF8
-    [System.Windows.Forms.MessageBox]::Show('¾÷µ¥ÀÌÆ® ÆĞÅ°Áö¸¦ Àû¿ëÇÏ±â À§ÇØ ÇÁ·Î±×·¥À» Á¾·áÇÕ´Ï´Ù.' + $script:NewLine + 'Àá½Ã ÈÄ ÀÚµ¿À¸·Î ´Ù½Ã ½ÇÇàµË´Ï´Ù.', '¾÷µ¥ÀÌÆ®') | Out-Null
+    [System.Windows.Forms.MessageBox]::Show('ì—…ë°ì´íŠ¸ íŒ¨í‚¤ì§€ë¥¼ ì ìš©í•˜ê¸° ìœ„í•´ í”„ë¡œê·¸ë¨ì„ ì¢…ë£Œí•©ë‹ˆë‹¤.' + $script:NewLine + 'ì ì‹œ í›„ ìë™ìœ¼ë¡œ ë‹¤ì‹œ ì‹¤í–‰ë©ë‹ˆë‹¤.', 'ì—…ë°ì´íŠ¸') | Out-Null
     Start-Process -FilePath 'powershell.exe' -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File', $workerPath, '-Root', $PSScriptRoot, '-ManifestPath', $manifestPath, '-BackupRoot', $targetBackup, '-ParentPid', ([System.Diagnostics.Process]::GetCurrentProcess().Id), '-RestartPath', $restartPath) -WindowStyle Hidden
     $script:StopRequested = $true
     $form.Close()
 }
 function Invoke-AppUpdateApply($Manifest) {
-    if ($script:Running) { [System.Windows.Forms.MessageBox]::Show('½ÇÇà Áß¿¡´Â ¾÷µ¥ÀÌÆ®ÇÒ ¼ö ¾ø½À´Ï´Ù. ¸ÕÀú Áß´ÜÇÏ¼¼¿ä.', '¾÷µ¥ÀÌÆ®') | Out-Null; return }
-    if ($null -eq $Manifest.files) { throw 'files ¸ñ·ÏÀÌ ¾ø½À´Ï´Ù.' }
+    if ($script:Running) { [System.Windows.Forms.MessageBox]::Show('ì‹¤í–‰ ì¤‘ì—ëŠ” ì—…ë°ì´íŠ¸í•  ìˆ˜ ì—†ìŠµë‹ˆë‹¤. ë¨¼ì € ì¤‘ë‹¨í•˜ì„¸ìš”.', 'ì—…ë°ì´íŠ¸') | Out-Null; return }
+    if ($null -eq $Manifest.files) { throw 'files ëª©ë¡ì´ ì—†ìŠµë‹ˆë‹¤.' }
     $stamp = Get-Date -Format 'yyyyMMdd_HHmmss'
     $targetBackup = Join-Path $script:BackupDir $stamp
     New-Item -ItemType Directory -Force -Path $targetBackup | Out-Null
     $manifestPath = Join-Path $targetBackup 'manifest.json'
     $workerPath = Join-Path $targetBackup 'update_worker.ps1'
-    $restartPath = Join-Path $PSScriptRoot '»óÅÂ·çÆ¾ ½ÇÇà.vbs'
-    if (-not [System.IO.File]::Exists($restartPath)) { $restartPath = Join-Path $PSScriptRoot '»óÅÂ·çÆ¾ ½ÇÇà.bat' }
+    $restartPath = Join-Path $PSScriptRoot 'ìƒíƒœë£¨í‹´ ì‹¤í–‰.vbs'
+    if (-not [System.IO.File]::Exists($restartPath)) { $restartPath = Join-Path $PSScriptRoot 'ìƒíƒœë£¨í‹´ ì‹¤í–‰.bat' }
     ($Manifest | ConvertTo-Json -Depth 8) | Set-Content -LiteralPath $manifestPath -Encoding UTF8
     $worker = @'
 param(
@@ -2755,7 +2759,7 @@ try {
     }
     Start-Sleep -Milliseconds 800
     $manifest = Get-Content -LiteralPath $ManifestPath -Raw -Encoding UTF8 | ConvertFrom-Json
-    if ($null -eq $manifest.files) { throw 'files ¸ñ·ÏÀÌ ¾ø½À´Ï´Ù.' }
+    if ($null -eq $manifest.files) { throw 'files ëª©ë¡ì´ ì—†ìŠµë‹ˆë‹¤.' }
     $client = New-Object System.Net.WebClient
     $client.Headers.Add('User-Agent', 'GerinogiRoutineExternalUpdater')
     try {
@@ -2763,11 +2767,11 @@ try {
             $rel = [string]$file.path
             $src = [string]$file.url
             if ([string]::IsNullOrWhiteSpace($rel) -or [string]::IsNullOrWhiteSpace($src)) { continue }
-            if ($rel.Contains('..') -or [System.IO.Path]::IsPathRooted($rel)) { throw 'Çã¿ëµÇÁö ¾Ê´Â ÆÄÀÏ °æ·Î: ' + $rel }
+            if ($rel.Contains('..') -or [System.IO.Path]::IsPathRooted($rel)) { throw 'í—ˆìš©ë˜ì§€ ì•ŠëŠ” íŒŒì¼ ê²½ë¡œ: ' + $rel }
             $dest = Join-Path $Root $rel
             $destFull = [System.IO.Path]::GetFullPath($dest)
             $rootFull = [System.IO.Path]::GetFullPath($Root)
-            if (-not $destFull.StartsWith($rootFull, [StringComparison]::OrdinalIgnoreCase)) { throw 'Çã¿ëµÇÁö ¾Ê´Â ´ë»ó °æ·Î: ' + $rel }
+            if (-not $destFull.StartsWith($rootFull, [StringComparison]::OrdinalIgnoreCase)) { throw 'í—ˆìš©ë˜ì§€ ì•ŠëŠ” ëŒ€ìƒ ê²½ë¡œ: ' + $rel }
             $tmp = $destFull + '.download'
             New-Item -ItemType Directory -Force -Path ([System.IO.Path]::GetDirectoryName($destFull)) | Out-Null
             $expectedHash = if ($file.sha256) { ([string]$file.sha256).ToLowerInvariant() } else { '' }
@@ -2779,7 +2783,7 @@ try {
                 if ($hash -ne $expectedHash) {
                     Write-WorkerLog ('hash mismatch ' + $rel + ' expected=' + $expectedHash + ' actual=' + $hash)
                     Remove-Item -LiteralPath $tmp -Force
-                    throw 'ÇØ½Ã °ËÁõ ½ÇÆĞ: ' + $rel
+                    throw 'í•´ì‹œ ê²€ì¦ ì‹¤íŒ¨: ' + $rel
                 }
             }
             if ([System.IO.File]::Exists($destFull)) {
@@ -2793,18 +2797,18 @@ try {
     finally { $client.Dispose() }
     Write-WorkerLog 'update complete'
     Add-Type -AssemblyName System.Windows.Forms
-    [System.Windows.Forms.MessageBox]::Show('ÆĞÄ¡°¡ ¿Ï·áµÇ¾ú½À´Ï´Ù.' + [Environment]::NewLine + '»õ ¹öÀüÀ¸·Î ´Ù½Ã ½ÇÇàÇÕ´Ï´Ù.', '¾÷µ¥ÀÌÆ®') | Out-Null
+    [System.Windows.Forms.MessageBox]::Show('íŒ¨ì¹˜ê°€ ì™„ë£Œë˜ì—ˆìŠµë‹ˆë‹¤.' + [Environment]::NewLine + 'ìƒˆ ë²„ì „ìœ¼ë¡œ ë‹¤ì‹œ ì‹¤í–‰í•©ë‹ˆë‹¤.', 'ì—…ë°ì´íŠ¸') | Out-Null
     Start-RoutineAgain $RestartPath $Root
 }
 catch {
     Write-WorkerLog ('failed: ' + $_.Exception.Message)
     Add-Type -AssemblyName System.Windows.Forms
-    [System.Windows.Forms.MessageBox]::Show('¾÷µ¥ÀÌÆ® ½ÇÆĞ: ' + $_.Exception.Message + [Environment]::NewLine + '·Î±×: ' + (Join-Path $BackupRoot 'update_worker.log'), '¾÷µ¥ÀÌÆ®') | Out-Null
+    [System.Windows.Forms.MessageBox]::Show('ì—…ë°ì´íŠ¸ ì‹¤íŒ¨: ' + $_.Exception.Message + [Environment]::NewLine + 'ë¡œê·¸: ' + (Join-Path $BackupRoot 'update_worker.log'), 'ì—…ë°ì´íŠ¸') | Out-Null
     Start-RoutineAgain $RestartPath $Root
 }
 '@
     Set-Content -LiteralPath $workerPath -Value $worker -Encoding UTF8
-    [System.Windows.Forms.MessageBox]::Show('¾÷µ¥ÀÌÆ®¸¦ À§ÇØ ÇÁ·Î±×·¥À» Á¾·áÇÕ´Ï´Ù.' + $script:NewLine + 'Àá½Ã ÈÄ ÀÚµ¿À¸·Î ´Ù½Ã ½ÇÇàµË´Ï´Ù.', '¾÷µ¥ÀÌÆ®') | Out-Null
+    [System.Windows.Forms.MessageBox]::Show('ì—…ë°ì´íŠ¸ë¥¼ ìœ„í•´ í”„ë¡œê·¸ë¨ì„ ì¢…ë£Œí•©ë‹ˆë‹¤.' + $script:NewLine + 'ì ì‹œ í›„ ìë™ìœ¼ë¡œ ë‹¤ì‹œ ì‹¤í–‰ë©ë‹ˆë‹¤.', 'ì—…ë°ì´íŠ¸') | Out-Null
     Start-Process -FilePath 'powershell.exe' -ArgumentList @('-NoProfile','-ExecutionPolicy','Bypass','-File', $workerPath, '-Root', $PSScriptRoot, '-ManifestPath', $manifestPath, '-BackupRoot', $targetBackup, '-ParentPid', ([System.Diagnostics.Process]::GetCurrentProcess().Id), '-RestartPath', $restartPath) -WindowStyle Hidden
     $script:StopRequested = $true
     $form.Close()
@@ -2820,8 +2824,8 @@ $form.MinimumSize = New-Object System.Drawing.Size((Get-UiInt 'window.minWidth' 
 $form.Font = New-Object System.Drawing.Font($uiFontName, $uiFontSize)
 $form.TopMost = Get-UiBool 'app.topMost' $true
 $tabs = New-Object System.Windows.Forms.TabControl; $tabs.Dock = 'Fill'; $tabs.Appearance = 'Normal'
-$gamePage = New-Object System.Windows.Forms.TabPage; $gamePage.Text = [string](Get-UiValue 'tabs.main' '½ÇÇè¼ÂÆÃ'); $gamePage.Padding = New-Object System.Windows.Forms.Padding(8); $gamePage.BackColor = $uiBackground
-$optionPage = New-Object System.Windows.Forms.TabPage; $optionPage.Text = [string](Get-UiValue 'tabs.options' '¼¼ºÎ¿É¼Ç'); $optionPage.Padding = New-Object System.Windows.Forms.Padding(8)
+$gamePage = New-Object System.Windows.Forms.TabPage; $gamePage.Text = [string](Get-UiValue 'tabs.main' 'ì‹¤í—˜ì…‹íŒ…'); $gamePage.Padding = New-Object System.Windows.Forms.Padding(8); $gamePage.BackColor = $uiBackground
+$optionPage = New-Object System.Windows.Forms.TabPage; $optionPage.Text = [string](Get-UiValue 'tabs.options' 'ì„¸ë¶€ì˜µì…˜'); $optionPage.Padding = New-Object System.Windows.Forms.Padding(8)
 [void]$tabs.TabPages.Add($gamePage); [void]$tabs.TabPages.Add($optionPage); $form.Controls.Add($tabs)
 
 $gameTable = New-Object System.Windows.Forms.TableLayoutPanel; $gameTable.Dock = 'Fill'; $gameTable.ColumnCount = 1; $gameTable.RowCount = 8; $gameTable.Padding = New-Object System.Windows.Forms.Padding(0); $gameTable.BackColor = $uiBackground
@@ -2836,30 +2840,30 @@ foreach ($style in @(
     (New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100)))) { $gameTable.RowStyles.Add($style) | Out-Null }
 $gamePage.Controls.Add($gameTable)
 
-$targetGroup = New-Object System.Windows.Forms.GroupBox; $targetGroup.Text = [string](Get-UiValue 'labels.targetGroup' '´ë»ó'); $targetGroup.Dock = 'Fill'; $targetGroup.Padding = New-Object System.Windows.Forms.Padding(8)
+$targetGroup = New-Object System.Windows.Forms.GroupBox; $targetGroup.Text = [string](Get-UiValue 'labels.targetGroup' 'ëŒ€ìƒ'); $targetGroup.Dock = 'Fill'; $targetGroup.Padding = New-Object System.Windows.Forms.Padding(8)
 $targetTable = New-Object System.Windows.Forms.TableLayoutPanel; $targetTable.Dock = 'Fill'; $targetTable.ColumnCount = 2; $targetTable.RowCount = 2
 $targetTable.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Absolute, 82))) | Out-Null
 $targetTable.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
 $targetTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 50))) | Out-Null
 $targetTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 50))) | Out-Null
 $targetGroup.Controls.Add($targetTable); $gameTable.Controls.Add($targetGroup, 0, 0)
-$targetTitleLabel = New-Object System.Windows.Forms.Label; $targetTitleLabel.Text = [string](Get-UiValue 'labels.targetWindow' '´ë»ó Ã¢'); $targetTitleLabel.Dock = 'Fill'; $targetTitleLabel.TextAlign = 'MiddleLeft'; $targetTable.Controls.Add($targetTitleLabel, 0, 0)
+$targetTitleLabel = New-Object System.Windows.Forms.Label; $targetTitleLabel.Text = [string](Get-UiValue 'labels.targetWindow' 'ëŒ€ìƒ ì°½'); $targetTitleLabel.Dock = 'Fill'; $targetTitleLabel.TextAlign = 'MiddleLeft'; $targetTable.Controls.Add($targetTitleLabel, 0, 0)
 $titlePanel = New-Object System.Windows.Forms.TableLayoutPanel; $titlePanel.Dock = 'Fill'; $titlePanel.ColumnCount = 3
 $titlePanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 42))) | Out-Null
 $titlePanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 42))) | Out-Null
 $titlePanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Absolute, 72))) | Out-Null
 $titleBox = New-Object System.Windows.Forms.TextBox; $titleBox.Dock = 'Fill'
 $windowBox = New-Object System.Windows.Forms.ComboBox; $windowBox.DropDownStyle = 'DropDownList'; $windowBox.Dock = 'Fill'
-$refreshWindowsButton = New-Object System.Windows.Forms.Button; $refreshWindowsButton.Text = [string](Get-UiValue 'buttons.searchWindows' '°Ë»ö'); $refreshWindowsButton.Dock = 'Fill'
+$refreshWindowsButton = New-Object System.Windows.Forms.Button; $refreshWindowsButton.Text = [string](Get-UiValue 'buttons.searchWindows' 'ê²€ìƒ‰'); $refreshWindowsButton.Dock = 'Fill'
 $titlePanel.Controls.Add($titleBox, 0, 0); $titlePanel.Controls.Add($windowBox, 1, 0); $titlePanel.Controls.Add($refreshWindowsButton, 2, 0); $targetTable.Controls.Add($titlePanel, 1, 0)
-$monitorLabel = New-Object System.Windows.Forms.Label; $monitorLabel.Text = [string](Get-UiValue 'labels.monitor' '¸ğ´ÏÅÍ'); $monitorLabel.Dock = 'Fill'; $monitorLabel.TextAlign = 'MiddleLeft'; $targetTable.Controls.Add($monitorLabel, 0, 1)
+$monitorLabel = New-Object System.Windows.Forms.Label; $monitorLabel.Text = [string](Get-UiValue 'labels.monitor' 'ëª¨ë‹ˆí„°'); $monitorLabel.Dock = 'Fill'; $monitorLabel.TextAlign = 'MiddleLeft'; $targetTable.Controls.Add($monitorLabel, 0, 1)
 $monitorBox = New-Object System.Windows.Forms.ComboBox; $monitorBox.DropDownStyle = 'DropDownList'; $monitorBox.Dock = 'Fill'
 $screens = [System.Windows.Forms.Screen]::AllScreens
 for ($i = 0; $i -lt $screens.Count; $i++) { $b = $screens[$i].Bounds; [void]$monitorBox.Items.Add(('Monitor {0} ({1},{2} - {3},{4})' -f ($i + 1), $b.Left, $b.Top, $b.Right, $b.Bottom)) }
 if ($monitorBox.Items.Count -gt 0) { $monitorBox.SelectedIndex = 0 }
 $targetTable.Controls.Add($monitorBox, 1, 1)
 
-$slotSelectGroup = New-Object System.Windows.Forms.GroupBox; $slotSelectGroup.Text = [string](Get-UiValue 'labels.slotSelect' '½½·Ô ¼±ÅÃ'); $slotSelectGroup.Dock = 'Fill'; $slotSelectGroup.Padding = New-Object System.Windows.Forms.Padding(8,4,8,4)
+$slotSelectGroup = New-Object System.Windows.Forms.GroupBox; $slotSelectGroup.Text = [string](Get-UiValue 'labels.slotSelect' 'ìŠ¬ë¡¯ ì„ íƒ'); $slotSelectGroup.Dock = 'Fill'; $slotSelectGroup.Padding = New-Object System.Windows.Forms.Padding(8,4,8,4)
 $slotSelectTable = New-Object System.Windows.Forms.TableLayoutPanel; $slotSelectTable.Dock = 'Fill'; $slotSelectTable.ColumnCount = 2; $slotSelectTable.RowCount = 1
 $slotSelectTable.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 50))) | Out-Null
 $slotSelectTable.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 50))) | Out-Null
@@ -2870,21 +2874,21 @@ $slotSelectTable.Controls.Add($slotBox, 0, 0)
 $slotSelectTable.Controls.Add($questProfileBox, 1, 0)
 $slotSelectGroup.Controls.Add($slotSelectTable); $slotSelectGroup.Visible = $false; $gameTable.Controls.Add($slotSelectGroup, 0, 1)
 
-$slotPreviewGroup = New-Object System.Windows.Forms.GroupBox; $slotPreviewGroup.Text = '½½·Ô ºĞ·ù'; $slotPreviewGroup.Dock = 'Fill'; $slotPreviewGroup.Padding = New-Object System.Windows.Forms.Padding(6)
+$slotPreviewGroup = New-Object System.Windows.Forms.GroupBox; $slotPreviewGroup.Text = 'ìŠ¬ë¡¯ ë¶„ë¥˜'; $slotPreviewGroup.Dock = 'Fill'; $slotPreviewGroup.Padding = New-Object System.Windows.Forms.Padding(6)
 $slotPreviewTable = New-Object System.Windows.Forms.TableLayoutPanel; $slotPreviewTable.Dock = 'Fill'; $slotPreviewTable.ColumnCount = 1; $slotPreviewTable.RowCount = 5
 $slotPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 26))) | Out-Null
 $slotPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 78))) | Out-Null
 $slotPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 118))) | Out-Null
 $slotPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 118))) | Out-Null
 $slotPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 150))) | Out-Null
-$slotPreviewToggleButton = New-Object System.Windows.Forms.Button; $slotPreviewToggleButton.Text = 'Á¢±â'; $slotPreviewToggleButton.Dock = 'Right'; $slotPreviewToggleButton.Width = 66
+$slotPreviewToggleButton = New-Object System.Windows.Forms.Button; $slotPreviewToggleButton.Text = 'ì ‘ê¸°'; $slotPreviewToggleButton.Dock = 'Right'; $slotPreviewToggleButton.Width = 66
 
-$specialPreviewGroup = New-Object System.Windows.Forms.GroupBox; $specialPreviewGroup.Text = [string](Get-UiValue 'labels.specialSlotPreview' 'Æ¯¼öÄ«Å×°í¸®'); $specialPreviewGroup.Dock = 'Fill'; $specialPreviewGroup.Padding = New-Object System.Windows.Forms.Padding(5)
+$specialPreviewGroup = New-Object System.Windows.Forms.GroupBox; $specialPreviewGroup.Text = [string](Get-UiValue 'labels.specialSlotPreview' 'íŠ¹ìˆ˜ì¹´í…Œê³ ë¦¬'); $specialPreviewGroup.Dock = 'Fill'; $specialPreviewGroup.Padding = New-Object System.Windows.Forms.Padding(5)
 $specialPreviewTable = New-Object System.Windows.Forms.TableLayoutPanel; $specialPreviewTable.Dock = 'Fill'; $specialPreviewTable.ColumnCount = 1; $specialPreviewTable.RowCount = 2
 $specialPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 20))) | Out-Null
 $specialPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
-$specialEnabledCheck = New-Object System.Windows.Forms.CheckBox; $specialEnabledCheck.Text = 'Çùµ¿ ON'; $specialEnabledCheck.Checked = $true; $specialEnabledCheck.Dock = 'Left'
-$script:SpecialSlotChecks['Çùµ¿'] = $specialEnabledCheck
+$specialEnabledCheck = New-Object System.Windows.Forms.CheckBox; $specialEnabledCheck.Text = 'í˜‘ë™ ON'; $specialEnabledCheck.Checked = $true; $specialEnabledCheck.Dock = 'Left'
+$script:SpecialSlotChecks['í˜‘ë™'] = $specialEnabledCheck
 $specialSlotPanel = New-Object System.Windows.Forms.TableLayoutPanel; $specialSlotPanel.Dock = 'Fill'; $specialSlotPanel.ColumnCount = 1; $specialSlotPanel.RowCount = 1; $specialSlotPanel.AutoScroll = $false; $specialSlotPanel.Padding = New-Object System.Windows.Forms.Padding(0)
 $specialSlotPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
 $specialSlotPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
@@ -2892,7 +2896,7 @@ $specialPreviewTable.Controls.Add($specialEnabledCheck, 0, 0)
 $specialPreviewTable.Controls.Add($specialSlotPanel, 0, 1)
 $specialPreviewGroup.Controls.Add($specialPreviewTable)
 
-$routePreviewGroup = New-Object System.Windows.Forms.GroupBox; $routePreviewGroup.Text = 'Çã»óÀÇ Á¤¹ÚÁö'; $routePreviewGroup.Dock = 'Fill'; $routePreviewGroup.Padding = New-Object System.Windows.Forms.Padding(5)
+$routePreviewGroup = New-Object System.Windows.Forms.GroupBox; $routePreviewGroup.Text = 'í—ˆìƒì˜ ì •ë°•ì§€'; $routePreviewGroup.Dock = 'Fill'; $routePreviewGroup.Padding = New-Object System.Windows.Forms.Padding(5)
 $routePreviewTable = New-Object System.Windows.Forms.TableLayoutPanel; $routePreviewTable.Dock = 'Fill'; $routePreviewTable.ColumnCount = 1; $routePreviewTable.RowCount = 2
 $routePreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 24))) | Out-Null
 $routePreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
@@ -2900,7 +2904,7 @@ $routeHeaderPanel = New-Object System.Windows.Forms.TableLayoutPanel; $routeHead
 $routeHeaderPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
 $routeHeaderPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Absolute, 66))) | Out-Null
 $harborEnabledCheck = New-Object System.Windows.Forms.CheckBox; $harborEnabledCheck.Text = 'ON'; $harborEnabledCheck.Checked = $true; $harborEnabledCheck.Dock = 'Left'
-$harborPreviewFoldButton = New-Object System.Windows.Forms.Button; $harborPreviewFoldButton.Text = 'Á¢±â'; $harborPreviewFoldButton.Dock = 'Fill'
+$harborPreviewFoldButton = New-Object System.Windows.Forms.Button; $harborPreviewFoldButton.Text = 'ì ‘ê¸°'; $harborPreviewFoldButton.Dock = 'Fill'
 $routeHeaderPanel.Controls.Add($harborEnabledCheck, 0, 0)
 $routeHeaderPanel.Controls.Add($harborPreviewFoldButton, 1, 0)
 $routeSlotPanel = New-Object System.Windows.Forms.TableLayoutPanel; $routeSlotPanel.Dock = 'Fill'; $routeSlotPanel.ColumnCount = 7; $routeSlotPanel.RowCount = 1; $routeSlotPanel.AutoScroll = $false; $routeSlotPanel.Padding = New-Object System.Windows.Forms.Padding(0)
@@ -2910,7 +2914,7 @@ $routePreviewTable.Controls.Add($routeHeaderPanel, 0, 0)
 $routePreviewTable.Controls.Add($routeSlotPanel, 0, 1)
 $routePreviewGroup.Controls.Add($routePreviewTable)
 
-$cavePreviewGroup = New-Object System.Windows.Forms.GroupBox; $cavePreviewGroup.Text = '±¤±âÀÇ µ¿±¼'; $cavePreviewGroup.Dock = 'Fill'; $cavePreviewGroup.Padding = New-Object System.Windows.Forms.Padding(5)
+$cavePreviewGroup = New-Object System.Windows.Forms.GroupBox; $cavePreviewGroup.Text = 'ê´‘ê¸°ì˜ ë™êµ´'; $cavePreviewGroup.Dock = 'Fill'; $cavePreviewGroup.Padding = New-Object System.Windows.Forms.Padding(5)
 $cavePreviewTable = New-Object System.Windows.Forms.TableLayoutPanel; $cavePreviewTable.Dock = 'Fill'; $cavePreviewTable.ColumnCount = 1; $cavePreviewTable.RowCount = 2
 $cavePreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 24))) | Out-Null
 $cavePreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
@@ -2918,7 +2922,7 @@ $caveHeaderPanel = New-Object System.Windows.Forms.TableLayoutPanel; $caveHeader
 $caveHeaderPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
 $caveHeaderPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Absolute, 66))) | Out-Null
 $caveEnabledCheck = New-Object System.Windows.Forms.CheckBox; $caveEnabledCheck.Text = 'ON'; $caveEnabledCheck.Checked = $false; $caveEnabledCheck.Dock = 'Left'
-$cavePreviewFoldButton = New-Object System.Windows.Forms.Button; $cavePreviewFoldButton.Text = 'Á¢±â'; $cavePreviewFoldButton.Dock = 'Fill'
+$cavePreviewFoldButton = New-Object System.Windows.Forms.Button; $cavePreviewFoldButton.Text = 'ì ‘ê¸°'; $cavePreviewFoldButton.Dock = 'Fill'
 $caveHeaderPanel.Controls.Add($caveEnabledCheck, 0, 0)
 $caveHeaderPanel.Controls.Add($cavePreviewFoldButton, 1, 0)
 $caveSlotPanel = New-Object System.Windows.Forms.TableLayoutPanel; $caveSlotPanel.Dock = 'Fill'; $caveSlotPanel.ColumnCount = 7; $caveSlotPanel.RowCount = 1; $caveSlotPanel.AutoScroll = $false; $caveSlotPanel.Padding = New-Object System.Windows.Forms.Padding(0)
@@ -2928,7 +2932,7 @@ $cavePreviewTable.Controls.Add($caveHeaderPanel, 0, 0)
 $cavePreviewTable.Controls.Add($caveSlotPanel, 0, 1)
 $cavePreviewGroup.Controls.Add($cavePreviewTable)
 
-$combatPreviewGroup = New-Object System.Windows.Forms.GroupBox; $combatPreviewGroup.Text = [string](Get-UiValue 'labels.combatSlotPreview' 'ÀüÅõ°ü·Ã ½½·Ô ¹Ì¸®º¸±â'); $combatPreviewGroup.Dock = 'Fill'; $combatPreviewGroup.Padding = New-Object System.Windows.Forms.Padding(5)
+$combatPreviewGroup = New-Object System.Windows.Forms.GroupBox; $combatPreviewGroup.Text = [string](Get-UiValue 'labels.combatSlotPreview' 'ì „íˆ¬ê´€ë ¨ ìŠ¬ë¡¯ ë¯¸ë¦¬ë³´ê¸°'); $combatPreviewGroup.Dock = 'Fill'; $combatPreviewGroup.Padding = New-Object System.Windows.Forms.Padding(5)
 $combatPreviewTable = New-Object System.Windows.Forms.TableLayoutPanel; $combatPreviewTable.Dock = 'Fill'; $combatPreviewTable.ColumnCount = 1; $combatPreviewTable.RowCount = 3
 $combatPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 24))) | Out-Null
 $combatPreviewTable.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Absolute, 24))) | Out-Null
@@ -2948,7 +2952,7 @@ foreach ($slot in $script:CombatSlots) {
     $combatTogglePanel.Controls.Add($check, $combatToggleIndex, 0)
     $combatToggleIndex++
 }
-$combatPreviewFoldButton = New-Object System.Windows.Forms.Button; $combatPreviewFoldButton.Text = 'Á¢±â'; $combatPreviewFoldButton.Dock = 'Fill'
+$combatPreviewFoldButton = New-Object System.Windows.Forms.Button; $combatPreviewFoldButton.Text = 'ì ‘ê¸°'; $combatPreviewFoldButton.Dock = 'Fill'
 $combatTogglePanel.Controls.Add($combatPreviewFoldButton, 5, 0)
 $combatSlotPanel = New-Object System.Windows.Forms.TableLayoutPanel; $combatSlotPanel.Dock = 'Fill'; $combatSlotPanel.ColumnCount = 5; $combatSlotPanel.RowCount = 1; $combatSlotPanel.AutoScroll = $false; $combatSlotPanel.Padding = New-Object System.Windows.Forms.Padding(0)
 for ($si = 0; $si -lt 5; $si++) { $combatSlotPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 20))) | Out-Null }
@@ -2956,7 +2960,7 @@ $combatSlotPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System
 $ultimateProfilePanel = New-Object System.Windows.Forms.TableLayoutPanel; $ultimateProfilePanel.Dock = 'Fill'; $ultimateProfilePanel.ColumnCount = 2; $ultimateProfilePanel.RowCount = 1
 $ultimateProfilePanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Absolute, 78))) | Out-Null
 $ultimateProfilePanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
-$ultimateProfileLabel = New-Object System.Windows.Forms.Label; $ultimateProfileLabel.Text = '±Ã±Ø±â ¼³Á¤'; $ultimateProfileLabel.Dock = 'Fill'; $ultimateProfileLabel.TextAlign = 'MiddleLeft'; $ultimateProfileLabel.Font = New-Object System.Drawing.Font($uiFontName, 7, [System.Drawing.FontStyle]::Bold)
+$ultimateProfileLabel = New-Object System.Windows.Forms.Label; $ultimateProfileLabel.Text = 'ê¶ê·¹ê¸° ì„¤ì •'; $ultimateProfileLabel.Dock = 'Fill'; $ultimateProfileLabel.TextAlign = 'MiddleLeft'; $ultimateProfileLabel.Font = New-Object System.Drawing.Font($uiFontName, 7, [System.Drawing.FontStyle]::Bold)
 $ultimateProfileBox = New-Object System.Windows.Forms.ComboBox; $ultimateProfileBox.DropDownStyle = 'DropDownList'; $ultimateProfileBox.Dock = 'Fill'; $ultimateProfileBox.Font = New-Object System.Drawing.Font($uiFontName, 7)
 $ultimateProfilePanel.Controls.Add($ultimateProfileLabel, 0, 0)
 $ultimateProfilePanel.Controls.Add($ultimateProfileBox, 1, 0)
@@ -2997,21 +3001,21 @@ function Set-ActionButtonStyle([System.Windows.Forms.Button]$Button, [System.Dra
 $primaryColor = Get-UiColor 'colors.actionPrimary' ([System.Drawing.Color]::FromArgb(255,221,87))
 $secondaryColor = Get-UiColor 'colors.actionSecondary' ([System.Drawing.Color]::FromArgb(245,190,65))
 $thirdColor = Get-UiColor 'colors.actionTertiary' ([System.Drawing.Color]::FromArgb(238,139,48))
-$addButton = New-Object System.Windows.Forms.Button; $addButton.Text = [string](Get-UiValue 'buttons.capture' 'ÃÔ¿µ(F8)'); Set-ActionButtonStyle $addButton $primaryColor
-$pointButton = New-Object System.Windows.Forms.Button; $pointButton.Text = [string](Get-UiValue 'buttons.point' 'ÁÂÇ¥(F7)'); Set-ActionButtonStyle $pointButton $primaryColor
-$startButton = New-Object System.Windows.Forms.Button; $startButton.Text = [string](Get-UiValue 'buttons.start' '½ÃÀÛ(F5)'); Set-ActionButtonStyle $startButton $primaryColor
-$stopButton = New-Object System.Windows.Forms.Button; $stopButton.Text = [string](Get-UiValue 'buttons.stop' 'Áß´Ü(F6)'); Set-ActionButtonStyle $stopButton $primaryColor
-$fileButton = New-Object System.Windows.Forms.Button; $fileButton.Text = [string](Get-UiValue 'buttons.file' 'ÆÄÀÏ'); Set-ActionButtonStyle $fileButton $secondaryColor
-$reloadButton = New-Object System.Windows.Forms.Button; $reloadButton.Text = [string](Get-UiValue 'buttons.folder' 'Æú´õ'); Set-ActionButtonStyle $reloadButton $secondaryColor
-$deleteButton = New-Object System.Windows.Forms.Button; $deleteButton.Text = [string](Get-UiValue 'buttons.delete' '»èÁ¦'); Set-ActionButtonStyle $deleteButton $secondaryColor
-$locateButton = New-Object System.Windows.Forms.Button; $locateButton.Text = [string](Get-UiValue 'buttons.locate' 'À§Ä¡'); Set-ActionButtonStyle $locateButton $secondaryColor
-$probeButton = New-Object System.Windows.Forms.Button; $probeButton.Text = [string](Get-UiValue 'buttons.probe' 'Å¬¸¯È®ÀÎ'); Set-ActionButtonStyle $probeButton $thirdColor
-$diagnosticButton = New-Object System.Windows.Forms.Button; $diagnosticButton.Text = [string](Get-UiValue 'buttons.diagnostic' 'Áø´Ü'); Set-ActionButtonStyle $diagnosticButton $thirdColor
-$reportButton = New-Object System.Windows.Forms.Button; $reportButton.Text = [string](Get-UiValue 'buttons.report' '¹®Á¦º¸°í'); Set-ActionButtonStyle $reportButton $thirdColor
-$logButton = New-Object System.Windows.Forms.Button; $logButton.Text = [string](Get-UiValue 'buttons.log' '·Î±×'); Set-ActionButtonStyle $logButton $thirdColor
-$exitButton = New-Object System.Windows.Forms.Button; $exitButton.Text = [string](Get-UiValue 'buttons.exit' 'Á¾·á'); Set-ActionButtonStyle $exitButton $thirdColor
-$showIgnoreButton = New-Object System.Windows.Forms.Button; $showIgnoreButton.Text = 'ÀÚµ¿Á¦¿Ü È®ÀÎ'; Set-ActionButtonStyle $showIgnoreButton $thirdColor
-$advancedToggleButton = New-Object System.Windows.Forms.Button; $advancedToggleButton.Text = '°í±Ş µµ±¸ ¿­±â'; Set-ActionButtonStyle $advancedToggleButton ([System.Drawing.Color]::FromArgb(232,232,232))
+$addButton = New-Object System.Windows.Forms.Button; $addButton.Text = [string](Get-UiValue 'buttons.capture' 'ì´¬ì˜(F8)'); Set-ActionButtonStyle $addButton $primaryColor
+$pointButton = New-Object System.Windows.Forms.Button; $pointButton.Text = [string](Get-UiValue 'buttons.point' 'ì¢Œí‘œ(F7)'); Set-ActionButtonStyle $pointButton $primaryColor
+$startButton = New-Object System.Windows.Forms.Button; $startButton.Text = [string](Get-UiValue 'buttons.start' 'ì‹œì‘(F5)'); Set-ActionButtonStyle $startButton $primaryColor
+$stopButton = New-Object System.Windows.Forms.Button; $stopButton.Text = [string](Get-UiValue 'buttons.stop' 'ì¤‘ë‹¨(F6)'); Set-ActionButtonStyle $stopButton $primaryColor
+$fileButton = New-Object System.Windows.Forms.Button; $fileButton.Text = [string](Get-UiValue 'buttons.file' 'íŒŒì¼'); Set-ActionButtonStyle $fileButton $secondaryColor
+$reloadButton = New-Object System.Windows.Forms.Button; $reloadButton.Text = [string](Get-UiValue 'buttons.folder' 'í´ë”'); Set-ActionButtonStyle $reloadButton $secondaryColor
+$deleteButton = New-Object System.Windows.Forms.Button; $deleteButton.Text = [string](Get-UiValue 'buttons.delete' 'ì‚­ì œ'); Set-ActionButtonStyle $deleteButton $secondaryColor
+$locateButton = New-Object System.Windows.Forms.Button; $locateButton.Text = [string](Get-UiValue 'buttons.locate' 'ìœ„ì¹˜'); Set-ActionButtonStyle $locateButton $secondaryColor
+$probeButton = New-Object System.Windows.Forms.Button; $probeButton.Text = [string](Get-UiValue 'buttons.probe' 'í´ë¦­í™•ì¸'); Set-ActionButtonStyle $probeButton $thirdColor
+$diagnosticButton = New-Object System.Windows.Forms.Button; $diagnosticButton.Text = [string](Get-UiValue 'buttons.diagnostic' 'ì§„ë‹¨'); Set-ActionButtonStyle $diagnosticButton $thirdColor
+$reportButton = New-Object System.Windows.Forms.Button; $reportButton.Text = [string](Get-UiValue 'buttons.report' 'ë¬¸ì œë³´ê³ '); Set-ActionButtonStyle $reportButton $thirdColor
+$logButton = New-Object System.Windows.Forms.Button; $logButton.Text = [string](Get-UiValue 'buttons.log' 'ë¡œê·¸'); Set-ActionButtonStyle $logButton $thirdColor
+$exitButton = New-Object System.Windows.Forms.Button; $exitButton.Text = [string](Get-UiValue 'buttons.exit' 'ì¢…ë£Œ'); Set-ActionButtonStyle $exitButton $thirdColor
+$showIgnoreButton = New-Object System.Windows.Forms.Button; $showIgnoreButton.Text = 'ìë™ì œì™¸ í™•ì¸'; Set-ActionButtonStyle $showIgnoreButton $thirdColor
+$advancedToggleButton = New-Object System.Windows.Forms.Button; $advancedToggleButton.Text = 'ê³ ê¸‰ ë„êµ¬ ì—´ê¸°'; Set-ActionButtonStyle $advancedToggleButton ([System.Drawing.Color]::FromArgb(232,232,232))
 $advancedPanel = New-Object System.Windows.Forms.TableLayoutPanel; $advancedPanel.Dock = 'Fill'; $advancedPanel.ColumnCount = 4; $advancedPanel.RowCount = 2; $advancedPanel.Visible = $false
 for ($ai = 0; $ai -lt 4; $ai++) { $advancedPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 25))) | Out-Null }
 for ($ar = 0; $ar -lt 2; $ar++) { $advancedPanel.RowStyles.Add((New-Object System.Windows.Forms.RowStyle([System.Windows.Forms.SizeType]::Percent, 50))) | Out-Null }
@@ -3025,18 +3029,18 @@ $gameTable.Controls.Add($buttonPanel, 0, 3)
 $updatePanel = New-Object System.Windows.Forms.TableLayoutPanel; $updatePanel.Dock = 'Fill'; $updatePanel.ColumnCount = 2; $updatePanel.RowCount = 1
 $updatePanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 100))) | Out-Null
 $updatePanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Absolute, 130))) | Out-Null
-$versionLabel = New-Object System.Windows.Forms.Label; $versionLabel.Text = [string](Get-UiValue 'app.versionPrefix' 'Çö¹öÀü ') + $script:AppVersion; $versionLabel.Dock = 'Fill'; $versionLabel.TextAlign = 'MiddleRight'; $versionLabel.ForeColor = Get-UiColor 'colors.versionText' ([System.Drawing.Color]::FromArgb(35,55,65)); $versionLabel.Font = New-Object System.Drawing.Font($uiFontName, 8, [System.Drawing.FontStyle]::Bold); $versionLabel.Padding = New-Object System.Windows.Forms.Padding(0,0,8,0)
-$updateButton = New-Object System.Windows.Forms.Button; $updateButton.Text = [string](Get-UiValue 'buttons.update' '¾÷µ¥ÀÌÆ® È®ÀÎ'); $updateButton.Dock = 'Fill'; $updateButton.Margin = New-Object System.Windows.Forms.Padding(3); $updateButton.FlatStyle = 'Flat'; $updateButton.BackColor = Get-UiColor 'colors.updateButton' ([System.Drawing.Color]::FromArgb(54,91,109)); $updateButton.ForeColor = [System.Drawing.Color]::White; $updateButton.Font = New-Object System.Drawing.Font($uiFontName, 8, [System.Drawing.FontStyle]::Bold)
+$versionLabel = New-Object System.Windows.Forms.Label; $versionLabel.Text = [string](Get-UiValue 'app.versionPrefix' 'í˜„ë²„ì „ ') + $script:AppVersion; $versionLabel.Dock = 'Fill'; $versionLabel.TextAlign = 'MiddleRight'; $versionLabel.ForeColor = Get-UiColor 'colors.versionText' ([System.Drawing.Color]::FromArgb(35,55,65)); $versionLabel.Font = New-Object System.Drawing.Font($uiFontName, 8, [System.Drawing.FontStyle]::Bold); $versionLabel.Padding = New-Object System.Windows.Forms.Padding(0,0,8,0)
+$updateButton = New-Object System.Windows.Forms.Button; $updateButton.Text = [string](Get-UiValue 'buttons.update' 'ì—…ë°ì´íŠ¸ í™•ì¸'); $updateButton.Dock = 'Fill'; $updateButton.Margin = New-Object System.Windows.Forms.Padding(3); $updateButton.FlatStyle = 'Flat'; $updateButton.BackColor = Get-UiColor 'colors.updateButton' ([System.Drawing.Color]::FromArgb(54,91,109)); $updateButton.ForeColor = [System.Drawing.Color]::White; $updateButton.Font = New-Object System.Drawing.Font($uiFontName, 8, [System.Drawing.FontStyle]::Bold)
 $updatePanel.Controls.Add($versionLabel, 0, 0)
 $updatePanel.Controls.Add($updateButton, 1, 0)
 $gameTable.Controls.Add($updatePanel, 0, 4)
 
-$progressGroup = New-Object System.Windows.Forms.GroupBox; $progressGroup.Text = [string](Get-UiValue 'labels.progress' 'ÁøÇà »óÈ²'); $progressGroup.Dock = 'Fill'; $progressGroup.Padding = New-Object System.Windows.Forms.Padding(5,8,5,5); $progressGroup.BackColor = $uiBackground
+$progressGroup = New-Object System.Windows.Forms.GroupBox; $progressGroup.Text = [string](Get-UiValue 'labels.progress' 'ì§„í–‰ ìƒí™©'); $progressGroup.Dock = 'Fill'; $progressGroup.Padding = New-Object System.Windows.Forms.Padding(5,8,5,5); $progressGroup.BackColor = $uiBackground
 $progressPanel = New-Object System.Windows.Forms.TableLayoutPanel; $progressPanel.Dock = 'Fill'; $progressPanel.ColumnCount = 10; $progressPanel.RowCount = 1
 for ($pi = 0; $pi -lt 10; $pi++) { $progressPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 10))) | Out-Null }
 $script:ProgressCells = @()
-$progressNames = @(Get-UiValue 'progress.labels' @('¸Ş´º','¾îºñ','´øÀü','ÀÔÀå','»óÅÂ','´ë±â','ÀüÅõ','¿Ï·á','Á¾·á','¼øÈ¯'))
-if ($progressNames.Count -lt 10) { $progressNames = @('¸Ş´º','¾îºñ','´øÀü','ÀÔÀå','»óÅÂ','´ë±â','ÀüÅõ','¿Ï·á','Á¾·á','¼øÈ¯') }
+$progressNames = @(Get-UiValue 'progress.labels' @('ë©”ë‰´','ì–´ë¹„','ë˜ì „','ì…ì¥','ìƒíƒœ','ëŒ€ê¸°','ì „íˆ¬','ì™„ë£Œ','ì¢…ë£Œ','ìˆœí™˜'))
+if ($progressNames.Count -lt 10) { $progressNames = @('ë©”ë‰´','ì–´ë¹„','ë˜ì „','ì…ì¥','ìƒíƒœ','ëŒ€ê¸°','ì „íˆ¬','ì™„ë£Œ','ì¢…ë£Œ','ìˆœí™˜') }
 $progressActiveColor = Get-UiColor 'colors.progressActive' ([System.Drawing.Color]::FromArgb(0,122,204))
 $progressInactiveColor = Get-UiColor 'colors.progressInactive' ([System.Drawing.Color]::FromArgb(245,247,250))
 $progressActiveTextColor = Get-UiColor 'colors.progressActiveText' ([System.Drawing.Color]::White)
@@ -3093,7 +3097,7 @@ if ([System.IO.File]::Exists($portraitPath)) {
     })
     $form.Add_FormClosed({ if ($null -ne $script:PortraitImage) { $script:PortraitImage.Dispose() } })
 }
-$brandTitleText = [string](Get-UiValue 'brand.title' '³» ¸Ú´ë·Î °Ô¸®³ë±â')
+$brandTitleText = [string](Get-UiValue 'brand.title' 'ë‚´ ë©‹ëŒ€ë¡œ ê²Œë¦¬ë…¸ê¸°')
 $brandLinkText = [string](Get-UiValue 'brand.linkText' 'getiton85.github.io/gerinogi-pob')
 $brandUrl = [string](Get-UiValue 'brand.url' 'https://getiton85.github.io/gerinogi-pob/')
 $openBrandLink = { Start-Process $brandUrl }
@@ -3158,7 +3162,7 @@ $portraitPanel.Add_Resize({
 $gameTable.Controls.Add($portraitPanel, 0, 7)
 
 
-$settingsGroup = New-Object System.Windows.Forms.GroupBox; $settingsGroup.Text = [string](Get-UiValue 'labels.settings' '¼ÂÆÃ'); $settingsGroup.Dock = 'Top'; $settingsGroup.Height = 560; $settingsGroup.Padding = New-Object System.Windows.Forms.Padding(10)
+$settingsGroup = New-Object System.Windows.Forms.GroupBox; $settingsGroup.Text = [string](Get-UiValue 'labels.settings' 'ì…‹íŒ…'); $settingsGroup.Dock = 'Top'; $settingsGroup.Height = 560; $settingsGroup.Padding = New-Object System.Windows.Forms.Padding(10)
 $optionPage.Controls.Add($settingsGroup)
 $settingsTable = New-Object System.Windows.Forms.TableLayoutPanel; $settingsTable.Dock = 'Fill'; $settingsTable.ColumnCount = 2; $settingsTable.RowCount = 17
 $settingsTable.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 56))) | Out-Null
@@ -3166,12 +3170,12 @@ $settingsTable.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([Sy
 $settingsGroup.Controls.Add($settingsTable)
 $checkPanel = New-Object System.Windows.Forms.TableLayoutPanel; $checkPanel.Dock = 'Fill'; $checkPanel.ColumnCount = 3; $checkPanel.RowCount = 2
 for ($ci = 0; $ci -lt 3; $ci++) { $checkPanel.ColumnStyles.Add((New-Object System.Windows.Forms.ColumnStyle([System.Windows.Forms.SizeType]::Percent, 33.33))) | Out-Null }
-$topMostCheck = New-Object System.Windows.Forms.CheckBox; $topMostCheck.Text = 'Ç×»ó À§'; $topMostCheck.Checked = $true; $topMostCheck.Dock = 'Fill'
-$beepCheck = New-Object System.Windows.Forms.CheckBox; $beepCheck.Text = '½ÇÆĞÀ½'; $beepCheck.Checked = $true; $beepCheck.Dock = 'Fill'
-$fullMonitorCheck = New-Object System.Windows.Forms.CheckBox; $fullMonitorCheck.Text = 'ÀüÃ¼°Ë»ö'; $fullMonitorCheck.Checked = $false; $fullMonitorCheck.Dock = 'Fill'
-$minimizeOnRunCheck = New-Object System.Windows.Forms.CheckBox; $minimizeOnRunCheck.Text = 'ÃÖ¼ÒÈ­'; $minimizeOnRunCheck.Checked = $false; $minimizeOnRunCheck.Dock = 'Fill'
-$centerBeforeRunCheck = New-Object System.Windows.Forms.CheckBox; $centerBeforeRunCheck.Text = 'Áß¾ÓÀÌµ¿'; $centerBeforeRunCheck.Checked = $false; $centerBeforeRunCheck.Dock = 'Fill'
-$pointCheck = New-Object System.Windows.Forms.CheckBox; $pointCheck.Text = 'ÁÂÇ¥°ËÁõ'; $pointCheck.Checked = $true; $pointCheck.Dock = 'Fill'
+$topMostCheck = New-Object System.Windows.Forms.CheckBox; $topMostCheck.Text = 'í•­ìƒ ìœ„'; $topMostCheck.Checked = $true; $topMostCheck.Dock = 'Fill'
+$beepCheck = New-Object System.Windows.Forms.CheckBox; $beepCheck.Text = 'ì‹¤íŒ¨ìŒ'; $beepCheck.Checked = $true; $beepCheck.Dock = 'Fill'
+$fullMonitorCheck = New-Object System.Windows.Forms.CheckBox; $fullMonitorCheck.Text = 'ì „ì²´ê²€ìƒ‰'; $fullMonitorCheck.Checked = $false; $fullMonitorCheck.Dock = 'Fill'
+$minimizeOnRunCheck = New-Object System.Windows.Forms.CheckBox; $minimizeOnRunCheck.Text = 'ìµœì†Œí™”'; $minimizeOnRunCheck.Checked = $false; $minimizeOnRunCheck.Dock = 'Fill'
+$centerBeforeRunCheck = New-Object System.Windows.Forms.CheckBox; $centerBeforeRunCheck.Text = 'ì¤‘ì•™ì´ë™'; $centerBeforeRunCheck.Checked = $false; $centerBeforeRunCheck.Dock = 'Fill'
+$pointCheck = New-Object System.Windows.Forms.CheckBox; $pointCheck.Text = 'ì¢Œí‘œê²€ì¦'; $pointCheck.Checked = $true; $pointCheck.Dock = 'Fill'
 $checkPanel.Controls.Add($topMostCheck,0,0); $checkPanel.Controls.Add($beepCheck,1,0); $checkPanel.Controls.Add($fullMonitorCheck,2,0); $checkPanel.Controls.Add($minimizeOnRunCheck,0,1); $checkPanel.Controls.Add($centerBeforeRunCheck,1,1); $checkPanel.Controls.Add($pointCheck,2,1)
 $settingsTable.Controls.Add($checkPanel, 0, 0); $settingsTable.SetColumnSpan($checkPanel, 2)
 function Add-OptionRow([int]$Row, [string]$Text, [System.Windows.Forms.Control]$Control) {
@@ -3181,8 +3185,8 @@ function Add-OptionRow([int]$Row, [string]$Text, [System.Windows.Forms.Control]$
 }
 $intervalBox = New-Object System.Windows.Forms.NumericUpDown; $intervalBox.Minimum = 1000; $intervalBox.Maximum = 60000; $intervalBox.Increment = 100; $intervalBox.Value = 10000
 $pointToleranceBox = New-Object System.Windows.Forms.NumericUpDown; $pointToleranceBox.Minimum = 10; $pointToleranceBox.Maximum = 1000; $pointToleranceBox.Increment = 10; $pointToleranceBox.Value = 80
-$coordinateModeBox = New-Object System.Windows.Forms.ComboBox; $coordinateModeBox.DropDownStyle = 'DropDownList'; [void]$coordinateModeBox.Items.Add('´ë»ó Ã¢ ±âÁØ'); [void]$coordinateModeBox.Items.Add('È­¸é ±âÁØ'); $coordinateModeBox.SelectedIndex = 0
-$clickModeBox = New-Object System.Windows.Forms.ComboBox; $clickModeBox.DropDownStyle = 'DropDownList'; [void]$clickModeBox.Items.Add('µÑ´Ù'); [void]$clickModeBox.Items.Add('SendInput'); [void]$clickModeBox.Items.Add('mouse_event'); [void]$clickModeBox.Items.Add('¹é±×¶ó¿îµå'); $clickModeBox.SelectedIndex = 0; $script:ClickModeBox = $clickModeBox
+$coordinateModeBox = New-Object System.Windows.Forms.ComboBox; $coordinateModeBox.DropDownStyle = 'DropDownList'; [void]$coordinateModeBox.Items.Add('ëŒ€ìƒ ì°½ ê¸°ì¤€'); [void]$coordinateModeBox.Items.Add('í™”ë©´ ê¸°ì¤€'); $coordinateModeBox.SelectedIndex = 0
+$clickModeBox = New-Object System.Windows.Forms.ComboBox; $clickModeBox.DropDownStyle = 'DropDownList'; [void]$clickModeBox.Items.Add('ë‘˜ë‹¤'); [void]$clickModeBox.Items.Add('SendInput'); [void]$clickModeBox.Items.Add('mouse_event'); [void]$clickModeBox.Items.Add('ë°±ê·¸ë¼ìš´ë“œ'); $clickModeBox.SelectedIndex = 0; $script:ClickModeBox = $clickModeBox
 $matchPercentBox = New-Object System.Windows.Forms.NumericUpDown; $matchPercentBox.Minimum = 50; $matchPercentBox.Maximum = 100; $matchPercentBox.Value = 91
 $colorToleranceBox = New-Object System.Windows.Forms.NumericUpDown; $colorToleranceBox.Minimum = 10; $colorToleranceBox.Maximum = 100; $colorToleranceBox.Value = 22
 $retryCountBox = New-Object System.Windows.Forms.NumericUpDown; $retryCountBox.Minimum = 1; $retryCountBox.Maximum = 20; $retryCountBox.Value = 5
@@ -3191,20 +3195,20 @@ $stepDelayBox = New-Object System.Windows.Forms.NumericUpDown; $stepDelayBox.Min
 $moveSettleBox = New-Object System.Windows.Forms.NumericUpDown; $moveSettleBox.Minimum = 100; $moveSettleBox.Maximum = 5000; $moveSettleBox.Increment = 100; $moveSettleBox.Value = 250; $script:MoveSettleBox = $moveSettleBox
 $clickHoldBox = New-Object System.Windows.Forms.NumericUpDown; $clickHoldBox.Minimum = 50; $clickHoldBox.Maximum = 3000; $clickHoldBox.Increment = 50; $clickHoldBox.Value = 350; $script:ClickHoldBox = $clickHoldBox
 $goneDelayBox = New-Object System.Windows.Forms.NumericUpDown; $goneDelayBox.Minimum = 1000; $goneDelayBox.Maximum = 120000; $goneDelayBox.Increment = 1000; $goneDelayBox.Value = 20000
-$ultimateNameBox = New-Object System.Windows.Forms.TextBox; $ultimateNameBox.Text = '±Ã±Ø±â ¼³Á¤ 1'
-Add-OptionRow 1 '¹İº¹ °£°İms' $intervalBox
-Add-OptionRow 2 'ÁÂÇ¥ Çã¿ëpx' $pointToleranceBox
-Add-OptionRow 3 'ÁÂÇ¥ ±âÁØ' $coordinateModeBox
-Add-OptionRow 4 'Å¬¸¯ ¹æ½Ä' $clickModeBox
-Add-OptionRow 5 'ÀÏÄ¡À²%' $matchPercentBox
-Add-OptionRow 6 '»ö Çã¿ë' $colorToleranceBox
-Add-OptionRow 7 'Àç½Ãµµ' $retryCountBox
-Add-OptionRow 8 'Àç½Ãµµ °£°İms' $retryIntervalBox
-Add-OptionRow 9 'Å¬¸¯ ÈÄ ´ë±âms' $stepDelayBox
-Add-OptionRow 10 'ÀÌµ¿ ÈÄ ´ë±âms' $moveSettleBox
-Add-OptionRow 11 '´©¸§ À¯Áöms' $clickHoldBox
-Add-OptionRow 12 '»ç¶óÁü ÈÄ ´ë±âms' $goneDelayBox
-Add-OptionRow 13 '±Ã±Ø±â ÀÌ¸§' $ultimateNameBox
+$ultimateNameBox = New-Object System.Windows.Forms.TextBox; $ultimateNameBox.Text = 'ê¶ê·¹ê¸° ì„¤ì • 1'
+Add-OptionRow 1 'ë°˜ë³µ ê°„ê²©ms' $intervalBox
+Add-OptionRow 2 'ì¢Œí‘œ í—ˆìš©px' $pointToleranceBox
+Add-OptionRow 3 'ì¢Œí‘œ ê¸°ì¤€' $coordinateModeBox
+Add-OptionRow 4 'í´ë¦­ ë°©ì‹' $clickModeBox
+Add-OptionRow 5 'ì¼ì¹˜ìœ¨%' $matchPercentBox
+Add-OptionRow 6 'ìƒ‰ í—ˆìš©' $colorToleranceBox
+Add-OptionRow 7 'ì¬ì‹œë„' $retryCountBox
+Add-OptionRow 8 'ì¬ì‹œë„ ê°„ê²©ms' $retryIntervalBox
+Add-OptionRow 9 'í´ë¦­ í›„ ëŒ€ê¸°ms' $stepDelayBox
+Add-OptionRow 10 'ì´ë™ í›„ ëŒ€ê¸°ms' $moveSettleBox
+Add-OptionRow 11 'ëˆ„ë¦„ ìœ ì§€ms' $clickHoldBox
+Add-OptionRow 12 'ì‚¬ë¼ì§ í›„ ëŒ€ê¸°ms' $goneDelayBox
+Add-OptionRow 13 'ê¶ê·¹ê¸° ì´ë¦„' $ultimateNameBox
 function Refresh-WindowList {
     $windowBox.Items.Clear()
     $script:WindowItems = @()
@@ -3248,10 +3252,10 @@ function Update-SlotPreviewCollapsed {
     $slotPreviewTable.RowStyles[2].Height = if (-not $groupVisible) { 0 } elseif ($script:HarborPreviewCollapsed) { 30 } else { 118 }
     $slotPreviewTable.RowStyles[3].Height = if (-not $groupVisible) { 0 } elseif ($script:CavePreviewCollapsed) { 30 } else { 118 }
     $slotPreviewTable.RowStyles[4].Height = if (-not $groupVisible) { 0 } elseif ($script:CombatPreviewCollapsed) { 34 } else { 150 }
-    $slotPreviewToggleButton.Text = if ($script:SlotPreviewCollapsed) { '¿­±â' } else { 'Á¢±â' }
-    $harborPreviewFoldButton.Text = if ($script:HarborPreviewCollapsed) { '¿­±â' } else { 'Á¢±â' }
-    $cavePreviewFoldButton.Text = if ($script:CavePreviewCollapsed) { '¿­±â' } else { 'Á¢±â' }
-    $combatPreviewFoldButton.Text = if ($script:CombatPreviewCollapsed) { '¿­±â' } else { 'Á¢±â' }
+    $slotPreviewToggleButton.Text = if ($script:SlotPreviewCollapsed) { 'ì—´ê¸°' } else { 'ì ‘ê¸°' }
+    $harborPreviewFoldButton.Text = if ($script:HarborPreviewCollapsed) { 'ì—´ê¸°' } else { 'ì ‘ê¸°' }
+    $cavePreviewFoldButton.Text = if ($script:CavePreviewCollapsed) { 'ì—´ê¸°' } else { 'ì ‘ê¸°' }
+    $combatPreviewFoldButton.Text = if ($script:CombatPreviewCollapsed) { 'ì—´ê¸°' } else { 'ì ‘ê¸°' }
     $gameTable.RowStyles[2].Height = Get-SlotPreviewOpenHeight
 }
 function Toggle-SlotPreview {
@@ -3272,7 +3276,7 @@ function Toggle-CombatPreview {
 }
 function Update-AdvancedToolsCollapsed {
     $advancedPanel.Visible = -not $script:AdvancedToolsCollapsed
-    $advancedToggleButton.Text = if ($script:AdvancedToolsCollapsed) { '°í±Ş µµ±¸ ¿­±â' } else { '°í±Ş µµ±¸ ´İ±â' }
+    $advancedToggleButton.Text = if ($script:AdvancedToolsCollapsed) { 'ê³ ê¸‰ ë„êµ¬ ì—´ê¸°' } else { 'ê³ ê¸‰ ë„êµ¬ ë‹«ê¸°' }
     $buttonPanel.RowStyles[3].Height = if ($script:AdvancedToolsCollapsed) { 0 } else { 68 }
     $gameTable.RowStyles[3].Height = if ($script:AdvancedToolsCollapsed) { 106 } else { 164 }
 }
@@ -3297,8 +3301,8 @@ function Bring-MainWindowToFront {
 function Apply-RoutineToggleStates {
     try {
         $script:SuppressDungeonRoutineToggleEvents = $true
-        if ($harborEnabledCheck) { $harborEnabledCheck.Checked = [bool]$script:DungeonRoutineEnabled['Çã»óÀÇ Á¤¹ÚÁö'] }
-        if ($caveEnabledCheck) { $caveEnabledCheck.Checked = [bool]$script:DungeonRoutineEnabled['±¤±âÀÇ µ¿±¼'] }
+        if ($harborEnabledCheck) { $harborEnabledCheck.Checked = [bool]$script:DungeonRoutineEnabled['í—ˆìƒì˜ ì •ë°•ì§€'] }
+        if ($caveEnabledCheck) { $caveEnabledCheck.Checked = [bool]$script:DungeonRoutineEnabled['ê´‘ê¸°ì˜ ë™êµ´'] }
     } catch { } finally { $script:SuppressDungeonRoutineToggleEvents = $false }
     try {
         foreach ($slot in $script:SpecialSlots) {
@@ -3318,15 +3322,15 @@ function Apply-RoutineToggleStates {
 function Set-DungeonRoutineToggle([string]$Name, [bool]$Enabled) {
     if ($script:SuppressDungeonRoutineToggleEvents) { return }
     $script:DungeonRoutineEnabled[$Name] = $Enabled
-    if ($Name -eq 'Çã»óÀÇ Á¤¹ÚÁö') { $script:HarborEnabled = $Enabled }
+    if ($Name -eq 'í—ˆìƒì˜ ì •ë°•ì§€') { $script:HarborEnabled = $Enabled }
     if ($Enabled) {
-        $other = if ($Name -eq 'Çã»óÀÇ Á¤¹ÚÁö') { '±¤±âÀÇ µ¿±¼' } else { 'Çã»óÀÇ Á¤¹ÚÁö' }
+        $other = if ($Name -eq 'í—ˆìƒì˜ ì •ë°•ì§€') { 'ê´‘ê¸°ì˜ ë™êµ´' } else { 'í—ˆìƒì˜ ì •ë°•ì§€' }
         $script:DungeonRoutineEnabled[$other] = $false
-        if ($other -eq 'Çã»óÀÇ Á¤¹ÚÁö') { $script:HarborEnabled = $false }
+        if ($other -eq 'í—ˆìƒì˜ ì •ë°•ì§€') { $script:HarborEnabled = $false }
         try {
             $script:SuppressDungeonRoutineToggleEvents = $true
-            if ($other -eq 'Çã»óÀÇ Á¤¹ÚÁö' -and $harborEnabledCheck) { $harborEnabledCheck.Checked = $false }
-            if ($other -eq '±¤±âÀÇ µ¿±¼' -and $caveEnabledCheck) { $caveEnabledCheck.Checked = $false }
+            if ($other -eq 'í—ˆìƒì˜ ì •ë°•ì§€' -and $harborEnabledCheck) { $harborEnabledCheck.Checked = $false }
+            if ($other -eq 'ê´‘ê¸°ì˜ ë™êµ´' -and $caveEnabledCheck) { $caveEnabledCheck.Checked = $false }
         } finally { $script:SuppressDungeonRoutineToggleEvents = $false }
     }
     Refresh-Slots
@@ -3340,8 +3344,8 @@ function Select-Slot([string]$Slot) {
     }
     Refresh-Slots
 }
-function Mark-ActiveSlot([string]$Slot) { $script:ActiveSlot = $Slot; switch ($Slot) { '¸Ş´º' { Set-ProgressStep 1 } '¾îºñ½º' { Set-ProgressStep 2 } '´øÀü' { Set-ProgressStep 3 } 'ÀÔÀå' { Set-ProgressStep 4 } '»óÅÂ ±âÁØ' { Set-ProgressStep 5 } '¿Ï·á È®ÀÎ' { Set-ProgressStep 8 } '³ª°¡±â' { Set-ProgressStep 9 } default { } } }
-function Handle-FileDrop([string]$Slot, $Data) { $paths = $Data.GetData([System.Windows.Forms.DataFormats]::FileDrop); if ($paths -and $paths.Length -gt 0) { Select-Slot $Slot; Assign-ImageFileToSlot $Slot $paths[0]; Refresh-Slots; $statusLabel.Text = (Get-SlotStatusName $Slot) + ' ½½·Ô¿¡ ÀÌ¹ÌÁö ÆÄÀÏÀ» ¿¬°áÇß½À´Ï´Ù.' } }
+function Mark-ActiveSlot([string]$Slot) { $script:ActiveSlot = $Slot; switch ($Slot) { 'ë©”ë‰´' { Set-ProgressStep 1 } 'ì–´ë¹„ìŠ¤' { Set-ProgressStep 2 } 'ë˜ì „' { Set-ProgressStep 3 } 'ì…ì¥' { Set-ProgressStep 4 } 'ìƒíƒœ ê¸°ì¤€' { Set-ProgressStep 5 } 'ì™„ë£Œ í™•ì¸' { Set-ProgressStep 8 } 'ë‚˜ê°€ê¸°' { Set-ProgressStep 9 } default { } } }
+function Handle-FileDrop([string]$Slot, $Data) { $paths = $Data.GetData([System.Windows.Forms.DataFormats]::FileDrop); if ($paths -and $paths.Length -gt 0) { Select-Slot $Slot; Assign-ImageFileToSlot $Slot $paths[0]; Refresh-Slots; $statusLabel.Text = (Get-SlotStatusName $Slot) + ' ìŠ¬ë¡¯ì— ì´ë¯¸ì§€ íŒŒì¼ì„ ì—°ê²°í–ˆìŠµë‹ˆë‹¤.' } }
 function Add-DropHandlers($Control, [string]$Slot) { $Control.AllowDrop = $true; $Control.Add_DragEnter({ if ($_.Data.GetDataPresent([System.Windows.Forms.DataFormats]::FileDrop)) { $_.Effect = [System.Windows.Forms.DragDropEffects]::Copy } }.GetNewClosure()); $Control.Add_DragDrop({ Handle-FileDrop $Slot $_.Data }.GetNewClosure()) }
 function New-SlotPreviewCard([string]$Slot) {
     $slotKey = Get-EffectiveSlotKey $Slot
@@ -3352,7 +3356,7 @@ function New-SlotPreviewCard([string]$Slot) {
     if ($Slot -eq $script:ActiveSlot) { $label.ForeColor = [System.Drawing.Color]::DarkGreen; $label.Font = New-Object System.Drawing.Font('Malgun Gothic', 7, [System.Drawing.FontStyle]::Bold) } elseif ($Slot -eq $script:SelectedSlot) { $label.ForeColor = [System.Drawing.Color]::FromArgb(120,72,0); $label.Font = New-Object System.Drawing.Font('Malgun Gothic', 7, [System.Drawing.FontStyle]::Bold) } else { $label.Font = New-Object System.Drawing.Font('Malgun Gothic', 7) }
     Add-DropHandlers $label $Slot
     if ($script:Samples[$slotKey]) { $image = Load-ImageUnlocked $script:Samples[$slotKey].Path; $card.Tag = $image; $pic = New-Object System.Windows.Forms.PictureBox; $pic.Image = $image; $pic.SizeMode = 'Zoom'; $pic.Width = 58; $pic.Height = 52; $pic.Left = 1; $pic.Top = 3; Add-DropHandlers $pic $Slot; $pic.Add_Click({ Select-Slot $Slot }.GetNewClosure()); $card.Controls.Add($pic) }
-    $pointLabel = New-Object System.Windows.Forms.Label; $point = $script:SlotPoints[$slotKey]; $region = $script:SlotRegions[$slotKey]; $regionMark = if ($null -ne $region) { ' / ±¸¿ª' } else { '' }; if ($Slot -eq '»óÅÂ ±âÁØ') { $pointLabel.Text = 'ÁÂÇ¥ Á¦¿Ü' + $regionMark } elseif ($null -eq $point) { $pointLabel.Text = 'ÁÂÇ¥ ¾øÀ½' + $regionMark } else { $pointLabel.Text = (Get-CoordinateModeLabel $point.Mode) + ' X=' + $point.X + ', Y=' + $point.Y + $regionMark }; $pointLabel.TextAlign = 'MiddleCenter'; $pointLabel.Width = 58; $pointLabel.Height = 13; $pointLabel.Left = 1; $pointLabel.Top = 70; $pointLabel.ForeColor = [System.Drawing.Color]::DimGray; $pointLabel.Font = New-Object System.Drawing.Font('Malgun Gothic', 6); Add-DropHandlers $pointLabel $Slot; $pointLabel.Add_Click({ Select-Slot $Slot }.GetNewClosure()); $card.Add_Click({ Select-Slot $Slot }.GetNewClosure()); $label.Add_Click({ Select-Slot $Slot }.GetNewClosure()); $card.Controls.Add($label); $card.Controls.Add($pointLabel)
+    $pointLabel = New-Object System.Windows.Forms.Label; $point = $script:SlotPoints[$slotKey]; $region = $script:SlotRegions[$slotKey]; $regionMark = if ($null -ne $region) { ' / êµ¬ì—­' } else { '' }; if ($Slot -eq 'ìƒíƒœ ê¸°ì¤€') { $pointLabel.Text = 'ì¢Œí‘œ ì œì™¸' + $regionMark } elseif ($null -eq $point) { $pointLabel.Text = 'ì¢Œí‘œ ì—†ìŒ' + $regionMark } else { $pointLabel.Text = (Get-CoordinateModeLabel $point.Mode) + ' X=' + $point.X + ', Y=' + $point.Y + $regionMark }; $pointLabel.TextAlign = 'MiddleCenter'; $pointLabel.Width = 58; $pointLabel.Height = 13; $pointLabel.Left = 1; $pointLabel.Top = 70; $pointLabel.ForeColor = [System.Drawing.Color]::DimGray; $pointLabel.Font = New-Object System.Drawing.Font('Malgun Gothic', 6); Add-DropHandlers $pointLabel $Slot; $pointLabel.Add_Click({ Select-Slot $Slot }.GetNewClosure()); $card.Add_Click({ Select-Slot $Slot }.GetNewClosure()); $label.Add_Click({ Select-Slot $Slot }.GetNewClosure()); $card.Controls.Add($label); $card.Controls.Add($pointLabel)
     return $card
 }
 function Refresh-Slots {
@@ -3366,16 +3370,16 @@ function Refresh-Slots {
     foreach ($slot in $script:RouteSlots) {
         $idx = [array]::IndexOf($script:RouteSlots, $slot)
         $routeSlotPanel.Controls.Add((New-SlotPreviewCard $slot), $idx, 0)
-        $caveSlotPanel.Controls.Add((New-SlotPreviewCard (Get-DungeonRouteSlotKey '±¤±âÀÇ µ¿±¼' $slot)), $idx, 0)
+        $caveSlotPanel.Controls.Add((New-SlotPreviewCard (Get-DungeonRouteSlotKey 'ê´‘ê¸°ì˜ ë™êµ´' $slot)), $idx, 0)
     }
     foreach ($slot in $script:CombatSlots) {
         $combatSlotPanel.Controls.Add((New-SlotPreviewCard $slot), ([array]::IndexOf($script:CombatSlots, $slot)), 0)
     }
 }
-function Add-SlotSample { $screen = $screens[$monitorBox.SelectedIndex]; $script:LastCaptureMessage = ''; Capture-Slot $script:SelectedSlot $screen; Refresh-Slots; if (-not [string]::IsNullOrWhiteSpace($script:LastCaptureMessage)) { $statusLabel.Text = $script:LastCaptureMessage } else { $statusLabel.Text = $script:SelectedSlot + ' ÀÌ¹ÌÁö°¡ ÀúÀåµÇ¾ú½À´Ï´Ù.' } }
-function Add-ExtraSlotSample { $screen = $screens[$monitorBox.SelectedIndex]; $script:LastCaptureMessage = ''; Capture-ExtraSlotSample $script:SelectedSlot $screen; if (-not [string]::IsNullOrWhiteSpace($script:LastCaptureMessage)) { $statusLabel.Text = $script:LastCaptureMessage } else { $statusLabel.Text = $script:SelectedSlot + ' Ãß°¡ »ùÇÃ ÀúÀåÀÌ Ãë¼ÒµÇ¾ú½À´Ï´Ù.' } }
-function Import-SelectedSlotFile { $dialog = New-Object System.Windows.Forms.OpenFileDialog; $dialog.Title = '½½·Ô ÀÌ¹ÌÁö ¼±ÅÃ'; $dialog.InitialDirectory = $script:SampleDir; $dialog.Filter = 'Image files (*.png;*.jpg;*.jpeg;*.bmp)|*.png;*.jpg;*.jpeg;*.bmp'; if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { Assign-ImageFileToSlot $script:SelectedSlot $dialog.FileName; Refresh-Slots; $statusLabel.Text = (Get-SlotStatusName $script:SelectedSlot) + ' ½½·Ô¿¡ ÀÌ¹ÌÁö ÆÄÀÏÀ» ¿¬°áÇß½À´Ï´Ù.' } }
-function Reload-SavedSamplesToSlots { $count = Load-SavedSamples; Refresh-Slots; $statusLabel.Text = 'ÀúÀå Æú´õ¿¡¼­ ' + $count + '°³ ½½·ÔÀ» ºÒ·¯¿Ô½À´Ï´Ù.' }
+function Add-SlotSample { $screen = $screens[$monitorBox.SelectedIndex]; $script:LastCaptureMessage = ''; Capture-Slot $script:SelectedSlot $screen; Refresh-Slots; if (-not [string]::IsNullOrWhiteSpace($script:LastCaptureMessage)) { $statusLabel.Text = $script:LastCaptureMessage } else { $statusLabel.Text = $script:SelectedSlot + ' ì´ë¯¸ì§€ê°€ ì €ì¥ë˜ì—ˆìŠµë‹ˆë‹¤.' } }
+function Add-ExtraSlotSample { $screen = $screens[$monitorBox.SelectedIndex]; $script:LastCaptureMessage = ''; Capture-ExtraSlotSample $script:SelectedSlot $screen; if (-not [string]::IsNullOrWhiteSpace($script:LastCaptureMessage)) { $statusLabel.Text = $script:LastCaptureMessage } else { $statusLabel.Text = $script:SelectedSlot + ' ì¶”ê°€ ìƒ˜í”Œ ì €ì¥ì´ ì·¨ì†Œë˜ì—ˆìŠµë‹ˆë‹¤.' } }
+function Import-SelectedSlotFile { $dialog = New-Object System.Windows.Forms.OpenFileDialog; $dialog.Title = 'ìŠ¬ë¡¯ ì´ë¯¸ì§€ ì„ íƒ'; $dialog.InitialDirectory = $script:SampleDir; $dialog.Filter = 'Image files (*.png;*.jpg;*.jpeg;*.bmp)|*.png;*.jpg;*.jpeg;*.bmp'; if ($dialog.ShowDialog() -eq [System.Windows.Forms.DialogResult]::OK) { Assign-ImageFileToSlot $script:SelectedSlot $dialog.FileName; Refresh-Slots; $statusLabel.Text = (Get-SlotStatusName $script:SelectedSlot) + ' ìŠ¬ë¡¯ì— ì´ë¯¸ì§€ íŒŒì¼ì„ ì—°ê²°í–ˆìŠµë‹ˆë‹¤.' } }
+function Reload-SavedSamplesToSlots { $count = Load-SavedSamples; Refresh-Slots; $statusLabel.Text = 'ì €ì¥ í´ë”ì—ì„œ ' + $count + 'ê°œ ìŠ¬ë¡¯ì„ ë¶ˆëŸ¬ì™”ìŠµë‹ˆë‹¤.' }
 function Run-ClickDiagnostic {
     if (-not [System.IO.File]::Exists($script:ClickTracePath)) { 'time,x,y,mode,down_sent,up_sent,error_code,note' | Set-Content -LiteralPath $script:ClickTracePath -Encoding UTF8 }
     Invoke-LogMaintenance
@@ -3440,8 +3444,8 @@ function New-ProblemReportPackage {
     Compress-Archive -Path (Join-Path $stageDir '*') -DestinationPath $zipPath -CompressionLevel Optimal -Force
     Write-RoutineTrace $script:CurrentCycle 'report' '' 'created' ([System.Drawing.Rectangle]::Empty) $zipPath
     Start-Process -FilePath $script:ReportDir
-    [System.Windows.Forms.MessageBox]::Show('¹®Á¦ º¸°í¿ë ¾ĞÃà ÆÄÀÏÀ» ¸¸µé¾ú½À´Ï´Ù.' + $script:NewLine + $zipPath, '¹®Á¦ º¸°í') | Out-Null
-    $statusLabel.Text = '¹®Á¦ º¸°í ÆÄÀÏ »ı¼º: ' + [System.IO.Path]::GetFileName($zipPath)
+    [System.Windows.Forms.MessageBox]::Show('ë¬¸ì œ ë³´ê³ ìš© ì••ì¶• íŒŒì¼ì„ ë§Œë“¤ì—ˆìŠµë‹ˆë‹¤.' + $script:NewLine + $zipPath, 'ë¬¸ì œ ë³´ê³ ') | Out-Null
+    $statusLabel.Text = 'ë¬¸ì œ ë³´ê³  íŒŒì¼ ìƒì„±: ' + [System.IO.Path]::GetFileName($zipPath)
     return $zipPath
 }
 function Run-LocateSelectedSlot {
@@ -3449,20 +3453,20 @@ function Run-LocateSelectedSlot {
     $screen = $screens[$monitorBox.SelectedIndex]
     $slot = $script:SelectedSlot
     if ((Get-SlotSamplePaths $slot).Count -eq 0) {
-        [System.Windows.Forms.MessageBox]::Show('ÇöÀç ¼±ÅÃ ½½·Ô¿¡ ÀÌ¹ÌÁö°¡ ¾ø½À´Ï´Ù.', 'À§Ä¡ È®ÀÎ') | Out-Null
+        [System.Windows.Forms.MessageBox]::Show('í˜„ì¬ ì„ íƒ ìŠ¬ë¡¯ì— ì´ë¯¸ì§€ê°€ ì—†ìŠµë‹ˆë‹¤.', 'ìœ„ì¹˜ í™•ì¸') | Out-Null
         return
     }
     $rect = Find-Slot $slot $screen
     if ($rect.IsEmpty) {
-        [System.Windows.Forms.MessageBox]::Show('¼±ÅÃ ½½·Ô ÀÌ¹ÌÁö¸¦ È­¸é¿¡¼­ Ã£Áö ¸øÇß½À´Ï´Ù.' + $script:NewLine + 'ÀÏÄ¡À²À» ³·Ãß°Å³ª »öÇã¿ë °ªÀ» ¿Ã·Áº¸¼¼¿ä. µµ±¸ Ã¢ÀÌ ´ë»ó È­¸éÀ» °¡¸®¸é ´Ù¸¥ ¸ğ´ÏÅÍ·Î ¿Å±â°Å³ª ÀüÃ¼ ¸ğ´ÏÅÍ °Ë»öÀ» »ç¿ëÇÏ¼¼¿ä.', 'À§Ä¡ È®ÀÎ') | Out-Null
+        [System.Windows.Forms.MessageBox]::Show('ì„ íƒ ìŠ¬ë¡¯ ì´ë¯¸ì§€ë¥¼ í™”ë©´ì—ì„œ ì°¾ì§€ ëª»í–ˆìŠµë‹ˆë‹¤.' + $script:NewLine + 'ì¼ì¹˜ìœ¨ì„ ë‚®ì¶”ê±°ë‚˜ ìƒ‰í—ˆìš© ê°’ì„ ì˜¬ë ¤ë³´ì„¸ìš”. ë„êµ¬ ì°½ì´ ëŒ€ìƒ í™”ë©´ì„ ê°€ë¦¬ë©´ ë‹¤ë¥¸ ëª¨ë‹ˆí„°ë¡œ ì˜®ê¸°ê±°ë‚˜ ì „ì²´ ëª¨ë‹ˆí„° ê²€ìƒ‰ì„ ì‚¬ìš©í•˜ì„¸ìš”.', 'ìœ„ì¹˜ í™•ì¸') | Out-Null
         return
     }
     $x = [int]($rect.Left + $rect.Width / 2)
     $y = [int]($rect.Top + $rect.Height / 2)
     [void][NativeInput]::SetCursorPos($x, $y)
-    $statusLabel.Text = (Get-SlotStatusName $slot) + ' À§Ä¡ È®ÀÎ: X=' + $x + ', Y=' + $y
+    $statusLabel.Text = (Get-SlotStatusName $slot) + ' ìœ„ì¹˜ í™•ì¸: X=' + $x + ', Y=' + $y
 }
-function Run-ActualClickProbe { $slot=$script:SelectedSlot; $titlePart=$titleBox.Text.Trim(); if([string]::IsNullOrWhiteSpace($titlePart)){[System.Windows.Forms.MessageBox]::Show('´ë»ó Ã¢ Á¦¸ñÀ» ¸ÕÀú ÀÔ·ÂÇÏ¼¼¿ä.','½ÇÁ¦ Å¬¸¯ È®ÀÎ')|Out-Null;return}; $target=Find-WindowByTitlePart $titlePart; if($null -eq $target){[System.Windows.Forms.MessageBox]::Show('´ë»ó Ã¢À» Ã£Áö ¸øÇß½À´Ï´Ù.','½ÇÁ¦ Å¬¸¯ È®ÀÎ')|Out-Null;return}; $script:TargetHandle=$target.Handle; $screen=$screens[$monitorBox.SelectedIndex]; if((Get-SlotSamplePaths $slot).Count -eq 0){[System.Windows.Forms.MessageBox]::Show('ÇöÀç ¼±ÅÃ ½½·Ô¿¡ ÀÌ¹ÌÁö°¡ ¾ø½À´Ï´Ù.','½ÇÁ¦ Å¬¸¯ È®ÀÎ')|Out-Null;return}; $rect=Find-Slot $slot $screen; if($rect.IsEmpty){[System.Windows.Forms.MessageBox]::Show('ÇöÀç ¼±ÅÃ ½½·Ô ÀÌ¹ÌÁö¸¦ È­¸é¿¡¼­ Ã£Áö ¸øÇß½À´Ï´Ù.','½ÇÁ¦ Å¬¸¯ È®ÀÎ')|Out-Null;return}; if([System.Windows.Forms.MessageBox]::Show('¼±ÅÃ ½½·ÔÀ» ÇÑ ¹ø Å¬¸¯ÇÕ´Ï´Ù. ¹İÀÀ ¿©ºÎ¸¦ ´«À¸·Î È®ÀÎÇÏ¼¼¿ä.','½ÇÁ¦ Å¬¸¯ È®ÀÎ',[System.Windows.Forms.MessageBoxButtons]::OKCancel) -eq [System.Windows.Forms.DialogResult]::OK){[void][NativeInput]::SetForegroundWindow($target.Handle); Start-Sleep -Milliseconds 200; [void](Click-SlotTarget $slot $rect ([int]$stepDelayBox.Value))} }
+function Run-ActualClickProbe { $slot=$script:SelectedSlot; $titlePart=$titleBox.Text.Trim(); if([string]::IsNullOrWhiteSpace($titlePart)){[System.Windows.Forms.MessageBox]::Show('ëŒ€ìƒ ì°½ ì œëª©ì„ ë¨¼ì € ì…ë ¥í•˜ì„¸ìš”.','ì‹¤ì œ í´ë¦­ í™•ì¸')|Out-Null;return}; $target=Find-WindowByTitlePart $titlePart; if($null -eq $target){[System.Windows.Forms.MessageBox]::Show('ëŒ€ìƒ ì°½ì„ ì°¾ì§€ ëª»í–ˆìŠµë‹ˆë‹¤.','ì‹¤ì œ í´ë¦­ í™•ì¸')|Out-Null;return}; $script:TargetHandle=$target.Handle; $screen=$screens[$monitorBox.SelectedIndex]; if((Get-SlotSamplePaths $slot).Count -eq 0){[System.Windows.Forms.MessageBox]::Show('í˜„ì¬ ì„ íƒ ìŠ¬ë¡¯ì— ì´ë¯¸ì§€ê°€ ì—†ìŠµë‹ˆë‹¤.','ì‹¤ì œ í´ë¦­ í™•ì¸')|Out-Null;return}; $rect=Find-Slot $slot $screen; if($rect.IsEmpty){[System.Windows.Forms.MessageBox]::Show('í˜„ì¬ ì„ íƒ ìŠ¬ë¡¯ ì´ë¯¸ì§€ë¥¼ í™”ë©´ì—ì„œ ì°¾ì§€ ëª»í–ˆìŠµë‹ˆë‹¤.','ì‹¤ì œ í´ë¦­ í™•ì¸')|Out-Null;return}; if([System.Windows.Forms.MessageBox]::Show('ì„ íƒ ìŠ¬ë¡¯ì„ í•œ ë²ˆ í´ë¦­í•©ë‹ˆë‹¤. ë°˜ì‘ ì—¬ë¶€ë¥¼ ëˆˆìœ¼ë¡œ í™•ì¸í•˜ì„¸ìš”.','ì‹¤ì œ í´ë¦­ í™•ì¸',[System.Windows.Forms.MessageBoxButtons]::OKCancel) -eq [System.Windows.Forms.DialogResult]::OK){[void][NativeInput]::SetForegroundWindow($target.Handle); Start-Sleep -Milliseconds 200; [void](Click-SlotTarget $slot $rect ([int]$stepDelayBox.Value))} }
 $refreshWindowsButton.Add_Click({ Refresh-WindowList })
 $windowBox.Add_SelectedIndexChanged({ if ($windowBox.SelectedItem) { $titleBox.Text = [string]$windowBox.SelectedItem } })
 $slotBox.Add_SelectedIndexChanged({ if ($script:SuppressSlotBoxSelectionEvents) { return }; if ($slotBox.SelectedItem) { $script:SelectedSlot = [string]$slotBox.SelectedItem; Refresh-Slots } })
@@ -3470,36 +3474,36 @@ $addButton.Add_Click({ Add-SlotSample })
 $pointButton.Add_Click({ Save-CurrentPointForSelectedSlot })
 $fileButton.Add_Click({ Import-SelectedSlotFile })
 $reloadButton.Add_Click({ Reload-SavedSamplesToSlots })
-$deleteButton.Add_Click({ $slot=$script:SelectedSlot; $slotKey=Get-EffectiveSlotKey $slot; if($script:Samples[$slotKey] -and [System.IO.File]::Exists($script:Samples[$slotKey].Path)){[System.IO.File]::Delete($script:Samples[$slotKey].Path)}; $script:Samples[$slotKey]=$null; $script:SlotRegions[$slotKey]=$null; $script:SlotPoints[$slotKey]=$null; Save-SlotRegions; Save-SlotPoints; Refresh-Slots; $statusLabel.Text=(Get-SlotStatusName $slot)+' ½½·Ô Á¤º¸¸¦ »èÁ¦Çß½À´Ï´Ù.' })
+$deleteButton.Add_Click({ $slot=$script:SelectedSlot; $slotKey=Get-EffectiveSlotKey $slot; if($script:Samples[$slotKey] -and [System.IO.File]::Exists($script:Samples[$slotKey].Path)){[System.IO.File]::Delete($script:Samples[$slotKey].Path)}; $script:Samples[$slotKey]=$null; $script:SlotRegions[$slotKey]=$null; $script:SlotPoints[$slotKey]=$null; Save-SlotRegions; Save-SlotPoints; Refresh-Slots; $statusLabel.Text=(Get-SlotStatusName $slot)+' ìŠ¬ë¡¯ ì •ë³´ë¥¼ ì‚­ì œí–ˆìŠµë‹ˆë‹¤.' })
 $locateButton.Add_Click({ Run-LocateSelectedSlot })
 $probeButton.Add_Click({ Run-ActualClickProbe })
 $diagnosticButton.Add_Click({ Run-ClickDiagnostic })
 $reportButton.Add_Click({ [void](New-ProblemReportPackage) })
 $showIgnoreButton.Add_Click({ Show-IgnoreZones })
-$stopButton.Add_Click({ $script:StopRequested = $true; $statusLabel.Text = 'Áß´Ü ¿äÃ»µÊ.' })
+$stopButton.Add_Click({ $script:StopRequested = $true; $statusLabel.Text = 'ì¤‘ë‹¨ ìš”ì²­ë¨.' })
 $logButton.Add_Click({ Ensure-LogHeader; Start-Process -FilePath $script:LogPath })
 $updateButton.Add_Click({ Invoke-AppUpdateCheck $false })
 $exitButton.Add_Click({ $script:StopRequested = $true; $form.Close() })
 $advancedToggleButton.Add_Click({ Toggle-AdvancedTools })
 $topMostCheck.Add_CheckedChanged({ $form.TopMost = $topMostCheck.Checked })
-$harborEnabledCheck.Add_CheckedChanged({ Set-DungeonRoutineToggle 'Çã»óÀÇ Á¤¹ÚÁö' ([bool]$harborEnabledCheck.Checked) })
-$caveEnabledCheck.Add_CheckedChanged({ Set-DungeonRoutineToggle '±¤±âÀÇ µ¿±¼' ([bool]$caveEnabledCheck.Checked) })
-$specialEnabledCheck.Add_CheckedChanged({ $script:SpecialSlotEnabled['Çùµ¿'] = [bool]$specialEnabledCheck.Checked; Refresh-Slots })
+$harborEnabledCheck.Add_CheckedChanged({ Set-DungeonRoutineToggle 'í—ˆìƒì˜ ì •ë°•ì§€' ([bool]$harborEnabledCheck.Checked) })
+$caveEnabledCheck.Add_CheckedChanged({ Set-DungeonRoutineToggle 'ê´‘ê¸°ì˜ ë™êµ´' ([bool]$caveEnabledCheck.Checked) })
+$specialEnabledCheck.Add_CheckedChanged({ $script:SpecialSlotEnabled['í˜‘ë™'] = [bool]$specialEnabledCheck.Checked; Refresh-Slots })
 $ultimateProfileBox.Add_SelectionChangeCommitted({
     Save-SelectedUltimateProfileFromControls
     if ($ultimateProfileBox.SelectedIndex -ge 0) { $script:SelectedUltimateProfileIndex = [int]$ultimateProfileBox.SelectedIndex }
-    $script:SelectedSlot = '±Ã±Ø±â'
-    if ($slotBox.SelectedItem -ne '±Ã±Ø±â') { $slotBox.SelectedItem = '±Ã±Ø±â' }
+    $script:SelectedSlot = 'ê¶ê·¹ê¸°'
+    if ($slotBox.SelectedItem -ne 'ê¶ê·¹ê¸°') { $slotBox.SelectedItem = 'ê¶ê·¹ê¸°' }
     Apply-UltimateProfileToControls
     Refresh-Slots
-    $statusLabel.Text = '±Ã±Ø±â ¼³Á¤ ' + ([int]$script:SelectedUltimateProfileIndex + 1) + ' ¼±ÅÃµÊ. F8·Î ÀÌ ¼³Á¤ÀÇ ÀÌ¹ÌÁö¸¦ µî·ÏÇÏ¼¼¿ä.'
+    $statusLabel.Text = 'ê¶ê·¹ê¸° ì„¤ì • ' + ([int]$script:SelectedUltimateProfileIndex + 1) + ' ì„ íƒë¨. F8ë¡œ ì´ ì„¤ì •ì˜ ì´ë¯¸ì§€ë¥¼ ë“±ë¡í•˜ì„¸ìš”.'
 })
 $questProfileBox.Add_SelectedIndexChanged({
     if ($questProfileBox.SelectedIndex -ge 0) { $script:SelectedQuestProfileIndex = [int]$questProfileBox.SelectedIndex }
-    $script:SelectedSlot = 'Äù½ºÆ®'
-    if ($slotBox.SelectedItem -ne 'Äù½ºÆ®') { $slotBox.SelectedItem = 'Äù½ºÆ®' }
+    $script:SelectedSlot = 'í€˜ìŠ¤íŠ¸'
+    if ($slotBox.SelectedItem -ne 'í€˜ìŠ¤íŠ¸') { $slotBox.SelectedItem = 'í€˜ìŠ¤íŠ¸' }
     Refresh-Slots
-    $statusLabel.Text = 'Äù½ºÆ® ¼³Á¤ ' + ([int]$script:SelectedQuestProfileIndex + 1) + ' ¼±ÅÃµÊ. F8·Î ÀÌ¹ÌÁö¸¦ µî·ÏÇÏ¼¼¿ä.'
+    $statusLabel.Text = 'í€˜ìŠ¤íŠ¸ ì„¤ì • ' + ([int]$script:SelectedQuestProfileIndex + 1) + ' ì„ íƒë¨. F8ë¡œ ì´ë¯¸ì§€ë¥¼ ë“±ë¡í•˜ì„¸ìš”.'
 })
 $ultimateNameBox.Add_Leave({ Save-SelectedUltimateProfileFromControls; Refresh-UltimateProfileCombo; Refresh-Slots })
 foreach ($slot in $script:CombatSlots) {
@@ -3523,20 +3527,20 @@ $loadedIgnoreZonesOnStart = Load-IgnoreZones
 Refresh-Slots
 Update-SlotPreviewCollapsed
 Update-AdvancedToolsCollapsed
-$statusLabel.Text = 'ÀúÀå Æú´õ¿¡¼­ ' + $loadedOnStart + '°³ ½½·Ô, ÁÂÇ¥ ' + $loadedPointsOnStart + '°³, ½½·Ô±¸¿ª ' + $loadedRegionsOnStart + '°³, Á¦¿Ü±¸¿ª ' + $loadedIgnoreZonesOnStart + '°³¸¦ ºÒ·¯¿Ô½À´Ï´Ù.'
+$statusLabel.Text = 'ì €ì¥ í´ë”ì—ì„œ ' + $loadedOnStart + 'ê°œ ìŠ¬ë¡¯, ì¢Œí‘œ ' + $loadedPointsOnStart + 'ê°œ, ìŠ¬ë¡¯êµ¬ì—­ ' + $loadedRegionsOnStart + 'ê°œ, ì œì™¸êµ¬ì—­ ' + $loadedIgnoreZonesOnStart + 'ê°œë¥¼ ë¶ˆëŸ¬ì™”ìŠµë‹ˆë‹¤.'
 function Start-StateRoutine {
-    if ($script:Running) { [System.Windows.Forms.MessageBox]::Show('ÀÌ¹Ì ½ÇÇà ÁßÀÔ´Ï´Ù.', '½ÇÇà') | Out-Null; return }
-    if (-not (Test-HarborEnabled)) { [System.Windows.Forms.MessageBox]::Show('Çã»óÀÇ Á¤¹ÚÁö°¡ OFF »óÅÂÀÔ´Ï´Ù. ½ÇÇàÇÏ·Á¸é Çã»óÀÇ Á¤¹ÚÁö ONÀ» Ã¼Å©ÇÏ¼¼¿ä.', '½ÇÇà') | Out-Null; return }
-    $optionalSlots = @('½Ä»ç ¹öÆ°','±Ã±Ø±â','½ºÅµ','ÆÈ¶óµò')
-    foreach ($slot in $script:RouteSlots + @('»óÅÂ ±âÁØ')) { if ($optionalSlots -contains $slot) { continue }; $requiredSlot = if ($script:RouteSlots -contains $slot) { Get-ActiveRouteSlotKey $slot } else { $slot }; if (-not (Test-SlotEnabled $requiredSlot)) { continue }; if ((Get-SlotSamplePaths $requiredSlot).Count -eq 0) { [System.Windows.Forms.MessageBox]::Show((Get-SlotStatusName $requiredSlot) + ' ½½·Ô ÀÌ¹ÌÁö°¡ ÇÊ¿äÇÕ´Ï´Ù.', '½ÇÇà') | Out-Null; return } }
-    $titlePart = $titleBox.Text.Trim(); if ([string]::IsNullOrWhiteSpace($titlePart)) { [System.Windows.Forms.MessageBox]::Show('´ë»ó Ã¢ Á¦¸ñÀ» ¹İµå½Ã ÀÔ·ÂÇØ¾ß ÇÕ´Ï´Ù.', '½ÇÇà') | Out-Null; return }
-    $target = Get-SelectedTargetWindow $titlePart; if ($null -eq $target) { [System.Windows.Forms.MessageBox]::Show('´ë»ó Ã¢À» Ã£Áö ¸øÇß½À´Ï´Ù.', '½ÇÇà') | Out-Null; return }
+    if ($script:Running) { [System.Windows.Forms.MessageBox]::Show('ì´ë¯¸ ì‹¤í–‰ ì¤‘ì…ë‹ˆë‹¤.', 'ì‹¤í–‰') | Out-Null; return }
+    if (-not (Test-AnyDungeonRoutineEnabled)) { [System.Windows.Forms.MessageBox]::Show('ì‹¤í–‰í•  ë˜ì „ ë£¨í‹´ì´ ëª¨ë‘ OFF ìƒíƒœì…ë‹ˆë‹¤. í—ˆìƒì˜ ì •ë°•ì§€ ë˜ëŠ” ê´‘ê¸°ì˜ ë™êµ´ ONì„ ì²´í¬í•˜ì„¸ìš”.', 'ì‹¤í–‰') | Out-Null; return }
+    $optionalSlots = @('ì‹ì‚¬ ë²„íŠ¼','ê¶ê·¹ê¸°','ìŠ¤í‚µ','íŒ”ë¼ë”˜')
+    foreach ($slot in $script:RouteSlots + @('ìƒíƒœ ê¸°ì¤€')) { if ($optionalSlots -contains $slot) { continue }; $requiredSlot = if ($script:RouteSlots -contains $slot) { Get-ActiveRouteSlotKey $slot } else { $slot }; if (-not (Test-SlotEnabled $requiredSlot)) { continue }; if ((Get-SlotSamplePaths $requiredSlot).Count -eq 0) { [System.Windows.Forms.MessageBox]::Show((Get-SlotStatusName $requiredSlot) + ' ìŠ¬ë¡¯ ì´ë¯¸ì§€ê°€ í•„ìš”í•©ë‹ˆë‹¤.', 'ì‹¤í–‰') | Out-Null; return } }
+    $titlePart = $titleBox.Text.Trim(); if ([string]::IsNullOrWhiteSpace($titlePart)) { [System.Windows.Forms.MessageBox]::Show('ëŒ€ìƒ ì°½ ì œëª©ì„ ë°˜ë“œì‹œ ì…ë ¥í•´ì•¼ í•©ë‹ˆë‹¤.', 'ì‹¤í–‰') | Out-Null; return }
+    $target = Get-SelectedTargetWindow $titlePart; if ($null -eq $target) { [System.Windows.Forms.MessageBox]::Show('ëŒ€ìƒ ì°½ì„ ì°¾ì§€ ëª»í–ˆìŠµë‹ˆë‹¤.', 'ì‹¤í–‰') | Out-Null; return }
     $script:TargetHandle = $target.Handle; $screen = $screens[$monitorBox.SelectedIndex]
     if ($centerBeforeRunCheck.Checked) {
         $center = Get-WindowCenter $target.Handle
-        if ($null -eq $center) { [System.Windows.Forms.MessageBox]::Show('´ë»ó Ã¢ Áß½É ÁÂÇ¥¸¦ °è»êÇÏÁö ¸øÇß½À´Ï´Ù.', '½ÇÇà') | Out-Null; return }
+        if ($null -eq $center) { [System.Windows.Forms.MessageBox]::Show('ëŒ€ìƒ ì°½ ì¤‘ì‹¬ ì¢Œí‘œë¥¼ ê³„ì‚°í•˜ì§€ ëª»í–ˆìŠµë‹ˆë‹¤.', 'ì‹¤í–‰') | Out-Null; return }
         [void][NativeInput]::SetCursorPos($center.X, $center.Y)
-        $statusLabel.Text = '½ÃÀÛ È®ÀÎ: Ä¿¼­¸¦ ´ë»ó Ã¢ Áß½ÉÀ¸·Î ÀÌµ¿Çß½À´Ï´Ù.'
+        $statusLabel.Text = 'ì‹œì‘ í™•ì¸: ì»¤ì„œë¥¼ ëŒ€ìƒ ì°½ ì¤‘ì‹¬ìœ¼ë¡œ ì´ë™í–ˆìŠµë‹ˆë‹¤.'
         [System.Windows.Forms.Application]::DoEvents()
         Start-Sleep -Milliseconds 500
     }
@@ -3554,17 +3558,17 @@ function Start-StateRoutine {
         $cycle=0
         $insidePhase = $false
         Reset-CoopAttempts
-        $routineStage = '¸Ş´º'
+        $routineStage = 'ë©”ë‰´'
         while(-not $script:StopRequested) {
             $cycle++
             $script:CurrentCycle = $cycle
             Write-RoutineTrace $cycle 'cycle' '' 'start' ([System.Drawing.Rectangle]::Empty) ('stage=' + $routineStage + '; inside=' + $insidePhase)
-            if($script:StopRequested){ $status='stopped'; $message='»ç¿ëÀÚ Áß´Ü'; break }
+            if($script:StopRequested){ $status='stopped'; $message='ì‚¬ìš©ì ì¤‘ë‹¨'; break }
             [void][NativeInput]::SetForegroundWindow($target.Handle)
             [void](Sleep-WithStop 150)
             $candidate = Find-RoutineCandidate $screen $routineStage
             if ($null -eq $candidate) {
-                $statusLabel.Text = 'ÇöÀç ´Ü°è ´ë±â Áß: ' + $routineStage
+                $statusLabel.Text = 'í˜„ì¬ ë‹¨ê³„ ëŒ€ê¸° ì¤‘: ' + $routineStage
                 [System.Windows.Forms.Application]::DoEvents()
                 [void](Sleep-WithStop ([Math]::Max(120, [Math]::Min(500, [int]$retryIntervalBox.Value))))
                 continue
@@ -3578,15 +3582,15 @@ function Start-StateRoutine {
             if ($actionResult.Completed) {
                 $completedCycles++
                 Write-RoutineTrace $cycle 'cycle' '' 'completed' ([System.Drawing.Rectangle]::Empty) ('clicks=' + $completedClicks + '; message=' + $actionResult.Message)
-                $routineStage = '¸Ş´º'
+                $routineStage = 'ë©”ë‰´'
                 $sleepWatch = [System.Diagnostics.Stopwatch]::StartNew()
                 while((-not $script:StopRequested) -and $sleepWatch.ElapsedMilliseconds -lt [int]$intervalBox.Value) { Start-Sleep -Milliseconds 100; [System.Windows.Forms.Application]::DoEvents() }
             }
         }
-        if($script:StopRequested -and $status -eq 'completed'){ $status='stopped'; $message='»ç¿ëÀÚ Áß´Ü' }
+        if($script:StopRequested -and $status -eq 'completed'){ $status='stopped'; $message='ì‚¬ìš©ì ì¤‘ë‹¨' }
     }
     catch { $status='error'; $message=$_.Exception.Message }
-    finally { Write-RoutineTrace $script:CurrentCycle 'run' '' ('end-' + $status) ([System.Drawing.Rectangle]::Empty) $message; $ended=Get-Date; $elapsed=$timer.Elapsed.TotalSeconds; $average=if($completedCycles -gt 0){$elapsed/$completedCycles}else{0}; Write-RunLog $started $ended $titlePart (Get-WindowTitle $target.Handle) $monitorBox.SelectedItem 0 $completedCycles $completedClicks ([int]$intervalBox.Value) $elapsed $average $status $message; if ($minimizeOnRunCheck.Checked) { $form.WindowState = $previousWindowState; [void]$form.Activate() }; $script:ActiveSlot=''; Refresh-Slots; $statusLabel.Text='Á¾·á: '+$status+', ¿Ï·á '+$completedCycles+'È¸'; Set-ProgressStep 0; $startButton.Enabled=$true; $script:Running=$false }
+    finally { Write-RoutineTrace $script:CurrentCycle 'run' '' ('end-' + $status) ([System.Drawing.Rectangle]::Empty) $message; $ended=Get-Date; $elapsed=$timer.Elapsed.TotalSeconds; $average=if($completedCycles -gt 0){$elapsed/$completedCycles}else{0}; Write-RunLog $started $ended $titlePart (Get-WindowTitle $target.Handle) $monitorBox.SelectedItem 0 $completedCycles $completedClicks ([int]$intervalBox.Value) $elapsed $average $status $message; if ($minimizeOnRunCheck.Checked) { $form.WindowState = $previousWindowState; [void]$form.Activate() }; $script:ActiveSlot=''; Refresh-Slots; $statusLabel.Text='ì¢…ë£Œ: '+$status+', ì™„ë£Œ '+$completedCycles+'íšŒ'; Set-ProgressStep 0; $startButton.Enabled=$true; $script:Running=$false }
 }
 $startButton.Add_Click({ Start-StateRoutine })
 $form.Add_Shown({
@@ -3606,9 +3610,11 @@ $form.Add_Shown({
 })
 $form.Add_FormClosed({ Save-UserSettings; [void][NativeInput]::UnregisterHotKey($form.Handle,801); [void][NativeInput]::UnregisterHotKey($form.Handle,803); [void][NativeInput]::UnregisterHotKey($form.Handle,804); [void][NativeInput]::UnregisterHotKey($form.Handle,805) })
 $script:HotKeyFilter = New-Object HotKeyWindowFilter
-$script:HotKeyFilter.OnHotKey = [Action[int]]{ param($id) if($id -eq 801 -and -not $script:Running){ Add-SlotSample }; if($id -eq 803 -and -not $script:Running){ Start-StateRoutine }; if($id -eq 804){ $script:StopRequested=$true; $statusLabel.Text='Áß´Ü ¿äÃ»µÊ.' }; if($id -eq 805 -and -not $script:Running){ Save-CurrentPointForSelectedSlot } }
+$script:HotKeyFilter.OnHotKey = [Action[int]]{ param($id) if($id -eq 801 -and -not $script:Running){ Add-SlotSample }; if($id -eq 803 -and -not $script:Running){ Start-StateRoutine }; if($id -eq 804){ $script:StopRequested=$true; $statusLabel.Text='ì¤‘ë‹¨ ìš”ì²­ë¨.' }; if($id -eq 805 -and -not $script:Running){ Save-CurrentPointForSelectedSlot } }
 [System.Windows.Forms.Application]::AddMessageFilter($script:HotKeyFilter)
 [void]$form.ShowDialog()
+
+
 
 
 
